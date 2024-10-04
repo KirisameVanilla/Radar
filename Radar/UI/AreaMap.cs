@@ -8,7 +8,7 @@ namespace Radar.UI;
 
 internal static class AreaMap
 {
-	public unsafe static AtkUnitBase* AreaMapAddon => (AtkUnitBase*)Plugin.gui.GetAddonByName("AreaMap");
+	public unsafe static AtkUnitBase* AreaMapAddon => (AtkUnitBase*)Plugin.Gui.GetAddonByName("AreaMap");
 
 	public unsafe static bool HasMap => AreaMapAddon != (AtkUnitBase*)IntPtr.Zero;
 
@@ -59,7 +59,7 @@ internal static class AreaMap
 			string result = null;
 			try
 			{
-				AtkUnitBase* ptr = (AtkUnitBase*)Plugin.gui.GetAddonByName("_NaviMap");
+				AtkUnitBase* ptr = (AtkUnitBase*)Plugin.Gui.GetAddonByName("_NaviMap");
 				AtkComponentNode* ptr2 = (AtkComponentNode*)ptr->UldManager.NodeList[2];
 				AtkImageNode* ptr3 = (AtkImageNode*)ptr2->Component->UldManager.NodeList[1];
 				if (ptr3->PartsList != null)

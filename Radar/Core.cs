@@ -4,7 +4,7 @@ namespace Radar;
 
 internal static class Core
 {
-	public unsafe static GameObject* Me => (GameObject*)((IntPtr)Plugin.cs.LocalPlayer.Address).ToPointer();
+	public static unsafe GameObject* Me => (GameObject*)((IntPtr)Plugin.ClientState.LocalPlayer.Address).ToPointer();
 
-	public unsafe static GameObject* Target => (GameObject*)((IntPtr)Plugin.targets.Target.Address).ToPointer();
+	public static unsafe GameObject* Target => (GameObject*)((IntPtr)Plugin.TargetManager.Target.Address).ToPointer();
 }

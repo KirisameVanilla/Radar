@@ -31,31 +31,31 @@ public class Plugin : IDalamudPlugin, IDisposable
 
 	internal static RadarAddressResolver address;
 
-	private static int _savetimer;
+	private static int Savetimer;
 
 	[PluginService]
 	internal static IDalamudPluginInterface pi { get; private set; }
 
 	[PluginService]
-	internal static IClientState cs { get; private set; }
+	internal static IClientState ClientState { get; private set; }
 
 	[PluginService]
-	internal static IFramework fw { get; private set; }
+	internal static IFramework Framework { get; private set; }
 
 	[PluginService]
-	internal static IGameGui gui { get; private set; }
+	internal static IGameGui Gui { get; private set; }
 
 	[PluginService]
-	internal static IChatGui chat { get; private set; }
+	internal static IChatGui ChatGui { get; private set; }
 
 	[PluginService]
-	internal static ISigScanner scanner { get; private set; }
+	internal static ISigScanner SigScanner { get; private set; }
 
 	[PluginService]
-	internal static IDataManager data { get; private set; }
+	internal static IDataManager DataManager { get; private set; }
 
 	[PluginService]
-	internal static ITargetManager targets { get; private set; }
+	internal static ITargetManager TargetManager { get; private set; }
 
 	[PluginService]
 	internal static ICondition condition { get; private set; }
@@ -77,22 +77,22 @@ public class Plugin : IDalamudPlugin, IDisposable
 
 	internal static Configuration config { get; private set; }
 
-	public static ProcessModule MainModule => scanner.Module;
+	public static ProcessModule MainModule => SigScanner.Module;
 
-	public static nint ImageBase => scanner.Module.BaseAddress;
+	public static nint ImageBase => SigScanner.Module.BaseAddress;
 
 	public string Name => "Radar";
 
-	internal unsafe static ref float HRotation => ref *(float*)(address.CamPtr + 304);
+	internal static unsafe ref float HRotation => ref *(float*)(address.CamPtr + 304);
 
 	public unsafe Plugin()
 	{
 		address = new RadarAddressResolver();
-		address.Setup(scanner);
+		address.Setup(SigScanner);
 		config = ((Configuration)pi.GetPluginConfig()) ?? new Configuration();
 		config.Initialize(pi);
 		GameObjectList = (GameObject**)objects.Address;
-		fw.Update += Framework_OnUpdateEvent;
+		Framework.Update += Framework_OnUpdateEvent;
 		SetupResources();
 		Ui = new BuildUi();
 		CommandManager = new PluginCommandManager<Plugin>(this, pi);
@@ -112,12 +112,12 @@ public class Plugin : IDalamudPlugin, IDisposable
 		{
 			try
 			{
-				EnpcIcons = (from i in data.GetExcelSheet<EventIconPriority>().SelectMany((EventIconPriority i) => i.Icon)
+				EnpcIcons = (from i in DataManager.GetExcelSheet<EventIconPriority>().SelectMany((EventIconPriority i) => i.Icon)
 					where i != 0
 					select i).ToDictionary((uint i) => i, delegate(uint j)
 				{
 					ITextureProvider textureProvider = textures;
-					GameIconLookup lookup = new GameIconLookup(j, itemHq: false, hiRes: false, data.Language);
+					GameIconLookup lookup = new GameIconLookup(j, itemHq: false, hiRes: false, DataManager.Language);
 					return textureProvider.GetFromGameIcon(in lookup);
 				});
 			}
@@ -130,12 +130,12 @@ public class Plugin : IDalamudPlugin, IDisposable
 
 	private void Framework_OnUpdateEvent(IFramework framework)
 	{
-		_savetimer++;
-		if (_savetimer % 3600 != 0)
+		Savetimer++;
+		if (Savetimer % 3600 != 0)
 		{
 			return;
 		}
-		_savetimer = 0;
+		Savetimer = 0;
 		Task.Run(delegate
 		{
 			try
@@ -165,7 +165,7 @@ public class Plugin : IDalamudPlugin, IDisposable
 	{
 		Configuration configuration = config;
 		configuration.ExternalMap_Enabled = !configuration.ExternalMap_Enabled;
-		chat.Print("[Radar] External Map " + (config.ExternalMap_Enabled ? "Enabled" : "Disabled") + ".");
+		ChatGui.Print("[Radar] External Map " + (config.ExternalMap_Enabled ? "Enabled" : "Disabled") + ".");
 	}
 
 	[Command("/rhunt")]
@@ -174,7 +174,7 @@ public class Plugin : IDalamudPlugin, IDisposable
 	{
 		Configuration configuration = config;
 		configuration.OverlayHint_MobHuntView = !configuration.OverlayHint_MobHuntView;
-		chat.Print("[Radar] Hunt view " + (config.OverlayHint_MobHuntView ? "Enabled" : "Disabled") + ".");
+		ChatGui.Print("[Radar] Hunt view " + (config.OverlayHint_MobHuntView ? "Enabled" : "Disabled") + ".");
 	}
 
 	[Command("/rfinder")]
@@ -183,7 +183,7 @@ public class Plugin : IDalamudPlugin, IDisposable
 	{
 		Configuration configuration = config;
 		configuration.OverlayHint_CustomObjectView = !configuration.OverlayHint_CustomObjectView;
-		chat.Print("[Radar] Custom object view " + (config.OverlayHint_CustomObjectView ? "Enabled" : "Disabled") + ".");
+		ChatGui.Print("[Radar] Custom object view " + (config.OverlayHint_CustomObjectView ? "Enabled" : "Disabled") + ".");
 	}
 
 	[Command("/r2d")]
@@ -192,7 +192,7 @@ public class Plugin : IDalamudPlugin, IDisposable
 	{
 		Configuration configuration = config;
 		configuration.Overlay2D_Enabled = !configuration.Overlay2D_Enabled;
-		chat.Print("[Radar] 2D overlay " + (config.Overlay2D_Enabled ? "Enabled" : "Disabled") + ".");
+		ChatGui.Print("[Radar] 2D overlay " + (config.Overlay2D_Enabled ? "Enabled" : "Disabled") + ".");
 	}
 
 	[Command("/r3d")]
@@ -201,7 +201,7 @@ public class Plugin : IDalamudPlugin, IDisposable
 	{
 		Configuration configuration = config;
 		configuration.Overlay3D_Enabled = !configuration.Overlay3D_Enabled;
-		chat.Print("[Radar] 3D overlay " + (config.Overlay3D_Enabled ? "Enabled" : "Disabled") + ".");
+		ChatGui.Print("[Radar] 3D overlay " + (config.Overlay3D_Enabled ? "Enabled" : "Disabled") + ".");
 	}
 
 	[Command("/rpreset")]
@@ -212,18 +212,18 @@ public class Plugin : IDalamudPlugin, IDisposable
 		{
 			string text = DateTime.Now.ToString("G");
 			config.profiles.Add(ConfigSnapShot.GetSnapShot(text, config));
-			chat.Print("[Radar] config snapchot saved as \"" + text + "\".");
+			ChatGui.Print("[Radar] config snapchot saved as \"" + text + "\".");
 			return;
 		}
 		ConfigSnapShot configSnapShot = config.profiles.OrderBy((ConfigSnapShot i) => i.LastEdit).LastOrDefault((ConfigSnapShot i) => i.Name == args);
 		if (configSnapShot != null)
 		{
-			chat.Print("[Radar] loading preset \"" + configSnapShot.Name + "\".");
+			ChatGui.Print("[Radar] loading preset \"" + configSnapShot.Name + "\".");
 			configSnapShot.RestoreSnapShot(config);
 		}
 		else
 		{
-			chat.PrintError("[Radar] no preset named \"" + args + "\" found.");
+			ChatGui.PrintError("[Radar] no preset named \"" + args + "\" found.");
 		}
 	}
 
@@ -231,7 +231,7 @@ public class Plugin : IDalamudPlugin, IDisposable
 	{
 		if (disposing)
 		{
-			fw.Update -= Framework_OnUpdateEvent;
+			Framework.Update -= Framework_OnUpdateEvent;
 			CommandManager.Dispose();
 			Ui.Dispose();
 			pi.SavePluginConfig(config);

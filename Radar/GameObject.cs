@@ -1,9 +1,8 @@
 using System.Numerics;
 using System.Runtime.InteropServices;
-using Dalamud.Game.ClientState.Objects.Enums;
 using FFXIVClientStructs.FFXIV.Client.Game.Character;
-using FFXIVClientStructs.FFXIV.Client.Game.Object;
 using Radar.Enums;
+using ObjectKind = Dalamud.Game.ClientState.Objects.Enums.ObjectKind;
 
 namespace Radar;
 
@@ -17,20 +16,20 @@ public struct GameObject
 	}
 
 	[FieldOffset(0)]
-	private FFXIVClientStructs.FFXIV.Client.Game.Object.GameObject _GameObject;
+	private FFXIVClientStructs.FFXIV.Client.Game.Object.GameObject gameObject;
 
 	[FieldOffset(0)]
 	public Character Character;
 
-	private uint ID1 => _GameObject.EntityId;
+	private uint ID1 => gameObject.EntityId;
 
-	private uint ID2 => _GameObject.LayoutId;
+	private uint ID2 => gameObject.LayoutId;
 
-	private uint ID3 => _GameObject.ObjectIndex;
+	private uint ID3 => gameObject.ObjectIndex;
 
-	private byte TargetableFlags => (byte)_GameObject.TargetableStatus;
+	private byte TargetableFlags => (byte)gameObject.TargetableStatus;
 
-	public Vector3 Location => _GameObject.Position;
+	public Vector3 Location => gameObject.Position;
 
 	public float X => Location.X;
 
@@ -38,15 +37,15 @@ public struct GameObject
 
 	public float Z => Location.Z;
 
-	public uint ENpcIcon => _GameObject.NamePlateIconId;
+	public uint ENpcIcon => gameObject.NamePlateIconId;
 
-	private uint RenderFlags => (uint)_GameObject.RenderFlags;
+	private uint RenderFlags => (uint)gameObject.RenderFlags;
 
 	public unsafe string Name
 	{
 		get
 		{
-			fixed (byte* ptr = _GameObject.Name)
+			fixed (byte* ptr = gameObject.Name)
 			{
 				return Util.ReadTerminatedString(ptr);
 			}
@@ -65,7 +64,7 @@ public struct GameObject
 		}
 	}
 
-	public uint ObjectId => _GameObject.GetGameObjectId().ObjectId;
+	public uint ObjectId => gameObject.GetGameObjectId().ObjectId;
 
 	public uint Id
 	{
@@ -83,22 +82,22 @@ public struct GameObject
 		}
 	}
 
-	public uint NpcBase => _GameObject.BaseId;
+	public uint NpcBase => gameObject.BaseId;
 
-	public Dalamud.Game.ClientState.Objects.Enums.ObjectKind ObjectKind => (Dalamud.Game.ClientState.Objects.Enums.ObjectKind)_GameObject.ObjectKind;
+	public ObjectKind ObjectKind => (ObjectKind)gameObject.ObjectKind;
 
-	public SubKind SubKind => (SubKind)_GameObject.SubKind;
+	public SubKind SubKind => (SubKind)gameObject.SubKind;
 
 	public MyObjectKind MyObjectKind
 	{
 		get
 		{
-			Dalamud.Game.ClientState.Objects.Enums.ObjectKind objectKind = (Dalamud.Game.ClientState.Objects.Enums.ObjectKind)_GameObject.ObjectKind;
+			ObjectKind objectKind = (ObjectKind)gameObject.ObjectKind;
 			switch (objectKind)
 			{
-			case Dalamud.Game.ClientState.Objects.Enums.ObjectKind.None:
+			case ObjectKind.None:
 				return MyObjectKind.None;
-			case Dalamud.Game.ClientState.Objects.Enums.ObjectKind.BattleNpc:
+			case ObjectKind.BattleNpc:
 				if (SubKind == SubKind.Pet)
 				{
 					return MyObjectKind.Pet;
@@ -119,8 +118,11 @@ public struct GameObject
 
 	public unsafe bool IsTargetable
 	{
-		get
-		{
+        /*
+         * Analysis by ChatGPT: https://pastebin.com/0B8aCHn0
+         */
+        get
+        {
 			void* ptr = stackalloc byte[6];
 			((byte*)ptr)[4] = TargetableFlags;
 			*(uint*)ptr = RenderFlags;
@@ -142,8 +144,8 @@ public struct GameObject
 
 	public GameObject(Vector3 pos)
 	{
-		_GameObject = default(FFXIVClientStructs.FFXIV.Client.Game.Object.GameObject);
+		gameObject = default(FFXIVClientStructs.FFXIV.Client.Game.Object.GameObject);
 		Character = default(Character);
-		_GameObject.Position = pos;
+		gameObject.Position = pos;
 	}
 }

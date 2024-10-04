@@ -147,12 +147,12 @@ internal static class Util
 		}
 	}
 
-	internal static bool TryScanText(this SigScanner scanner, string sig, out nint result)
+	internal static bool TryScanText(this SigScanner SigScanner, string sig, out nint result)
 	{
 		result = IntPtr.Zero;
 		try
 		{
-			result = scanner.ScanText(sig);
+			result = SigScanner.ScanText(sig);
 			return true;
 		}
 		catch (KeyNotFoundException)

@@ -34,7 +34,7 @@ public class ConfigSnapShot
 	public void RestoreSnapShot(Configuration configInstance)
 	{
 		Configuration savedCopy = saved.CloneJson();
-		Type type = configInstance.GetType();
+		var type = configInstance.GetType();
 		foreach (var item2 in from i in type.GetFields()
 			where i.GetCustomAttribute(typeof(JsonIgnoreAttribute)) == null
 			select (Name: i.Name, i.GetValue(savedCopy)))

@@ -73,9 +73,9 @@ internal static class ImguiUtil
 
 	public static void DrawCircleOutlined(this ImDrawListPtr drawList, Vector2 screenPos, uint fgcol, uint bgcol)
 	{
-		int overlay3D_RingType = (int)Plugin.config.Overlay3D_RingType;
-		float overlay3D_RingSize = Plugin.config.Overlay3D_RingSize;
-		float overlay3D_IconStrokeThickness = Plugin.config.Overlay3D_IconStrokeThickness;
+		var overlay3D_RingType = (int)Plugin.config.Overlay3D_RingType;
+		var overlay3D_RingSize = Plugin.config.Overlay3D_RingSize;
+		var overlay3D_IconStrokeThickness = Plugin.config.Overlay3D_IconStrokeThickness;
 		drawList.AddCircleFilled(screenPos, overlay3D_RingSize, fgcol, overlay3D_RingType);
 		drawList.AddCircle(screenPos, overlay3D_RingSize, bgcol, overlay3D_RingType, overlay3D_IconStrokeThickness / 2f);
 	}

@@ -219,9 +219,9 @@ public class BuildUi : IDisposable
 
 	private System.Numerics.Vector2[] MapPosSize = new System.Numerics.Vector2[2];
 
-	private static System.Numerics.Vector2 _meScreenPos = ImGuiHelpers.MainViewport.GetCenter();
+	private static System.Numerics.Vector2 MeScreenPos = ImGuiHelpers.MainViewport.GetCenter();
 
-	private static System.Numerics.Vector3 _meWorldPos = System.Numerics.Vector3.Zero;
+	private static System.Numerics.Vector3 MeWorldPos = System.Numerics.Vector3.Zero;
 
 	internal static Matrix MatrixSingetonCache;
 
@@ -239,7 +239,7 @@ public class BuildUi : IDisposable
 
 	private System.Numerics.Vector4 newCustomObjectColor = System.Numerics.Vector4.One;
 
-	private Dictionary<ushort, string> _territoryIdToBg;
+	private Dictionary<ushort, string> territoryIdToBg;
 
 	private int treeLevel;
 
@@ -320,7 +320,7 @@ public class BuildUi : IDisposable
 		}
 	}
 
-	private Dictionary<ushort, bool> isPvpZone => _isPvpZone ?? (_isPvpZone = Plugin.data.GetExcelSheet<TerritoryType>().ToDictionary((TerritoryType i) => (ushort)i.RowId, (TerritoryType j) => j.IsPvpZone));
+	private Dictionary<ushort, bool> isPvpZone => _isPvpZone ?? (_isPvpZone = Plugin.DataManager.GetExcelSheet<TerritoryType>().ToDictionary((TerritoryType i) => (ushort)i.RowId, (TerritoryType j) => j.IsPvpZone));
 
 	private static int FontsSize => ImGui.GetIO().Fonts.Fonts.Size;
 
@@ -328,12 +328,12 @@ public class BuildUi : IDisposable
 	{
 		get
 		{
-			if (_territoryIdToBg == null)
+			if (territoryIdToBg == null)
 			{
-				_territoryIdToBg = Plugin.data.GetExcelSheet<TerritoryType>().ToDictionary((TerritoryType i) => (ushort)i.RowId, (TerritoryType j) => j?.Bg?.RawString);
-				_territoryIdToBg[0] = "未记录区域（数据不可用）";
+				territoryIdToBg = Plugin.DataManager.GetExcelSheet<TerritoryType>().ToDictionary((TerritoryType i) => (ushort)i.RowId, (TerritoryType j) => j?.Bg?.RawString);
+				territoryIdToBg[0] = "未记录区域（数据不可用）";
 			}
-			return _territoryIdToBg;
+			return territoryIdToBg;
 		}
 	}
 
@@ -346,7 +346,7 @@ public class BuildUi : IDisposable
 	private List<(nint objectPointer, uint fgcolor, string title)> SpecialObjectDrawList { get; } = new List<(nint, uint, string)>();
 
 
-	private float WorldToMapScale => AreaMap.MapScale * (float)(int)sizeFactorDict[Plugin.cs.TerritoryType] / 100f * GlobalUIScale;
+	private float WorldToMapScale => AreaMap.MapScale * (float)(int)sizeFactorDict[Plugin.ClientState.TerritoryType] / 100f * GlobalUIScale;
 
 	private ref float UvZoom
 	{
@@ -368,15 +368,15 @@ public class BuildUi : IDisposable
 
 	public BuildUi()
 	{
-		sizeFactorDict = Plugin.data.GetExcelSheet<TerritoryType>().ToDictionary((TerritoryType k) => k.RowId, (TerritoryType v) => v.Map.Value.SizeFactor);
+		sizeFactorDict = Plugin.DataManager.GetExcelSheet<TerritoryType>().ToDictionary((TerritoryType k) => k.RowId, (TerritoryType v) => v.Map.Value.SizeFactor);
 		DeepDungeonTerritoryEqual = new DeepDungeonTerritoryEqualityComparer();
 		DeepDungeonObjectLocationEqual = new DeepDungeonObjectLocationEqualityComparer();
-		TerritoryMapsDictionary = (from i in Plugin.data.GetExcelSheet<Map>()
+		TerritoryMapsDictionary = (from i in Plugin.DataManager.GetExcelSheet<Map>()
 			group i by i.TerritoryType?.Value?.RowId into i
 			where i.Key.HasValue && i.Key != 0
 			select i).ToDictionary((IGrouping<uint?, Map> i) => (ushort)i.Key.Value, (IGrouping<uint?, Map> j) => j.ToArray());
-		TryGetCurrentMapTex(Plugin.cs.TerritoryType);
-		Plugin.cs.TerritoryChanged += TerritoryChanged;
+		TryGetCurrentMapTex(Plugin.ClientState.TerritoryType);
+		Plugin.ClientState.TerritoryChanged += TerritoryChanged;
 		Plugin.pi.UiBuilder.OpenConfigUi += UiBuilder_OnOpenConfigUi;
 		Plugin.pi.UiBuilder.Draw += UiBuilder_OnBuildUi;
 	}
@@ -398,7 +398,7 @@ public class BuildUi : IDisposable
 	{
 		Plugin.pi.UiBuilder.OpenConfigUi -= UiBuilder_OnOpenConfigUi;
 		Plugin.pi.UiBuilder.Draw -= UiBuilder_OnBuildUi;
-		Plugin.cs.TerritoryChanged -= TerritoryChanged;
+		Plugin.ClientState.TerritoryChanged -= TerritoryChanged;
 		DisposeMapTextures();
 	}
 
@@ -407,9 +407,9 @@ public class BuildUi : IDisposable
 		bool flag = false;
 		try
 		{
-			if (Plugin.cs.TerritoryType != 0)
+			if (Plugin.ClientState.TerritoryType != 0)
 			{
-				flag = isPvpZone[Plugin.cs.TerritoryType];
+				flag = isPvpZone[Plugin.ClientState.TerritoryType];
 			}
 		}
 		catch (Exception)
@@ -528,7 +528,7 @@ public class BuildUi : IDisposable
 		}
 	}
 
-	private unsafe static bool TryGetEnpcIcon(GameObject* o, out ISharedImmediateTexture enpcIcon)
+	private static unsafe bool TryGetEnpcIcon(GameObject* o, out ISharedImmediateTexture enpcIcon)
 	{
 		enpcIcon = null;
 		if (o->ObjectKind == ObjectKind.EventNpc && o->ENpcIcon != 0 && Plugin.EnpcIcons != null && Plugin.EnpcIcons.TryGetValue(o->ENpcIcon, out var value))
@@ -539,26 +539,26 @@ public class BuildUi : IDisposable
 		return false;
 	}
 
-	private unsafe static void RefreshMeScreenPos()
+	private static unsafe void RefreshMeScreenPos()
 	{
 		try
 		{
 			Util.WorldToScreenEx(Core.Me->Location, out var screenPos, out var _, ImGui.GetMainViewport().Pos);
-			_meScreenPos = screenPos;
+			MeScreenPos = screenPos;
 		}
 		catch
 		{
 		}
 	}
 
-	private unsafe static void RefreshMeWorldPos()
+	private static unsafe void RefreshMeWorldPos()
 	{
 		try
 		{
 			GameObject* gameObjectList = *Plugin.GameObjectList;
 			if (gameObjectList != null)
 			{
-				_meWorldPos = gameObjectList->Location;
+				MeWorldPos = gameObjectList->Location;
 			}
 		}
 		catch
@@ -566,6 +566,7 @@ public class BuildUi : IDisposable
 		}
 	}
 
+    /*
 	private unsafe void UiBuilder_OnBuildFonts()
 	{
 		fixed (byte* ptr = fontBytes)
@@ -579,6 +580,7 @@ public class BuildUi : IDisposable
 			}
 		}
 	}
+    */
 
 	private static void Config2D()
 	{
@@ -723,7 +725,7 @@ public class BuildUi : IDisposable
 		{
 			if (string.IsNullOrWhiteSpace(newCustomObjectName))
 			{
-				IGameObject target = Plugin.targets.Target;
+				IGameObject target = Plugin.TargetManager.Target;
 				if (target != null)
 				{
 					newCustomObjectName = target.Name.TextValue;
@@ -1159,7 +1161,7 @@ public class BuildUi : IDisposable
 				Base = o->NpcBase,
 				InstanceId = o->ObjectId,
 				Location = o->Location,
-				Territory = Plugin.cs.TerritoryType
+				Territory = Plugin.ClientState.TerritoryType
 			};
 			if (Plugin.config.DeepDungeonObjects.Add(deepDungeonObject))
 			{
@@ -1174,7 +1176,7 @@ public class BuildUi : IDisposable
 				Base = o->NpcBase,
 				InstanceId = o->ObjectId,
 				Location = o->Location,
-				Territory = Plugin.cs.TerritoryType
+				Territory = Plugin.ClientState.TerritoryType
 			};
 			if (Plugin.config.DeepDungeonObjects.Add(deepDungeonObject2))
 			{
@@ -1185,7 +1187,7 @@ public class BuildUi : IDisposable
 
 	private void DrawDeepDungeonObjects()
 	{
-		foreach (IGrouping<DeepDungeonObject, DeepDungeonObject> item in Plugin.config.DeepDungeonObjects.Where((DeepDungeonObject i) => i.Territory != 0 && i.GetBg == GetDeepDungeonBg(Plugin.cs.TerritoryType) && i.Location.Distance2D(_meWorldPos.Convert()) < Plugin.config.DeepDungeon_ObjectShowDistance).GroupBy((DeepDungeonObject i) => i, DeepDungeonObjectLocationEqual))
+		foreach (IGrouping<DeepDungeonObject, DeepDungeonObject> item in Plugin.config.DeepDungeonObjects.Where((DeepDungeonObject i) => i.Territory != 0 && i.GetBg == GetDeepDungeonBg(Plugin.ClientState.TerritoryType) && i.Location.Distance2D(MeWorldPos.Convert()) < Plugin.config.DeepDungeon_ObjectShowDistance).GroupBy((DeepDungeonObject i) => i, DeepDungeonObjectLocationEqual))
 		{
 			System.Numerics.Vector2 ringCenter;
 			if (item.Key.Type == DeepDungeonType.Trap)
@@ -1270,7 +1272,7 @@ public class BuildUi : IDisposable
 			item = (string.IsNullOrEmpty(a->DictionaryName) ? $"{a->ObjectKind} {a->NpcBase}" : a->DictionaryName);
 			break;
 		case 2:
-			item = (string.IsNullOrEmpty(a->DictionaryName) ? $"{a->ObjectKind} {a->NpcBase}" : $"{a->DictionaryName}\u3000{a->Location.Distance2D(_meWorldPos):F2}m");
+			item = (string.IsNullOrEmpty(a->DictionaryName) ? $"{a->ObjectKind} {a->NpcBase}" : $"{a->DictionaryName}\u3000{a->Location.Distance2D(MeWorldPos):F2}m");
 			break;
 		default:
 			throw new ArgumentOutOfRangeException();
@@ -1293,7 +1295,7 @@ public class BuildUi : IDisposable
 			text = (string.IsNullOrEmpty(obj->DictionaryName) ? $"{obj->ObjectKind} {obj->NpcBase}" : obj->DictionaryName);
 			break;
 		case 2:
-			text = (string.IsNullOrEmpty(obj->DictionaryName) ? $"{obj->ObjectKind} {obj->NpcBase}" : obj->DictionaryName) + $"\t{obj->Location.Distance2D(_meWorldPos):F2}m";
+			text = (string.IsNullOrEmpty(obj->DictionaryName) ? $"{obj->ObjectKind} {obj->NpcBase}" : obj->DictionaryName) + $"\t{obj->Location.Distance2D(MeWorldPos):F2}m";
 			break;
 		default:
 			throw new ArgumentOutOfRangeException();
@@ -1304,7 +1306,7 @@ public class BuildUi : IDisposable
 		}
 		else
 		{
-			if (Plugin.config.Overlay3D_DrawObjectLineCurrentTarget && Plugin.targets.Target?.Address == (nint?)obj)
+			if (Plugin.config.Overlay3D_DrawObjectLineCurrentTarget && Plugin.TargetManager.Target?.Address == (nint?)obj)
 			{
 				drawLine = true;
 			}
@@ -1316,18 +1318,18 @@ public class BuildUi : IDisposable
 		System.Numerics.Vector3 location = obj->Location;
 		System.Numerics.Vector2 size = ImGuiHelpers.MainViewport.Size;
 		System.Numerics.Vector2 pos = ImGuiHelpers.MainViewport.Pos;
-		_ = _meScreenPos - ImGuiHelpers.MainViewport.GetCenter();
+		_ = MeScreenPos - ImGuiHelpers.MainViewport.GetCenter();
 		ImGuiHelpers.MainViewport.GetCenter();
 		System.Numerics.Vector2 screenPos;
 		float Z;
 		bool flag2 = Util.WorldToScreenEx(location, out screenPos, out Z, System.Numerics.Vector2.Zero, 200f, 100f);
 		if (flag2 && Z < 0f)
 		{
-			screenPos -= _meScreenPos;
+			screenPos -= MeScreenPos;
 			screenPos /= size;
 			screenPos = screenPos.Normalize();
 			screenPos *= size;
-			screenPos += _meScreenPos;
+			screenPos += MeScreenPos;
 		}
 		else
 		{
@@ -1344,7 +1346,7 @@ public class BuildUi : IDisposable
 		}
 		if (drawLine)
 		{
-			BDL.AddLine(_meScreenPos, vector, fgcolor);
+			BDL.AddLine(MeScreenPos, vector, fgcolor);
 		}
 		if (flag3 || flag)
 		{
@@ -1387,7 +1389,7 @@ public class BuildUi : IDisposable
 		ImGui.PushStyleVar(ImGuiStyleVar.WindowRounding, 0f);
 		ImGui.PushStyleVar(ImGuiStyleVar.WindowBorderSize, Plugin.config.OverlayHint_BorderSize);
 		System.Numerics.Vector2 windowPos = Plugin.config.WindowPos;
-		foreach (var item4 in SpecialObjectDrawList.OrderBy(((nint objectPointer, uint fgcolor, string title) i) => ((GameObject*)i.objectPointer)->Location.Distance(_meWorldPos)))
+		foreach (var item4 in SpecialObjectDrawList.OrderBy(((nint objectPointer, uint fgcolor, string title) i) => ((GameObject*)i.objectPointer)->Location.Distance(MeWorldPos)))
 		{
 			nint item = item4.objectPointer;
 			uint item2 = item4.fgcolor;
@@ -1402,7 +1404,7 @@ public class BuildUi : IDisposable
 				continue;
 			}
 			System.Numerics.Vector2 pos2 = ImGui.GetWindowPos() + ImGui.GetCursorPos() + new System.Numerics.Vector2(ImGui.GetTextLineHeight(), ImGui.GetTextLineHeight());
-			ImGui.GetWindowDrawList().DrawArrow(pos2, ImGui.GetTextLineHeightWithSpacing() * 0.618f, item2, (ptr->Location2D - _meWorldPos.ToVector2()).Normalize().Rotate(0f - Plugin.HRotation), 5f);
+			ImGui.GetWindowDrawList().DrawArrow(pos2, ImGui.GetTextLineHeightWithSpacing() * 0.618f, item2, (ptr->Location2D - MeWorldPos.ToVector2()).Normalize().Rotate(0f - Plugin.HRotation), 5f);
 			ImGui.SetCursorPosX(ImGui.GetCursorPosX() + ImGui.GetTextLineHeight() + ImGui.GetTextLineHeightWithSpacing());
 			ImGui.TextColored(ImGui.ColorConvertU32ToFloat4(item2), item3 ?? "");
 			ImGui.Separator();
@@ -1411,14 +1413,14 @@ public class BuildUi : IDisposable
 			{
 				text += $"{ptr->Character.CharacterData.Health:N0}/{ptr->Character.CharacterData.MaxHealth:N0}\t{(float)ptr->Character.CharacterData.Health / (float)ptr->Character.CharacterData.MaxHealth:P}\n";
 			}
-			float num = ptr->Y - _meWorldPos.Y;
-			ImGui.TextUnformatted(string.Format("{0}{1:F2}m\t{2}{3:F2}m", text, ptr->Location.Distance2D(_meWorldPos), (num == 0f) ? "" : ((num > 0f) ? "↑" : "↓"), Math.Abs(num)));
+			float num = ptr->Y - MeWorldPos.Y;
+			ImGui.TextUnformatted(string.Format("{0}{1:F2}m\t{2}{3:F2}m", text, ptr->Location.Distance2D(MeWorldPos), (num == 0f) ? "" : ((num > 0f) ? "↑" : "↓"), Math.Abs(num)));
 			windowPos += new System.Numerics.Vector2(0f, ImGui.GetWindowSize().Y);
 			if (Plugin.config.OverlayHint_OpenMapLinkOnAlt && ImGui.GetIO().KeyAlt && ImGui.IsMouseHoveringRect(ImGui.GetWindowPos(), ImGui.GetWindowSize() + ImGui.GetWindowPos()))
 			{
 				try
 				{
-					Plugin.gui.OpenMapWithMapLink(new MapLinkPayload(Plugin.cs.TerritoryType, MapId, (int)(ptr->Location.X * 1000f), (int)(ptr->Location.Z * 1000f)));
+					Plugin.Gui.OpenMapWithMapLink(new MapLinkPayload(Plugin.ClientState.TerritoryType, MapId, (int)(ptr->Location.X * 1000f), (int)(ptr->Location.Z * 1000f)));
 				}
 				catch (Exception)
 				{
@@ -1441,7 +1443,7 @@ public class BuildUi : IDisposable
 			return;
 		}
 		System.Numerics.Vector2 valueOrDefault = vector.GetValueOrDefault();
-		if (!(valueOrDefault != System.Numerics.Vector2.Zero) || Plugin.cs.TerritoryType == 0)
+		if (!(valueOrDefault != System.Numerics.Vector2.Zero) || Plugin.ClientState.TerritoryType == 0)
 		{
 			return;
 		}
@@ -1467,7 +1469,7 @@ public class BuildUi : IDisposable
 
 	private System.Numerics.Vector2 WorldToMap(System.Numerics.Vector2 origin, System.Numerics.Vector3 worldVector3)
 	{
-		System.Numerics.Vector2 vector = (worldVector3.ToVector2() - _meWorldPos.ToVector2()) * WorldToMapScale;
+		System.Numerics.Vector2 vector = (worldVector3.ToVector2() - MeWorldPos.ToVector2()) * WorldToMapScale;
 		return origin + vector;
 	}
 
@@ -1582,7 +1584,7 @@ public class BuildUi : IDisposable
 			windowDrawList.ChannelsSetCurrent(1);
 			if (Plugin.config.ExternalMap_ShowMapInfo)
 			{
-				string text = $" {windowContentRegionWidth / (MAP_SizeFactor * UvZoom) / 2f:F2}m X: {_meWorldPos.X:N3} Y: {_meWorldPos.Y:N3} Z: {_meWorldPos.Z:N3} ";
+				string text = $" {windowContentRegionWidth / (MAP_SizeFactor * UvZoom) / 2f:F2}m X: {MeWorldPos.X:N3} Y: {MeWorldPos.Y:N3} Z: {MeWorldPos.Z:N3} ";
 				System.Numerics.Vector2 vector = ImGui.CalcTextSize(text);
 				System.Numerics.Vector2 vector2 = ImGui.GetWindowSize() - vector;
 				windowDrawList.AddRectFilled(vector2 + windowPos, windowPos + ImGui.GetWindowSize(), 2147483648u);
@@ -1615,7 +1617,7 @@ public class BuildUi : IDisposable
 				for (int j = 0; j < 4; j++)
 				{
 					ref System.Numerics.Vector2 reference = ref array[j];
-					reference -= (_meWorldPos.ToVector2() + MAP_offset) * MAP_SizeFactor;
+					reference -= (MeWorldPos.ToVector2() + MAP_offset) * MAP_SizeFactor;
 					if (Plugin.config.ExternalMap_Mode == 2)
 					{
 						reference = reference.Rotate(0f - Plugin.HRotation, IMGUI_windowcenter);
@@ -1667,7 +1669,7 @@ public class BuildUi : IDisposable
 				}
 				if (Plugin.config.Overlay2D_ShowCenter)
 				{
-					System.Numerics.Vector2 vector3 = WorldToMapNoSnap(_meWorldPos);
+					System.Numerics.Vector2 vector3 = WorldToMapNoSnap(MeWorldPos);
 					windowDrawList.DrawMapTextDot(vector3, (Plugin.config.Overlay2D_DetailLevel > 0) ? "ME" : null, 4294967040u, 4278190080u);
 					if (Plugin.config.Overlay2D_ShowAssist)
 					{
@@ -1684,7 +1686,7 @@ public class BuildUi : IDisposable
 					dragPos -= ImGui.GetIO().MouseDelta / UvZoom;
 					if (Plugin.config.ExternalMap_Mode != 0)
 					{
-						dragPos = (_meWorldPos.ToVector2() + MAP_offset) * MAP_SizeFactor;
+						dragPos = (MeWorldPos.ToVector2() + MAP_offset) * MAP_SizeFactor;
 						Plugin.config.ExternalMap_Mode = 0;
 					}
 				}
@@ -1696,7 +1698,7 @@ public class BuildUi : IDisposable
 		ImGui.PopStyleVar();
 		System.Numerics.Vector2 WorldToMap(System.Numerics.Vector3 worldPos)
 		{
-			System.Numerics.Vector2 vector4 = (worldPos - _meWorldPos).ToVector2() * MAP_SizeFactor;
+			System.Numerics.Vector2 vector4 = (worldPos - MeWorldPos).ToVector2() * MAP_SizeFactor;
 			if (Plugin.config.ExternalMap_Mode == 2)
 			{
 				vector4 = vector4.Rotate(0f - Plugin.HRotation);
