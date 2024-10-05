@@ -367,8 +367,6 @@ public class BuildUi : IDisposable
 
 	private Dictionary<ushort, Map[]> TerritoryMapsDictionary { get; }
 
-	private List<(Map map, string texpath, ISharedImmediateTexture texture)> CurrentTerritoryMaps { get; set; } = new();
-
     private float rotation;
 
 
@@ -381,7 +379,6 @@ public class BuildUi : IDisposable
 			group i by i.TerritoryType?.Value?.RowId into i
 			where i.Key.HasValue && i.Key != 0
 			select i).ToDictionary((IGrouping<uint?, Map> i) => (ushort)i.Key.Value, (IGrouping<uint?, Map> j) => j.ToArray());
-		TryGetCurrentMapTex(Plugin.ClientState.TerritoryType);
 		Plugin.ClientState.TerritoryChanged += TerritoryChanged;
 		Plugin.pi.UiBuilder.OpenConfigUi += UiBuilder_OnOpenConfigUi;
 		Plugin.pi.UiBuilder.Draw += UiBuilder_OnBuildUi;
@@ -395,7 +392,6 @@ public class BuildUi : IDisposable
 	private void TerritoryChanged(ushort territoryId)
 	{
 		Plugin.log.Information($"territory changed to: {territoryId}");
-		TryGetCurrentMapTex(territoryId);
 		trapBlacklist.Clear();
 		hoardBlackList.Clear();
 	}
@@ -405,7 +401,6 @@ public class BuildUi : IDisposable
 		Plugin.pi.UiBuilder.OpenConfigUi -= UiBuilder_OnOpenConfigUi;
 		Plugin.pi.UiBuilder.Draw -= UiBuilder_OnBuildUi;
 		Plugin.ClientState.TerritoryChanged -= TerritoryChanged;
-		DisposeMapTextures();
 	}
 
 	private unsafe void UiBuilder_OnBuildUi()
@@ -534,6 +529,7 @@ public class BuildUi : IDisposable
 		}
 	}
 
+    /*
 	private static unsafe bool TryGetEnpcIcon(GameObject* o, out ISharedImmediateTexture enpcIcon)
 	{
 		enpcIcon = null;
@@ -544,13 +540,14 @@ public class BuildUi : IDisposable
 		}
 		return false;
 	}
+    */
 
 	private static unsafe void RefreshMeScreenPos()
 	{
 		try
-		{
-			Util.WorldToScreenEx(Core.Me->Location, out var screenPos, out var _, ImGui.GetMainViewport().Pos);
-			MeScreenPos = screenPos;
+        {
+            Util.WorldToScreenEx(Plugin.ClientState.LocalPlayer.Position, out var screenPos, out var _, ImGui.GetMainViewport().Pos);
+            MeScreenPos = screenPos;
 		}
 		catch
 		{
@@ -1316,12 +1313,12 @@ public class BuildUi : IDisposable
 			{
 				drawLine = true;
 			}
-			if (Plugin.config.Overlay3D_DrawObjectLineTargetingYou && Core.Me != null && ((ulong)obj->Character.TargetId == Core.Me->Id || (ulong)obj->Character.LookAt.Controller.Params[0].TargetParam.TargetId == Core.Me->Id))
+			if (Plugin.config.Overlay3D_DrawObjectLineTargetingYou && Plugin.ClientState.LocalPlayer != null && ((ulong)obj->Character.TargetId == Plugin.ClientState.LocalPlayer.EntityId || (ulong)obj->Character.LookAt.Controller.Params[0].TargetParam.TargetId == Plugin.ClientState.LocalPlayer.EntityId))
 			{
 				drawLine = true;
 			}
 		}
-		System.Numerics.Vector3 location = obj->Location;
+        System.Numerics.Vector3 location = obj->Location;
 		System.Numerics.Vector2 size = ImGuiHelpers.MainViewport.Size;
 		System.Numerics.Vector2 pos = ImGuiHelpers.MainViewport.Pos;
 		_ = MeScreenPos - ImGuiHelpers.MainViewport.GetCenter();
@@ -1428,7 +1425,6 @@ public class BuildUi : IDisposable
 			{
 				try
 				{
-                    // Plugin.log.Warning($"At BuildUi.cs line 1441, MapId is {Plugin.ClientState.MapId}, TerritoryTypeId is {Plugin.ClientState.TerritoryType}");
                     Plugin.Gui.OpenMapWithMapLink(new MapLinkPayload(Plugin.ClientState.TerritoryType, Plugin.ClientState.MapId, (int)(ptr->Location.X * 1000f), (int)(ptr->Location.Z * 1000f)));
                 }
 				catch (Exception)
@@ -1549,7 +1545,7 @@ public class BuildUi : IDisposable
 
 	internal unsafe void DrawExternalMap()
 	{
-		if (Core.Me == null)
+		if (Plugin.ClientState.LocalPlayer == null)
 		{
 			return;
 		}
@@ -1561,14 +1557,13 @@ public class BuildUi : IDisposable
 		};
 		IDalamudTextureWrap textureWrap = null;
 		try
-		{
-			int num = CurrentTerritoryMaps.FindIndex(((Map map, string texpath, ISharedImmediateTexture texture) i) => i.map.RowId == Plugin.ClientState.MapId);
-			if (num != -1)
-			{
-				map = CurrentTerritoryMaps[num].map;
-				textureWrap = CurrentTerritoryMaps[num].texture.GetWrapOrDefault();
-			}
-		}
+        {
+            map = MapSheet.GetRow(Plugin.ClientState.MapId);
+            var rawString = map.Id.RawString;
+            string text = "ui/map/" + rawString + "/" + rawString.Replace("_", string.Empty).Replace("/", string.Empty) + "_m.tex";
+            ISharedImmediateTexture fromGame = Plugin.textures.GetFromGame(text);
+            textureWrap = fromGame.GetWrapOrDefault();
+        }
 		catch (Exception exception)
 		{
 			Plugin.log.Error(exception, "error when get map");
@@ -1603,7 +1598,7 @@ public class BuildUi : IDisposable
 			System.Numerics.Vector2[] array = Square4(windowPos, ImGui.GetWindowWidth());
 			IMGUI_windowcenter = ImGui.GetWindowPos() + new System.Numerics.Vector2(windowContentRegionWidth, windowContentRegionWidth) / 2f;
 			MAP_offset = new System.Numerics.Vector2(map.OffsetX, map.OffsetY);
-			MAP_SizeFactor = (float)(int)map.SizeFactor / 100f * num2;
+			MAP_SizeFactor = map.SizeFactor / 100f * num2;
 			windowDrawList.ChannelsSetCurrent(1);
 			if (Plugin.config.ExternalMap_ShowMapInfo)
 			{
@@ -1612,7 +1607,7 @@ public class BuildUi : IDisposable
 				System.Numerics.Vector2 vector2 = ImGui.GetWindowSize() - vector;
 				windowDrawList.AddRectFilled(vector2 + windowPos, windowPos + ImGui.GetWindowSize(), 2147483648u);
 				ImGui.SetCursorPos(vector2);
-				ImGui.TextColored(System.Numerics.Vector4.One, text);
+				ImGui.TextColored(Vector4.One, text);
 			}
 			if (!Plugin.config.ExternalMap_ClickThrough)
 			{
@@ -1747,47 +1742,5 @@ public class BuildUi : IDisposable
 			ltPos + new System.Numerics.Vector2(size, size),
 			ltPos + new System.Numerics.Vector2(0f, size)
 		};
-	}
-
-	private void TryGetCurrentMapTex(ushort e)
-	{
-		DisposeMapTextures();
-		Task.Run(delegate
-		{
-			if (TerritoryMapsDictionary.TryGetValue(e, out var value))
-			{
-				try
-				{
-					CurrentTerritoryMaps = value.Select(delegate(Map i)
-					{
-						try
-						{
-							string rawString = i.Id.RawString;
-							string text = "ui/map/" + rawString + "/" + rawString.Replace("_", string.Empty).Replace("/", string.Empty) + "_m.tex";
-							Plugin.log.Information("Loading map tex... " + $"rowid: {i.RowId} " + "idstring: " + rawString + ", placename: [" + i.PlaceNameRegion?.Value?.Name?.RawString + "/" + i.PlaceName?.Value?.Name?.RawString + "/" + i.PlaceNameSub?.Value?.Name?.RawString + "], texpath: " + text);
-							ISharedImmediateTexture fromGame = Plugin.textures.GetFromGame(text);
-							return (i: i, text: text, imGuiTexture: fromGame);
-						}
-						catch (Exception exception2)
-						{
-							Plugin.log.Warning(exception2, $"error when getting map tex: {i.RowId} {i.Id?.RawString}");
-							return ((Map i, string text, ISharedImmediateTexture imGuiTexture))(i: i, text: "", imGuiTexture: null);
-						}
-					}).ToList();
-					return;
-				}
-				catch (Exception exception)
-				{
-					Plugin.log.Warning(exception, "error when getting map tex");
-					return;
-				}
-			}
-			Plugin.log.Information($"no map found for territory {e}");
-		});
-	}
-
-	private void DisposeMapTextures()
-	{
-		CurrentTerritoryMaps.Clear();
 	}
 }
