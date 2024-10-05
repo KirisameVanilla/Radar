@@ -12,16 +12,17 @@ using Dalamud.Interface;
 using Dalamud.Interface.Textures;
 using Dalamud.Interface.Textures.TextureWraps;
 using Dalamud.Interface.Utility;
-using FFXIVClientStructs.FFXIV.Client.Game;
+using Dalamud.Plugin.Services;
 using FFXIVClientStructs.FFXIV.Client.Game.Control;
 using FFXIVClientStructs.FFXIV.Client.Graphics.Kernel;
-using FFXIVClientStructs.FFXIV.Client.Graphics.Render;
 using FFXIVClientStructs.FFXIV.Component.GUI;
 using FFXIVClientStructs.STD;
 using ImGuiNET;
+using Lumina.Excel;
 using Lumina.Excel.GeneratedSheets;
 using Radar.Enums;
 using SharpDX;
+using Vector4 = System.Numerics.Vector4;
 
 namespace Radar.UI;
 
@@ -215,9 +216,9 @@ public class BuildUi : IDisposable
 
 	private System.Numerics.Vector2? mapOrigin = System.Numerics.Vector2.Zero;
 
-	private float GlobalUIScale = 1f;
+	private float globalUiScale = 1f;
 
-	private System.Numerics.Vector2[] MapPosSize = new System.Numerics.Vector2[2];
+	private System.Numerics.Vector2[] mapPosSize = new System.Numerics.Vector2[2];
 
 	private static System.Numerics.Vector2 MeScreenPos = ImGuiHelpers.MainViewport.GetCenter();
 
@@ -227,17 +228,17 @@ public class BuildUi : IDisposable
 
 	internal static System.Numerics.Vector2 ViewPortSizeCache;
 
-	private ImDrawListPtr FDL;
+    private ImDrawListPtr foregroundDrawList;
 
-	private ImDrawListPtr BDL;
+	private ImDrawListPtr backgroundDrawList;
 
 	private ConfigSnapShot currentProfile;
 
-	private Dictionary<ushort, bool> _isPvpZone;
+	private Dictionary<ushort, bool> isPvpZone;
 
 	private string newCustomObjectName = string.Empty;
 
-	private System.Numerics.Vector4 newCustomObjectColor = System.Numerics.Vector4.One;
+	private Vector4 newCustomObjectColor = Vector4.One;
 
 	private Dictionary<ushort, string> territoryIdToBg;
 
@@ -249,19 +250,28 @@ public class BuildUi : IDisposable
 
 	private HashSet<DeepDungeonObject> deepDungeonObjectsImportCache;
 
-	private string[] _getEnumNames;
+	private string[] getEnumNames;
 
-	private static Random random = new Random();
+    /*
+    private static Random random = new Random();
 
-	private static Lazy<System.Numerics.Vector4> randomColor = new Lazy<System.Numerics.Vector4>(delegate
-	{
-		ImGui.ColorConvertHSVtoRGB((float)random.NextDouble(), 1f, 1f, out var out_r, out var out_g, out var out_b);
-		return new System.Numerics.Vector4(out_r, out_g, out_b, 1f);
-	});
+    private static Lazy<Vector4> RandomColor = new(delegate
+    {
+        ImGui.ColorConvertHSVtoRGB((float)random.NextDouble(), 1f, 1f, out var out_r, out var out_g, out var out_b);
+        return new Vector4(out_r, out_g, out_b, 1f);
+    });
+    */
 
-	public const uint Red = 4278190335u;
+    #region ColorsVector4
 
-	public const uint Magenta = 4294902015u;
+    public static Vector4 RedVector4 = new(1f, 0f, 0f, 1f);
+
+    #endregion
+
+    /*
+    public const uint Red = 4278190335u;
+
+    public const uint Magenta = 4294902015u;
 
 	public const uint Yellow = 4278255615u;
 
@@ -286,10 +296,11 @@ public class BuildUi : IDisposable
 	public const uint White = uint.MaxValue;
 
 	public const ImGuiTableFlags TableFlags = ImGuiTableFlags.BordersInner | ImGuiTableFlags.SizingFixedFit | ImGuiTableFlags.PadOuterX | ImGuiTableFlags.ScrollX | ImGuiTableFlags.ScrollY;
+    */
 
-	private HashSet<System.Numerics.Vector2> HoardBlackList = new HashSet<System.Numerics.Vector2>();
+    private HashSet<System.Numerics.Vector2> hoardBlackList = new();
 
-	private HashSet<System.Numerics.Vector2> TrapBlacklist = new HashSet<System.Numerics.Vector2>();
+	private HashSet<System.Numerics.Vector2> trapBlacklist = new();
 
 	private readonly Dictionary<uint, ushort> sizeFactorDict;
 
@@ -297,30 +308,23 @@ public class BuildUi : IDisposable
 
 	private float uvZoom1 = 1f;
 
-	private readonly System.Numerics.Vector2 uv1 = new System.Numerics.Vector2(0f, -1f);
+	private readonly System.Numerics.Vector2 uv1 = new(0f, -1f);
 
-	private readonly System.Numerics.Vector2 uv2 = new System.Numerics.Vector2(1f, -1f);
+	private readonly System.Numerics.Vector2 uv2 = new(1f, -1f);
 
-	private readonly System.Numerics.Vector2 uv3 = new System.Numerics.Vector2(1f, 0f);
+	private readonly System.Numerics.Vector2 uv3 = new(1f, 0f);
 
-	private readonly System.Numerics.Vector2 uv4 = new System.Numerics.Vector2(0f, 0f);
+	private readonly System.Numerics.Vector2 uv4 = new(0f, 0f);
 
-	private List<(System.Numerics.Vector3 worldpos, uint fgcolor, uint bgcolor, string name)> DrawList2D { get; } = new List<(System.Numerics.Vector3, uint, uint, string)>();
+	private List<(System.Numerics.Vector3 worldpos, uint fgcolor, uint bgcolor, string name)> DrawList2D { get; } = new();
 
+    #region ExcelSheets
+    private static readonly ExcelSheet<TerritoryType> TerritoryTypeSheet = Plugin.DataManager.GetExcelSheet<TerritoryType>();
+    private static readonly ExcelSheet<Map> MapSheet = Plugin.DataManager.GetExcelSheet<Map>();
 
-	public unsafe uint MapId
-	{
-		get
-		{
-			if (*(uint*)Plugin.address.MapIdDungeon != 0)
-			{
-				return *(uint*)Plugin.address.MapIdDungeon;
-			}
-			return *(uint*)Plugin.address.MapIdWorld;
-		}
-	}
+    #endregion
 
-	private Dictionary<ushort, bool> isPvpZone => _isPvpZone ?? (_isPvpZone = Plugin.DataManager.GetExcelSheet<TerritoryType>().ToDictionary((TerritoryType i) => (ushort)i.RowId, (TerritoryType j) => j.IsPvpZone));
+	private Dictionary<ushort, bool> IsPvpZone => isPvpZone ?? (isPvpZone = TerritoryTypeSheet.ToDictionary((i) => (ushort)i.RowId, (j) => j.IsPvpZone));
 
 	private static int FontsSize => ImGui.GetIO().Fonts.Fonts.Size;
 
@@ -330,23 +334,23 @@ public class BuildUi : IDisposable
 		{
 			if (territoryIdToBg == null)
 			{
-				territoryIdToBg = Plugin.DataManager.GetExcelSheet<TerritoryType>().ToDictionary((TerritoryType i) => (ushort)i.RowId, (TerritoryType j) => j?.Bg?.RawString);
+				territoryIdToBg = TerritoryTypeSheet.ToDictionary((i) => (ushort)i.RowId, (j) => j?.Bg?.RawString);
 				territoryIdToBg[0] = "未记录区域（数据不可用）";
 			}
 			return territoryIdToBg;
 		}
 	}
 
-	private string[] GetEnumNames => _getEnumNames ?? (_getEnumNames = Enum.GetNames(typeof(MyObjectKind)));
+	private string[] GetEnumNames => getEnumNames ?? (getEnumNames = Enum.GetNames(typeof(MyObjectKind)));
 
 	public static DeepDungeonTerritoryEqualityComparer DeepDungeonTerritoryEqual { get; set; }
 
 	public static DeepDungeonObjectLocationEqualityComparer DeepDungeonObjectLocationEqual { get; set; }
 
-	private List<(nint objectPointer, uint fgcolor, string title)> SpecialObjectDrawList { get; } = new List<(nint, uint, string)>();
+	private List<(nint objectPointer, uint fgcolor, string title)> SpecialObjectDrawList { get; } = new();
 
 
-	private float WorldToMapScale => AreaMap.MapScale * (float)(int)sizeFactorDict[Plugin.ClientState.TerritoryType] / 100f * GlobalUIScale;
+	private float WorldToMapScale => AreaMap.MapScale * sizeFactorDict[Plugin.ClientState.TerritoryType] / 100f * globalUiScale;
 
 	private ref float UvZoom
 	{
@@ -363,15 +367,17 @@ public class BuildUi : IDisposable
 
 	private Dictionary<ushort, Map[]> TerritoryMapsDictionary { get; }
 
-	private List<(Map map, string texpath, ISharedImmediateTexture texture)> CurrentTerritoryMaps { get; set; } = new List<(Map, string, ISharedImmediateTexture)>();
+	private List<(Map map, string texpath, ISharedImmediateTexture texture)> CurrentTerritoryMaps { get; set; } = new();
+
+    private float rotation;
 
 
 	public BuildUi()
 	{
-		sizeFactorDict = Plugin.DataManager.GetExcelSheet<TerritoryType>().ToDictionary((TerritoryType k) => k.RowId, (TerritoryType v) => v.Map.Value.SizeFactor);
+		sizeFactorDict = TerritoryTypeSheet.ToDictionary((TerritoryType k) => k.RowId, (TerritoryType v) => v.Map.Value.SizeFactor);
 		DeepDungeonTerritoryEqual = new DeepDungeonTerritoryEqualityComparer();
 		DeepDungeonObjectLocationEqual = new DeepDungeonObjectLocationEqualityComparer();
-		TerritoryMapsDictionary = (from i in Plugin.DataManager.GetExcelSheet<Map>()
+		TerritoryMapsDictionary = (from i in MapSheet
 			group i by i.TerritoryType?.Value?.RowId into i
 			where i.Key.HasValue && i.Key != 0
 			select i).ToDictionary((IGrouping<uint?, Map> i) => (ushort)i.Key.Value, (IGrouping<uint?, Map> j) => j.ToArray());
@@ -390,8 +396,8 @@ public class BuildUi : IDisposable
 	{
 		Plugin.log.Information($"territory changed to: {territoryId}");
 		TryGetCurrentMapTex(territoryId);
-		TrapBlacklist.Clear();
-		HoardBlackList.Clear();
+		trapBlacklist.Clear();
+		hoardBlackList.Clear();
 	}
 
 	public void Dispose()
@@ -409,7 +415,7 @@ public class BuildUi : IDisposable
 		{
 			if (Plugin.ClientState.TerritoryType != 0)
 			{
-				flag = isPvpZone[Plugin.ClientState.TerritoryType];
+				flag = IsPvpZone[Plugin.ClientState.TerritoryType];
 			}
 		}
 		catch (Exception)
@@ -426,8 +432,8 @@ public class BuildUi : IDisposable
 				MatrixSingetonCache = Matrix4x4ToSharpDX(view * proj);
 				Device* device = Device.Instance();
 				ViewPortSizeCache = new System.Numerics.Vector2(device->Width, device->Height);
-				FDL = ImGui.GetForegroundDrawList(ImGui.GetMainViewport());
-				BDL = ImGui.GetBackgroundDrawList(ImGui.GetMainViewport());
+				foregroundDrawList = ImGui.GetForegroundDrawList(ImGui.GetMainViewport());
+				backgroundDrawList = ImGui.GetBackgroundDrawList(ImGui.GetMainViewport());
 				RefreshMeScreenPos();
 				RefreshMeWorldPos();
 				if (Plugin.config.DeepDungeon_EnableTrapView && Plugin.condition[ConditionFlag.InDeepDungeon])
@@ -495,15 +501,15 @@ public class BuildUi : IDisposable
 				CheckEachObject(o2);
 			}
 		}
-		unsafe void CheckEachObject(GameObject* o)
+		void CheckEachObject(GameObject* o)
 		{
 			if (Plugin.condition[ConditionFlag.InDeepDungeon])
 			{
 				AddDeepDungeonObjectRecord(o);
 			}
-			uint fgColor = uint.MaxValue;
-			uint bgColor = 3204448256u;
-			bool flag = TryAddSpecialObjectsToDrawList(o, ref fgColor, ref bgColor);
+			var fgColor = uint.MaxValue;
+			var bgColor = 3204448256u;
+			var flag = TryAddSpecialObjectsToDrawList(o, ref fgColor, ref bgColor);
 			if (Plugin.config.Overlay2D_Enabled || Plugin.config.Overlay3D_Enabled)
 			{
 				if (!flag)
@@ -588,9 +594,9 @@ public class BuildUi : IDisposable
 		ImGui.Checkbox("启用2D覆盖", ref Plugin.config.Overlay2D_Enabled);
 		ImGui.Checkbox("显示自己##Overlay2D_ShowCenter", ref Plugin.config.Overlay2D_ShowCenter);
 		ImGui.Checkbox("显示辅助圈(25m|125m)", ref Plugin.config.Overlay2D_ShowAssist);
-		ref int overlay2D_DetailLevel = ref Plugin.config.Overlay2D_DetailLevel;
-		DetailLevel overlay2D_DetailLevel2 = (DetailLevel)Plugin.config.Overlay2D_DetailLevel;
-		ImGui.SliderInt("信息显示级别##2d", ref overlay2D_DetailLevel, 0, 2, overlay2D_DetailLevel2.ToString());
+		ref int overlay2DDetailLevel = ref Plugin.config.Overlay2D_DetailLevel;
+		DetailLevel overlay2DDetailLevel2 = (DetailLevel)Plugin.config.Overlay2D_DetailLevel;
+		ImGui.SliderInt("信息显示级别##2d", ref overlay2DDetailLevel, 0, 2, overlay2DDetailLevel2.ToString());
 		ImGui.Separator();
 		ImGui.Checkbox("启用外置地图##externalmap", ref Plugin.config.ExternalMap_Enabled);
 		ImGui.Checkbox("锁定位置大小##externalmap", ref Plugin.config.ExternalMap_LockSizePos);
@@ -598,9 +604,9 @@ public class BuildUi : IDisposable
 		ImGui.Checkbox("显示地图信息##externalmap", ref Plugin.config.ExternalMap_ShowMapInfo);
 		ImGui.SliderFloat("地图透明度##externalmap", ref Plugin.config.ExternalMap_MapAlpha, 0f, 1f);
 		ImGui.SliderFloat("背景透明度##externalmap", ref Plugin.config.ExternalMap_BgAlpha, 0f, 1f);
-		ref int externalMap_Mode = ref Plugin.config.ExternalMap_Mode;
-		MapMode externalMap_Mode2 = (MapMode)Plugin.config.ExternalMap_Mode;
-		ImGui.SliderInt("地图模式##externalmap", ref externalMap_Mode, 0, 2, externalMap_Mode2.ToString());
+		ref int externalMapMode = ref Plugin.config.ExternalMap_Mode;
+		MapMode externalMapMode2 = (MapMode)Plugin.config.ExternalMap_Mode;
+		ImGui.SliderInt("地图模式##externalmap", ref externalMapMode, 0, 2, externalMapMode2.ToString());
 		ImGui.Separator();
 		ImGui.TextUnformatted("名牌设置");
 		if (ImGui.GetIO().Fonts.Fonts.Size > 2)
@@ -622,9 +628,9 @@ public class BuildUi : IDisposable
 		ImGui.Checkbox("显示当前目标线", ref Plugin.config.Overlay3D_DrawObjectLineCurrentTarget);
 		ImGui.Checkbox("显示以你为目标的目标线", ref Plugin.config.Overlay3D_DrawObjectLineTargetingYou);
 		ImGui.Checkbox("显示所有物体目标线", ref Plugin.config.Overlay3D_DrawObjectLineAll);
-		ref int overlay3D_DetailLevel = ref Plugin.config.Overlay3D_DetailLevel;
-		DetailLevel overlay3D_DetailLevel2 = (DetailLevel)Plugin.config.Overlay3D_DetailLevel;
-		ImGui.SliderInt("信息显示级别##3d", ref overlay3D_DetailLevel, 0, 2, overlay3D_DetailLevel2.ToString());
+		ref int overlay3DDetailLevel = ref Plugin.config.Overlay3D_DetailLevel;
+		DetailLevel overlay3DDetailLevel2 = (DetailLevel)Plugin.config.Overlay3D_DetailLevel;
+		ImGui.SliderInt("信息显示级别##3d", ref overlay3DDetailLevel, 0, 2, overlay3DDetailLevel2.ToString());
 		ImGui.Separator();
 		ImGui.TextUnformatted("名牌设置");
 		if (ImGui.GetIO().Fonts.Fonts.Size > 2)
@@ -782,8 +788,8 @@ public class BuildUi : IDisposable
 			}
 			if (importingError)
 			{
-				ImGui.TextColored(new System.Numerics.Vector4(1f, 0f, 0f, 1f), "导入发生错误，请检查导入的字符串和日志。");
-				ImGui.TextColored(new System.Numerics.Vector4(1f, 0f, 0f, 1f), errorMessage);
+				ImGui.TextColored(RedVector4, "导入发生错误，请检查导入的字符串和日志。");
+				ImGui.TextColored(RedVector4, errorMessage);
 			}
 			return;
 		}
@@ -794,7 +800,7 @@ public class BuildUi : IDisposable
 			Plugin.log.Debug("user canceled importing task.");
 			return;
 		}
-		bool flag = ImGui.SliderInt("树视图展开级别", ref treeLevel, 1, 4, getformat(treeLevel));
+		bool flag = ImGui.SliderInt("树视图展开级别", ref treeLevel, 1, 4, GetFormat(treeLevel));
 		IEnumerable<IGrouping<ushort, DeepDungeonObject>> source2 = from i in deepDungeonObjectsImportCache
 			group i by i.Territory;
 		string arg = string.Join(", ", from i in source2
@@ -879,7 +885,7 @@ public class BuildUi : IDisposable
 			int num = Plugin.config.DeepDungeonObjects.Count - count;
 			Plugin.log.Information($"imported {num} deep dungeon object records.");
 		}
-		static string getformat(int input)
+		static string GetFormat(int input)
 		{
 			return input switch
 			{
@@ -1151,7 +1157,7 @@ public class BuildUi : IDisposable
 	{
 		if (DeepDungeonObjectExtension.IsSilverCoffer(o))
 		{
-			TrapBlacklist.Add(o->Location2D);
+			trapBlacklist.Add(o->Location2D);
 		}
 		if (DeepDungeonObjectExtension.IsAccursedHoard(o))
 		{
@@ -1168,7 +1174,7 @@ public class BuildUi : IDisposable
 				Plugin.log.Information($"New AccursedHoard recorded! {deepDungeonObject}");
 			}
 		}
-		if (DeepDungeonObjectExtension.IsTrap(o) && !TrapBlacklist.Contains(o->Location2D))
+		if (DeepDungeonObjectExtension.IsTrap(o) && !trapBlacklist.Contains(o->Location2D))
 		{
 			DeepDungeonObject deepDungeonObject2 = new DeepDungeonObject
 			{
@@ -1194,7 +1200,7 @@ public class BuildUi : IDisposable
 			{
 				if (Plugin.config.DeepDungeon_ShowObjectCount)
 				{
-					ImDrawListPtr bDL = BDL;
+					ImDrawListPtr bDL = backgroundDrawList;
 					System.Numerics.Vector3 location = item.Key.Location;
 					string text = $"{item.Count()}";
 					ringCenter = default(System.Numerics.Vector2);
@@ -1202,18 +1208,18 @@ public class BuildUi : IDisposable
 				}
 				else
 				{
-					BDL.DrawRingWorld(item.Key.Location, 0.5f, 24, 2f, 4278190335u, out ringCenter);
+					backgroundDrawList.DrawRingWorld(item.Key.Location, 0.5f, 24, 2f, 4278190335u, out ringCenter);
 				}
 			}
 			if (item.Key.Type == DeepDungeonType.AccursedHoard)
 			{
 				if (Plugin.config.DeepDungeon_ShowObjectCount)
 				{
-					BDL.DrawRingWorldWithText(item.Key.Location + new System.Numerics.Vector3(0f, 0.1f, 0f), 0.5f, 24, 2f, 4278255615u, $"{item.Count()}", new System.Numerics.Vector2(0f, 0f - ImGui.GetTextLineHeight()));
+					backgroundDrawList.DrawRingWorldWithText(item.Key.Location + new System.Numerics.Vector3(0f, 0.1f, 0f), 0.5f, 24, 2f, 4278255615u, $"{item.Count()}", new System.Numerics.Vector2(0f, 0f - ImGui.GetTextLineHeight()));
 				}
 				else
 				{
-					BDL.DrawRingWorld(item.Key.Location + new System.Numerics.Vector3(0f, 0.1f, 0f), 0.5f, 24, 2f, 4278255615u, out ringCenter);
+					backgroundDrawList.DrawRingWorld(item.Key.Location + new System.Numerics.Vector3(0f, 0.1f, 0f), 0.5f, 24, 2f, 4278255615u, out ringCenter);
 				}
 			}
 		}
@@ -1247,7 +1253,7 @@ public class BuildUi : IDisposable
 				fgColor = 4278255360u;
 				return true;
 			}
-			if (NotoriousMonsters.ListEMobs.Contains(o->Character.NameId))
+			if (NotoriousMonsters.ListEurekaMobs.Contains(o->Character.NameId))
 			{
 				SpecialObjectDrawList.Add(((nint)o, 4294967040u, $"EUREKA ELEMENTAL\nLv.{o->Character.CharacterData.Level} {o->DictionaryName}"));
 				fgColor = 4294967040u;
@@ -1263,7 +1269,7 @@ public class BuildUi : IDisposable
 		return false;
 	}
 
-	private unsafe void AddObjectTo2DDrawList(GameObject* a, uint fgcolor, uint bgcolor, ISharedImmediateTexture icon = null)
+	private unsafe void AddObjectTo2DDrawList(GameObject* a, uint foregroundColor, uint backgroundColor, ISharedImmediateTexture icon = null)
 	{
 		string item = null;
 		switch (Plugin.config.Overlay2D_DetailLevel)
@@ -1279,10 +1285,10 @@ public class BuildUi : IDisposable
 		case 0:
 			break;
 		}
-		DrawList2D.Add((a->Location, fgcolor, bgcolor, item));
+		DrawList2D.Add((a->Location, foregroundColor, backgroundColor, item));
 	}
 
-	private unsafe void DrawObject3D(GameObject* obj, uint fgcolor, uint bgcolor, bool drawLine, ISharedImmediateTexture icon = null)
+	private unsafe void DrawObject3D(GameObject* obj, uint foregroundColor, uint bgcolor, bool drawLine, ISharedImmediateTexture icon = null)
 	{
 		bool flag = false;
 		string text = null;
@@ -1335,52 +1341,52 @@ public class BuildUi : IDisposable
 		{
 			screenPos += pos;
 		}
-		System.Numerics.Vector2 vector = screenPos;
+		var screenPosVector = screenPos;
 		_ = Plugin.config.Overlay3D_ClampVector2;
-		System.Numerics.Vector2 overlay3D_ClampVector = Plugin.config.Overlay3D_ClampVector2;
-		bool flag3 = false;
-		if (Plugin.config.Overlay3D_ShowOffscreen && Vector2Intersect.GetBorderClampedVector2(screenPos, overlay3D_ClampVector, out var clampedPos))
+		var overlay3DClampVector2 = Plugin.config.Overlay3D_ClampVector2;
+		var flag3 = false;
+		if (Plugin.config.Overlay3D_ShowOffscreen && Vector2Intersect.GetBorderClampedVector2(screenPos, overlay3DClampVector2, out var clampedPos))
 		{
 			screenPos = clampedPos;
 			flag3 = true;
 		}
 		if (drawLine)
 		{
-			BDL.AddLine(MeScreenPos, vector, fgcolor);
+			backgroundDrawList.AddLine(MeScreenPos, screenPosVector, foregroundColor);
 		}
 		if (flag3 || flag)
 		{
 			if (flag3)
 			{
-				System.Numerics.Vector2 rotation = vector - ImGui.GetMainViewport().GetCenter();
+				System.Numerics.Vector2 _rotation = screenPosVector - ImGui.GetMainViewport().GetCenter();
 				float thickness = Math.Min(Plugin.config.Overlay3D_RingSize * 2f, Plugin.config.Overlay3D_ArrorThickness);
 				if (Plugin.config.Overlay3D_IconStrokeThickness != 0f)
 				{
-					BDL.DrawArrow(screenPos, Plugin.config.Overlay3D_ArrowSize, fgcolor, bgcolor, rotation, thickness, Plugin.config.Overlay3D_IconStrokeThickness);
+					backgroundDrawList.DrawArrow(screenPos, Plugin.config.Overlay3D_ArrowSize, foregroundColor, bgcolor, _rotation, thickness, Plugin.config.Overlay3D_IconStrokeThickness);
 				}
 				else
 				{
-					BDL.DrawArrow(screenPos, Plugin.config.Overlay3D_ArrowSize, fgcolor, rotation, thickness);
+					backgroundDrawList.DrawArrow(screenPos, Plugin.config.Overlay3D_ArrowSize, foregroundColor, _rotation, thickness);
 				}
 			}
 			else
 			{
-				BDL.DrawCircleOutlined(screenPos, fgcolor, bgcolor);
+				backgroundDrawList.DrawCircleOutlined(screenPos, foregroundColor, bgcolor);
 			}
 		}
 		else if (flag2 && Z > 0f)
 		{
 			if (!string.IsNullOrWhiteSpace(text))
 			{
-				System.Numerics.Vector4 namePlateBgcolor = ImGui.ColorConvertU32ToFloat4(bgcolor);
-				namePlateBgcolor.W = Plugin.config.Overlay3D_NamePlateBgAlpha;
-				BDL.DrawTextWithBorderBg(screenPos, text, fgcolor, ImGui.GetColorU32(namePlateBgcolor), Plugin.config.Overlay3D_CenterAlign);
+				Vector4 nameplateBackgroundColor = ImGui.ColorConvertU32ToFloat4(bgcolor);
+				nameplateBackgroundColor.W = Plugin.config.Overlay3D_NamePlateBgAlpha;
+				backgroundDrawList.DrawTextWithBorderBg(screenPos, text, foregroundColor, ImGui.GetColorU32(nameplateBackgroundColor), Plugin.config.Overlay3D_CenterAlign);
 			}
 			if (icon != null)
 			{
-				BDL.DrawIcon(screenPos - new System.Numerics.Vector2(0f, 10f), icon);
+				backgroundDrawList.DrawIcon(screenPos - new System.Numerics.Vector2(0f, 10f), icon);
 			}
-			BDL.AddCircleFilled(screenPos, 4f, fgcolor, 4);
+			backgroundDrawList.AddCircleFilled(screenPos, 4f, foregroundColor, 4);
 		}
 	}
 
@@ -1391,9 +1397,9 @@ public class BuildUi : IDisposable
 		System.Numerics.Vector2 windowPos = Plugin.config.WindowPos;
 		foreach (var item4 in SpecialObjectDrawList.OrderBy(((nint objectPointer, uint fgcolor, string title) i) => ((GameObject*)i.objectPointer)->Location.Distance(MeWorldPos)))
 		{
-			nint item = item4.objectPointer;
-			uint item2 = item4.fgcolor;
-			string item3 = item4.title;
+			var item = item4.objectPointer;
+			var item2 = item4.fgcolor;
+			var item3 = item4.title;
 			GameObject* ptr = (GameObject*)item;
 			ImGui.PushStyleColor(ImGuiCol.Border, item2);
 			ImGui.SetNextWindowBgAlpha(Plugin.config.OverlayHint_BgAlpha);
@@ -1404,7 +1410,8 @@ public class BuildUi : IDisposable
 				continue;
 			}
 			System.Numerics.Vector2 pos2 = ImGui.GetWindowPos() + ImGui.GetCursorPos() + new System.Numerics.Vector2(ImGui.GetTextLineHeight(), ImGui.GetTextLineHeight());
-			ImGui.GetWindowDrawList().DrawArrow(pos2, ImGui.GetTextLineHeightWithSpacing() * 0.618f, item2, (ptr->Location2D - MeWorldPos.ToVector2()).Normalize().Rotate(0f - Plugin.HRotation), 5f);
+            rotation = AdjustRotationToHRotation(Plugin.ClientState.LocalPlayer.Rotation);
+            ImGui.GetWindowDrawList().DrawArrow(pos2, ImGui.GetTextLineHeightWithSpacing() * 0.618f, item2, (ptr->Location2D - MeWorldPos.ToVector2()).Normalize().Rotate(0f - rotation), 5f);
 			ImGui.SetCursorPosX(ImGui.GetCursorPosX() + ImGui.GetTextLineHeight() + ImGui.GetTextLineHeightWithSpacing());
 			ImGui.TextColored(ImGui.ColorConvertU32ToFloat4(item2), item3 ?? "");
 			ImGui.Separator();
@@ -1414,14 +1421,16 @@ public class BuildUi : IDisposable
 				text += $"{ptr->Character.CharacterData.Health:N0}/{ptr->Character.CharacterData.MaxHealth:N0}\t{(float)ptr->Character.CharacterData.Health / (float)ptr->Character.CharacterData.MaxHealth:P}\n";
 			}
 			float num = ptr->Y - MeWorldPos.Y;
-			ImGui.TextUnformatted(string.Format("{0}{1:F2}m\t{2}{3:F2}m", text, ptr->Location.Distance2D(MeWorldPos), (num == 0f) ? "" : ((num > 0f) ? "↑" : "↓"), Math.Abs(num)));
+            var direction = (num == 0f) ? "" : ((num > 0f) ? "↑" : "↓");
+            ImGui.TextUnformatted($"{text}{ptr->Location.Distance2D(MeWorldPos):F2}m\t{direction}{Math.Abs(num):F2}");
 			windowPos += new System.Numerics.Vector2(0f, ImGui.GetWindowSize().Y);
 			if (Plugin.config.OverlayHint_OpenMapLinkOnAlt && ImGui.GetIO().KeyAlt && ImGui.IsMouseHoveringRect(ImGui.GetWindowPos(), ImGui.GetWindowSize() + ImGui.GetWindowPos()))
 			{
 				try
 				{
-					Plugin.Gui.OpenMapWithMapLink(new MapLinkPayload(Plugin.ClientState.TerritoryType, MapId, (int)(ptr->Location.X * 1000f), (int)(ptr->Location.Z * 1000f)));
-				}
+                    // Plugin.log.Warning($"At BuildUi.cs line 1441, MapId is {Plugin.ClientState.MapId}, TerritoryTypeId is {Plugin.ClientState.TerritoryType}");
+                    Plugin.Gui.OpenMapWithMapLink(new MapLinkPayload(Plugin.ClientState.TerritoryType, Plugin.ClientState.MapId, (int)(ptr->Location.X * 1000f), (int)(ptr->Location.Z * 1000f)));
+                }
 				catch (Exception)
 				{
 					Plugin.log.Debug("no map available in this area!");
@@ -1433,6 +1442,13 @@ public class BuildUi : IDisposable
 		ImGui.PopStyleVar(2);
 		SpecialObjectDrawList.Clear();
 	}
+
+    private float AdjustRotationToHRotation(float angle)
+    {
+        if(angle>0) angle -= (float)Math.PI;
+        else if(angle<0) angle += (float)Math.PI;
+        return angle;
+    }
 
 	private void DrawMapOverlay()
 	{
@@ -1447,24 +1463,31 @@ public class BuildUi : IDisposable
 		{
 			return;
 		}
-		BDL.PushClipRect(MapPosSize[0], MapPosSize[1]);
+		backgroundDrawList.PushClipRect(mapPosSize[0], mapPosSize[1]);
 		foreach (var item in DrawList2D)
 		{
 			System.Numerics.Vector2 pos = WorldToMap(valueOrDefault, item.worldpos);
-			BDL.DrawMapTextDot(pos, item.name, item.fgcolor, item.bgcolor);
+			backgroundDrawList.DrawMapTextDot(pos, item.name, item.fgcolor, item.bgcolor);
 		}
 		if (Plugin.config.Overlay2D_ShowCenter)
 		{
-			BDL.DrawMapTextDot(valueOrDefault, "ME", 4294967040u, 4278190080u);
+			backgroundDrawList.DrawMapTextDot(valueOrDefault, "ME", 4294967040u, 4278190080u);
 		}
 		if (Plugin.config.Overlay2D_ShowAssist)
-		{
-			BDL.AddCircle(valueOrDefault, WorldToMapScale * 25f, 4294967040u, 0, 1f);
-			BDL.AddCircle(valueOrDefault, WorldToMapScale * 125f, 4286611584u, 0, 1f);
-			BDL.AddLine(valueOrDefault, valueOrDefault - new System.Numerics.Vector2(0f, WorldToMapScale * 25f).Rotate((float)Math.PI / 4f + Plugin.HRotation), 4294967040u, 1f);
-			BDL.AddLine(valueOrDefault, valueOrDefault - new System.Numerics.Vector2(0f, WorldToMapScale * 25f).Rotate(-(float)Math.PI / 4f + Plugin.HRotation), 4294967040u, 1f);
-		}
-		BDL.PopClipRect();
+        {
+            rotation = AdjustRotationToHRotation(Plugin.ClientState.LocalPlayer.Rotation);
+            backgroundDrawList.AddCircle(valueOrDefault, WorldToMapScale * 25f, 4294967040u, 0, 1f);
+			backgroundDrawList.AddCircle(valueOrDefault, WorldToMapScale * 125f, 4286611584u, 0, 1f);
+			backgroundDrawList.AddLine(valueOrDefault, 
+                                       valueOrDefault - new System.Numerics.Vector2(0f, WorldToMapScale * 25f).Rotate((float)Math.PI / 4f + rotation), 
+                                       4294967040u, 
+                                       1f);
+            backgroundDrawList.AddLine(valueOrDefault,
+                                       valueOrDefault - new System.Numerics.Vector2(0f, WorldToMapScale * 25f).Rotate(-(float)Math.PI / 4f + rotation),
+                                       4294967040u,
+                                       1f);
+        }
+		backgroundDrawList.PopClipRect();
 	}
 
 	private System.Numerics.Vector2 WorldToMap(System.Numerics.Vector2 origin, System.Numerics.Vector3 worldVector3)
@@ -1481,7 +1504,7 @@ public class BuildUi : IDisposable
 			return;
 		}
 		AtkUnitBase* areaMapAddon = AreaMap.AreaMapAddon;
-		GlobalUIScale = areaMapAddon->Scale;
+		globalUiScale = areaMapAddon->Scale;
 		if (areaMapAddon->UldManager.NodeListCount <= 4)
 		{
 			return;
@@ -1516,9 +1539,9 @@ public class BuildUi : IDisposable
 				Plugin.log.Verbose($"node found {i}");
 				AtkResNode atkResNode2 = ptr4->AtkResNode;
 				System.Numerics.Vector2 vector = new System.Numerics.Vector2(areaMapAddon->X, areaMapAddon->Y);
-				mapOrigin = ImGui.GetMainViewport().Pos + vector + (new System.Numerics.Vector2(atkResNode.X, atkResNode.Y) + new System.Numerics.Vector2(atkResNode2.X, atkResNode2.Y) + new System.Numerics.Vector2(atkResNode2.OriginX, atkResNode2.OriginY)) * GlobalUIScale;
-				MapPosSize[0] = ImGui.GetMainViewport().Pos + vector + new System.Numerics.Vector2(atkResNode.X, atkResNode.Y) * GlobalUIScale;
-				MapPosSize[1] = ImGui.GetMainViewport().Pos + vector + new System.Numerics.Vector2(atkResNode.X, atkResNode.Y) + new System.Numerics.Vector2((int)atkResNode.Width, (int)atkResNode.Height) * GlobalUIScale;
+				mapOrigin = ImGui.GetMainViewport().Pos + vector + (new System.Numerics.Vector2(atkResNode.X, atkResNode.Y) + new System.Numerics.Vector2(atkResNode2.X, atkResNode2.Y) + new System.Numerics.Vector2(atkResNode2.OriginX, atkResNode2.OriginY)) * globalUiScale;
+				mapPosSize[0] = ImGui.GetMainViewport().Pos + vector + new System.Numerics.Vector2(atkResNode.X, atkResNode.Y) * globalUiScale;
+				mapPosSize[1] = ImGui.GetMainViewport().Pos + vector + new System.Numerics.Vector2(atkResNode.X, atkResNode.Y) + new System.Numerics.Vector2((int)atkResNode.Width, (int)atkResNode.Height) * globalUiScale;
 				break;
 			}
 		}
@@ -1539,7 +1562,7 @@ public class BuildUi : IDisposable
 		IDalamudTextureWrap textureWrap = null;
 		try
 		{
-			int num = CurrentTerritoryMaps.FindIndex(((Map map, string texpath, ISharedImmediateTexture texture) i) => i.map.RowId == MapId);
+			int num = CurrentTerritoryMaps.FindIndex(((Map map, string texpath, ISharedImmediateTexture texture) i) => i.map.RowId == Plugin.ClientState.MapId);
 			if (num != -1)
 			{
 				map = CurrentTerritoryMaps[num].map;
@@ -1620,7 +1643,8 @@ public class BuildUi : IDisposable
 					reference -= (MeWorldPos.ToVector2() + MAP_offset) * MAP_SizeFactor;
 					if (Plugin.config.ExternalMap_Mode == 2)
 					{
-						reference = reference.Rotate(0f - Plugin.HRotation, IMGUI_windowcenter);
+                        rotation = AdjustRotationToHRotation(Plugin.ClientState.LocalPlayer.Rotation);
+                        reference = reference.Rotate(0f - rotation, IMGUI_windowcenter);
 					}
 					reference = reference.Zoom(UvZoom, IMGUI_windowcenter);
 				}
@@ -1641,7 +1665,8 @@ public class BuildUi : IDisposable
 					windowDrawList.DrawMapTextDot(IMGUI_windowcenter, (Plugin.config.Overlay2D_DetailLevel > 0) ? "ME" : null, 4294967040u, 4278190080u);
 					if (Plugin.config.Overlay2D_ShowAssist)
 					{
-						float num3 = ((Plugin.config.ExternalMap_Mode == 2) ? 0f : (0f - Plugin.HRotation));
+                        rotation = AdjustRotationToHRotation(Plugin.ClientState.LocalPlayer.Rotation);
+                        float num3 = ((Plugin.config.ExternalMap_Mode == 2) ? 0f : (0f - rotation));
 						windowDrawList.PathArcTo(IMGUI_windowcenter, MAP_SizeFactor * 25f * UvZoom, num3 - (float)Math.PI / 2f - (float)Math.PI / 4f, num3 - (float)Math.PI / 4f, 24);
 						windowDrawList.PathLineTo(IMGUI_windowcenter);
 						windowDrawList.PathStroke(4294967040u, ImDrawFlags.Closed, 2f);
@@ -1673,7 +1698,8 @@ public class BuildUi : IDisposable
 					windowDrawList.DrawMapTextDot(vector3, (Plugin.config.Overlay2D_DetailLevel > 0) ? "ME" : null, 4294967040u, 4278190080u);
 					if (Plugin.config.Overlay2D_ShowAssist)
 					{
-						windowDrawList.PathArcTo(vector3, MAP_SizeFactor * 25f * UvZoom, 0f - Plugin.HRotation - (float)Math.PI / 2f - (float)Math.PI / 4f, 0f - Plugin.HRotation - (float)Math.PI / 4f, 24);
+                        rotation = AdjustRotationToHRotation(Plugin.ClientState.LocalPlayer.Rotation);
+                        windowDrawList.PathArcTo(vector3, MAP_SizeFactor * 25f * UvZoom, 0f - rotation - (float)Math.PI / 2f - (float)Math.PI / 4f, 0f - rotation - (float)Math.PI / 4f, 24);
 						windowDrawList.PathLineTo(vector3);
 						windowDrawList.PathStroke(4294967040u, ImDrawFlags.Closed, 2f);
 					}
@@ -1701,7 +1727,8 @@ public class BuildUi : IDisposable
 			System.Numerics.Vector2 vector4 = (worldPos - MeWorldPos).ToVector2() * MAP_SizeFactor;
 			if (Plugin.config.ExternalMap_Mode == 2)
 			{
-				vector4 = vector4.Rotate(0f - Plugin.HRotation);
+                rotation = AdjustRotationToHRotation(Plugin.ClientState.LocalPlayer.Rotation);
+                vector4 = vector4.Rotate(0f - rotation);
 			}
 			return IMGUI_windowcenter + vector4 * UvZoom;
 		}

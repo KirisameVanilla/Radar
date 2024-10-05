@@ -1,29 +1,31 @@
 using System;
 using System.Collections.Generic;
 using System.Linq;
+using Lumina.Excel;
 using Lumina.Excel.GeneratedSheets;
 
 namespace Radar;
 
 internal static class NotoriousMonsters
 {
-	public static readonly HashSet<uint> ListEMobs = new HashSet<uint> { 7184u, 7567u, 7764u, 8131u };
+	public static readonly HashSet<uint> ListEurekaMobs = new() { 7184u, 7567u, 7764u, 8131u };
+    private static readonly ExcelSheet<NotoriousMonster> NotoriousMonsterSheet = Plugin.DataManager.GetExcelSheet<NotoriousMonster>();
 
-	public static readonly Lazy<HashSet<uint>> SRankLazy = new Lazy<HashSet<uint>>(() => new HashSet<uint>((from i in Plugin.DataManager.GetExcelSheet<NotoriousMonster>()
-		where i.Rank == 3
-		select i.BNpcBase.Value.RowId into i
-		where i != 0
-		select i).Distinct()));
+    private static Lazy<HashSet<uint>> GetRankLazyHashSet(int rank)
+    {
+        Lazy<HashSet<uint>> rankLazyHashSet = new(() =>
+            new(
+                NotoriousMonsterSheet
+                    .Where(i => i.Rank == rank && i.BNpcBase.Value.RowId != 0)
+                    .Select(i => i.BNpcBase.Value.RowId)
+                    .Distinct()
+            )
+        );
+        return rankLazyHashSet;
+    }
 
-	public static readonly Lazy<HashSet<uint>> ARankLazy = new Lazy<HashSet<uint>>(() => new HashSet<uint>((from i in Plugin.DataManager.GetExcelSheet<NotoriousMonster>()
-		where i.Rank == 2
-		select i.BNpcBase.Value.RowId into i
-		where i != 0
-		select i).Distinct()));
+    public static readonly Lazy<HashSet<uint>> SRankLazy = GetRankLazyHashSet(3);
+    public static readonly Lazy<HashSet<uint>> ARankLazy = GetRankLazyHashSet(2);
+    public static readonly Lazy<HashSet<uint>> BRankLazy = GetRankLazyHashSet(1);
 
-	public static readonly Lazy<HashSet<uint>> BRankLazy = new Lazy<HashSet<uint>>(() => new HashSet<uint>((from i in Plugin.DataManager.GetExcelSheet<NotoriousMonster>()
-		where i.Rank == 1
-		select i.BNpcBase.Value.RowId into i
-		where i != 0
-		select i).Distinct()));
 }

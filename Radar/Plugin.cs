@@ -9,6 +9,7 @@ using Dalamud.Interface.Textures;
 using Dalamud.IoC;
 using Dalamud.Plugin;
 using Dalamud.Plugin.Services;
+using Lumina.Excel;
 using Lumina.Excel.GeneratedSheets;
 using Radar.Attributes;
 using Radar.UI;
@@ -25,11 +26,9 @@ public class Plugin : IDalamudPlugin, IDisposable
 
 	public const uint EmptyObjectID = 3758096384u;
 
-	public unsafe static GameObject** GameObjectList;
+	public static unsafe GameObject** GameObjectList;
 
 	internal static Dictionary<uint, ISharedImmediateTexture> EnpcIcons;
-
-	internal static RadarAddressResolver address;
 
 	private static int Savetimer;
 
@@ -83,12 +82,8 @@ public class Plugin : IDalamudPlugin, IDisposable
 
 	public string Name => "Radar";
 
-	internal static unsafe ref float HRotation => ref *(float*)(address.CamPtr + 304);
-
 	public unsafe Plugin()
 	{
-		address = new RadarAddressResolver();
-		address.Setup(SigScanner);
 		config = ((Configuration)pi.GetPluginConfig()) ?? new Configuration();
 		config.Initialize(pi);
 		GameObjectList = (GameObject**)objects.Address;
@@ -108,11 +103,13 @@ public class Plugin : IDalamudPlugin, IDisposable
 
 	private static void SetupResources()
 	{
-		Task.Run(delegate
+        ExcelSheet<EventIconPriority> EventIconPrioritySheet = DataManager.GetExcelSheet<EventIconPriority>();
+
+        Task.Run(delegate
 		{
 			try
 			{
-				EnpcIcons = (from i in DataManager.GetExcelSheet<EventIconPriority>().SelectMany((EventIconPriority i) => i.Icon)
+				EnpcIcons = (from i in EventIconPrioritySheet?.SelectMany((EventIconPriority i) => i.Icon)
 					where i != 0
 					select i).ToDictionary((uint i) => i, delegate(uint j)
 				{

@@ -4,7 +4,7 @@ namespace Radar;
 
 public static class DeepDungeonObjectExtension
 {
-	public unsafe static bool IsTrap(GameObject* obj)
+	public static unsafe bool IsTrap(GameObject* obj)
 	{
 		if (obj->NpcBase == 6388 && obj->Location != Vector3.Zero)
 		{
@@ -17,7 +17,7 @@ public static class DeepDungeonObjectExtension
 		return false;
 	}
 
-	public unsafe static bool IsAccursedHoard(GameObject* obj)
+	public static unsafe bool IsAccursedHoard(GameObject* obj)
 	{
 		if (obj->NpcBase != 2007542)
 		{
@@ -26,7 +26,7 @@ public static class DeepDungeonObjectExtension
 		return true;
 	}
 
-	public unsafe static bool IsSilverCoffer(GameObject* obj)
+	public static unsafe bool IsSilverCoffer(GameObject* obj)
 	{
 		return obj->NpcBase == 2007357;
 	}
