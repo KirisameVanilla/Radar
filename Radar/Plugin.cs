@@ -16,82 +16,55 @@ using Radar.UI;
 
 namespace Radar;
 
-public class Plugin : IDalamudPlugin, IDisposable
+public class Plugin : IDalamudPlugin
 {
-	private delegate void sub_14089C400(long a1, int a2, int a3, float a4, float a5, int a6);
-
 	internal PluginCommandManager<Plugin> CommandManager;
 
 	internal BuildUi Ui;
-
-	public const uint EmptyObjectID = 3758096384u;
 
 	public static unsafe GameObject** GameObjectList;
 
 	internal static Dictionary<uint, ISharedImmediateTexture> EnpcIcons;
 
-	private static int Savetimer;
+	private static int SaveTimer;
 
-	[PluginService]
-	internal static IDalamudPluginInterface pi { get; private set; }
+	[PluginService] internal static IDalamudPluginInterface PluginInterface { get; private set; }
 
-	[PluginService]
-	internal static IClientState ClientState { get; private set; }
+	[PluginService] internal static IClientState ClientState { get; private set; }
 
-	[PluginService]
-	internal static IFramework Framework { get; private set; }
+	[PluginService] internal static IFramework Framework { get; private set; }
 
-	[PluginService]
-	internal static IGameGui Gui { get; private set; }
+	[PluginService] internal static IGameGui Gui { get; private set; }
 
-	[PluginService]
-	internal static IChatGui ChatGui { get; private set; }
+	[PluginService] internal static IChatGui ChatGui { get; private set; }
 
-	[PluginService]
-	internal static ISigScanner SigScanner { get; private set; }
+	[PluginService] internal static IDataManager DataManager { get; private set; }
 
-	[PluginService]
-	internal static IDataManager DataManager { get; private set; }
+	[PluginService] internal static ITargetManager TargetManager { get; private set; }
 
-	[PluginService]
-	internal static ITargetManager TargetManager { get; private set; }
+	[PluginService] internal static ICondition Condition { get; private set; }
 
-	[PluginService]
-	internal static ICondition condition { get; private set; }
+	[PluginService] internal static ICommandManager cmd { get; private set; }
 
-	[PluginService]
-	internal static ICommandManager cmd { get; private set; }
+	[PluginService] internal static ITextureProvider TextureProvider { get; private set; }
 
-	[PluginService]
-	internal static ITextureProvider textures { get; private set; }
+	[PluginService] internal static IObjectTable ObjectTable { get; private set; }
 
-	[PluginService]
-	internal static IObjectTable objects { get; private set; }
-
-	[PluginService]
-	internal static IGameInteropProvider hook { get; private set; }
-
-	[PluginService]
-	internal static IPluginLog log { get; private set; }
-
-	internal static Configuration config { get; private set; }
-
-	public static ProcessModule MainModule => SigScanner.Module;
-
-	public static nint ImageBase => SigScanner.Module.BaseAddress;
+	[PluginService] internal static IPluginLog PluginLog { get; private set; }
+    internal static Configuration config { get; private set; }
 
 	public string Name => "Radar";
 
 	public unsafe Plugin()
 	{
-		config = ((Configuration)pi.GetPluginConfig()) ?? new Configuration();
-		config.Initialize(pi);
-		GameObjectList = (GameObject**)objects.Address;
+		config = ((Configuration)PluginInterface.GetPluginConfig()) ?? new Configuration();
+		config.Initialize(PluginInterface);
+		GameObjectList = (GameObject**)ObjectTable.Address;
 		Framework.Update += Framework_OnUpdateEvent;
 		SetupResources();
 		Ui = new BuildUi();
-		CommandManager = new PluginCommandManager<Plugin>(this, pi);
-		if (pi.Reason != PluginLoadReason.Boot)
+		CommandManager = new PluginCommandManager<Plugin>(this, PluginInterface);
+		if (PluginInterface.Reason != PluginLoadReason.Boot)
 		{
 			Ui.ConfigVisible = true;
 		}
@@ -103,47 +76,47 @@ public class Plugin : IDalamudPlugin, IDisposable
 
 	private static void SetupResources()
 	{
-        ExcelSheet<EventIconPriority> EventIconPrioritySheet = DataManager.GetExcelSheet<EventIconPriority>();
+        ExcelSheet<EventIconPriority> eventIconPrioritySheet = DataManager.GetExcelSheet<EventIconPriority>();
 
         Task.Run(delegate
 		{
 			try
 			{
-				EnpcIcons = (from i in EventIconPrioritySheet?.SelectMany((EventIconPriority i) => i.Icon)
+				EnpcIcons = (from i in eventIconPrioritySheet?.SelectMany(i => i.Icon)
 					where i != 0
 					select i).ToDictionary((uint i) => i, delegate(uint j)
 				{
-					ITextureProvider textureProvider = textures;
+					ITextureProvider textureProvider = TextureProvider;
 					GameIconLookup lookup = new GameIconLookup(j, itemHq: false, hiRes: false, DataManager.Language);
 					return textureProvider.GetFromGameIcon(in lookup);
 				});
 			}
 			catch (Exception exception)
 			{
-				log.Error(exception, "error when loading enpc icons.");
+				PluginLog.Error(exception, "error when loading enpc icons.");
 			}
 		});
 	}
 
 	private void Framework_OnUpdateEvent(IFramework framework)
 	{
-		Savetimer++;
-		if (Savetimer % 3600 != 0)
+		SaveTimer++;
+		if (SaveTimer % 3600 != 0)
 		{
 			return;
 		}
-		Savetimer = 0;
+		SaveTimer = 0;
 		Task.Run(delegate
 		{
 			try
 			{
 				Stopwatch stopwatch = Stopwatch.StartNew();
 				config.Save();
-				log.Verbose($"config saved in {stopwatch.Elapsed.TotalMilliseconds}ms.");
+				PluginLog.Verbose($"config saved in {stopwatch.Elapsed.TotalMilliseconds}ms.");
 			}
 			catch (Exception exception)
 			{
-				log.Warning(exception, "error when saving config");
+				PluginLog.Warning(exception, "error when saving config");
 			}
 		});
 	}
@@ -231,7 +204,7 @@ public class Plugin : IDalamudPlugin, IDisposable
 			Framework.Update -= Framework_OnUpdateEvent;
 			CommandManager.Dispose();
 			Ui.Dispose();
-			pi.SavePluginConfig(config);
+			PluginInterface.SavePluginConfig(config);
 		}
 	}
 

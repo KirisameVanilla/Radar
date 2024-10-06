@@ -8,11 +8,11 @@ namespace Radar.UI;
 
 internal static class AreaMap
 {
-	public unsafe static AtkUnitBase* AreaMapAddon => (AtkUnitBase*)Plugin.Gui.GetAddonByName("AreaMap");
+	public static unsafe AtkUnitBase* AreaMapAddon => (AtkUnitBase*)Plugin.Gui.GetAddonByName("AreaMap");
 
-	public unsafe static bool HasMap => AreaMapAddon != (AtkUnitBase*)IntPtr.Zero;
+	public static unsafe bool HasMap => AreaMapAddon != (AtkUnitBase*)IntPtr.Zero;
 
-	public unsafe static bool MapVisible
+	public static unsafe bool MapVisible
 	{
 		get
 		{
@@ -24,11 +24,11 @@ internal static class AreaMap
 		}
 	}
 
-	public unsafe static Vector2 WindowPos => ImGuiHelpers.MainViewport.Pos + new Vector2(AreaMapAddon->X, AreaMapAddon->Y);
+	public static unsafe Vector2 WindowPos => ImGuiHelpers.MainViewport.Pos + new Vector2(AreaMapAddon->X, AreaMapAddon->Y);
 
-	public unsafe static ref float MapScale => ref *(float*)((byte*)AreaMapAddon + 972);
+	public static unsafe ref float MapScale => ref *(float*)((byte*)AreaMapAddon + 972);
 
-	public unsafe static ref float MapNodeRotation
+	public static unsafe ref float MapNodeRotation
 	{
 		get
 		{
@@ -38,7 +38,7 @@ internal static class AreaMap
 		}
 	}
 
-	public unsafe static ref float MapTextureRotation
+	public static unsafe ref float MapTextureRotation
 	{
 		get
 		{
@@ -52,7 +52,7 @@ internal static class AreaMap
 		}
 	}
 
-	public unsafe static string GetNaviMapTexPath
+	public static unsafe string GetNaviMapTexPath
 	{
 		get
 		{
@@ -86,7 +86,7 @@ internal static class AreaMap
 		}
 	}
 
-	public unsafe static ref uint MapNodeFlags
+	public static unsafe ref uint MapNodeFlags
 	{
 		get
 		{

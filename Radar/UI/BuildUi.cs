@@ -3,7 +3,6 @@ using System.Collections.Generic;
 using System.IO;
 using System.Linq;
 using System.Numerics;
-using System.Threading.Tasks;
 using Dalamud.Game.ClientState.Conditions;
 using Dalamud.Game.ClientState.Objects.Enums;
 using Dalamud.Game.ClientState.Objects.Types;
@@ -12,7 +11,6 @@ using Dalamud.Interface;
 using Dalamud.Interface.Textures;
 using Dalamud.Interface.Textures.TextureWraps;
 using Dalamud.Interface.Utility;
-using Dalamud.Plugin.Services;
 using FFXIVClientStructs.FFXIV.Client.Game.Control;
 using FFXIVClientStructs.FFXIV.Client.Graphics.Kernel;
 using FFXIVClientStructs.FFXIV.Component.GUI;
@@ -210,10 +208,6 @@ public class BuildUi : IDisposable
 
 	public bool ConfigVisible;
 
-	private byte[] fontBytes;
-
-	private ImFontPtr fontPtr;
-
 	private System.Numerics.Vector2? mapOrigin = System.Numerics.Vector2.Zero;
 
 	private float globalUiScale = 1f;
@@ -252,51 +246,11 @@ public class BuildUi : IDisposable
 
 	private string[] getEnumNames;
 
-    /*
-    private static Random random = new Random();
-
-    private static Lazy<Vector4> RandomColor = new(delegate
-    {
-        ImGui.ColorConvertHSVtoRGB((float)random.NextDouble(), 1f, 1f, out var out_r, out var out_g, out var out_b);
-        return new Vector4(out_r, out_g, out_b, 1f);
-    });
-    */
-
     #region ColorsVector4
 
     public static Vector4 RedVector4 = new(1f, 0f, 0f, 1f);
 
     #endregion
-
-    /*
-    public const uint Red = 4278190335u;
-
-    public const uint Magenta = 4294902015u;
-
-	public const uint Yellow = 4278255615u;
-
-	public const uint Green = 4278255360u;
-
-	public const uint GrassGreen = 4278247424u;
-
-	public const uint Cyan = 4294967040u;
-
-	public const uint DarkCyan = 4287664128u;
-
-	public const uint LightCyan = 4294967200u;
-
-	public const uint Blue = 4294901760u;
-
-	public const uint Black = 4278190080u;
-
-	public const uint TransBlack = 2147483648u;
-
-	public const uint Grey = 4286611584u;
-
-	public const uint White = uint.MaxValue;
-
-	public const ImGuiTableFlags TableFlags = ImGuiTableFlags.BordersInner | ImGuiTableFlags.SizingFixedFit | ImGuiTableFlags.PadOuterX | ImGuiTableFlags.ScrollX | ImGuiTableFlags.ScrollY;
-    */
 
     private HashSet<System.Numerics.Vector2> hoardBlackList = new();
 
@@ -321,7 +275,6 @@ public class BuildUi : IDisposable
     #region ExcelSheets
     private static readonly ExcelSheet<TerritoryType> TerritoryTypeSheet = Plugin.DataManager.GetExcelSheet<TerritoryType>();
     private static readonly ExcelSheet<Map> MapSheet = Plugin.DataManager.GetExcelSheet<Map>();
-
     #endregion
 
 	private Dictionary<ushort, bool> IsPvpZone => isPvpZone ?? (isPvpZone = TerritoryTypeSheet.ToDictionary((i) => (ushort)i.RowId, (j) => j.IsPvpZone));
@@ -365,23 +318,16 @@ public class BuildUi : IDisposable
 		}
 	}
 
-	private Dictionary<ushort, Map[]> TerritoryMapsDictionary { get; }
-
     private float rotation;
-
 
 	public BuildUi()
 	{
-		sizeFactorDict = TerritoryTypeSheet.ToDictionary((TerritoryType k) => k.RowId, (TerritoryType v) => v.Map.Value.SizeFactor);
+		sizeFactorDict = TerritoryTypeSheet.ToDictionary(k => k.RowId, v => v.Map.Value.SizeFactor);
 		DeepDungeonTerritoryEqual = new DeepDungeonTerritoryEqualityComparer();
 		DeepDungeonObjectLocationEqual = new DeepDungeonObjectLocationEqualityComparer();
-		TerritoryMapsDictionary = (from i in MapSheet
-			group i by i.TerritoryType?.Value?.RowId into i
-			where i.Key.HasValue && i.Key != 0
-			select i).ToDictionary((IGrouping<uint?, Map> i) => (ushort)i.Key.Value, (IGrouping<uint?, Map> j) => j.ToArray());
 		Plugin.ClientState.TerritoryChanged += TerritoryChanged;
-		Plugin.pi.UiBuilder.OpenConfigUi += UiBuilder_OnOpenConfigUi;
-		Plugin.pi.UiBuilder.Draw += UiBuilder_OnBuildUi;
+		Plugin.PluginInterface.UiBuilder.OpenConfigUi += UiBuilder_OnOpenConfigUi;
+		Plugin.PluginInterface.UiBuilder.Draw += UiBuilder_OnBuildUi;
 	}
 
 	private void UiBuilder_OnOpenConfigUi()
@@ -391,15 +337,15 @@ public class BuildUi : IDisposable
 
 	private void TerritoryChanged(ushort territoryId)
 	{
-		Plugin.log.Information($"territory changed to: {territoryId}");
+		Plugin.PluginLog.Information($"territory changed to: {territoryId}");
 		trapBlacklist.Clear();
 		hoardBlackList.Clear();
 	}
 
 	public void Dispose()
 	{
-		Plugin.pi.UiBuilder.OpenConfigUi -= UiBuilder_OnOpenConfigUi;
-		Plugin.pi.UiBuilder.Draw -= UiBuilder_OnBuildUi;
+		Plugin.PluginInterface.UiBuilder.OpenConfigUi -= UiBuilder_OnOpenConfigUi;
+		Plugin.PluginInterface.UiBuilder.Draw -= UiBuilder_OnBuildUi;
 		Plugin.ClientState.TerritoryChanged -= TerritoryChanged;
 	}
 
@@ -431,7 +377,7 @@ public class BuildUi : IDisposable
 				backgroundDrawList = ImGui.GetBackgroundDrawList(ImGui.GetMainViewport());
 				RefreshMeScreenPos();
 				RefreshMeWorldPos();
-				if (Plugin.config.DeepDungeon_EnableTrapView && Plugin.condition[ConditionFlag.InDeepDungeon])
+				if (Plugin.config.DeepDungeon_EnableTrapView && Plugin.Condition[ConditionFlag.InDeepDungeon])
 				{
 					DrawDeepDungeonObjects();
 				}
@@ -496,9 +442,29 @@ public class BuildUi : IDisposable
 				CheckEachObject(o2);
 			}
 		}
-		void CheckEachObject(GameObject* o)
+        return;
+
+        bool IsTargetable(uint renderFlags, byte targetableFlags)
+        {
+            /*
+             * Analysis of the origin function by ChatGPT: https://pastebin.com/0B8aCHn0
+             */
+            var isRenderFlagSet = ((renderFlags >> 11) & 1u) != 0;
+            var isVisible = !isRenderFlagSet;
+
+            var isTargetableCandidate = (targetableFlags & 2) > 0;
+
+            if (isTargetableCandidate && (isVisible || targetableFlags >= 128))
+            {
+                return (renderFlags & 0xFFFFE7F7u) == 0;
+            }
+
+            return false;
+        }
+
+        void CheckEachObject(GameObject* o)
 		{
-			if (Plugin.condition[ConditionFlag.InDeepDungeon])
+			if (Plugin.Condition[ConditionFlag.InDeepDungeon])
 			{
 				AddDeepDungeonObjectRecord(o);
 			}
@@ -508,8 +474,9 @@ public class BuildUi : IDisposable
 			if (Plugin.config.Overlay2D_Enabled || Plugin.config.Overlay3D_Enabled)
 			{
 				if (!flag)
-				{
-					if (!Plugin.config.Overlay_ShowKinds[(int)o->MyObjectKind] || (Plugin.config.Overlay_OnlyShowTargetable && (!o->IsTargetable || o->ObjectKind == ObjectKind.MountType)))
+                {
+                    bool isThisObjectTargetable = IsTargetable(o->RenderFlags, o->TargetableStatus);
+					if (!Plugin.config.Overlay_ShowKinds[(int)o->MyObjectKind] || (Plugin.config.Overlay_OnlyShowTargetable && (!isThisObjectTargetable || o->ObjectKind == ObjectKind.MountType)))
 					{
 						return;
 					}
@@ -529,20 +496,7 @@ public class BuildUi : IDisposable
 		}
 	}
 
-    /*
-	private static unsafe bool TryGetEnpcIcon(GameObject* o, out ISharedImmediateTexture enpcIcon)
-	{
-		enpcIcon = null;
-		if (o->ObjectKind == ObjectKind.EventNpc && o->ENpcIcon != 0 && Plugin.EnpcIcons != null && Plugin.EnpcIcons.TryGetValue(o->ENpcIcon, out var value))
-		{
-			enpcIcon = value;
-			return true;
-		}
-		return false;
-	}
-    */
-
-	private static unsafe void RefreshMeScreenPos()
+	private static void RefreshMeScreenPos()
 	{
 		try
         {
@@ -561,29 +515,13 @@ public class BuildUi : IDisposable
 			GameObject* gameObjectList = *Plugin.GameObjectList;
 			if (gameObjectList != null)
 			{
-				MeWorldPos = gameObjectList->Location;
+				MeWorldPos = gameObjectList->Position;
 			}
 		}
 		catch
 		{
 		}
 	}
-
-    /*
-	private unsafe void UiBuilder_OnBuildFonts()
-	{
-		fixed (byte* ptr = fontBytes)
-		{
-			fixed (ushort* ptr2 = GlyphRangesChinese.GlyphRanges)
-			{
-				ImFontConfigPtr font_cfg = ImGuiNative.ImFontConfig_ImFontConfig();
-				font_cfg.MergeMode = true;
-				font_cfg.PixelSnapH = true;
-				fontPtr = ImGui.GetIO().Fonts.AddFontFromMemoryTTF((nint)ptr, fontBytes.Length, 24f, font_cfg, (nint)ptr2);
-			}
-		}
-	}
-    */
 
 	private static void Config2D()
 	{
@@ -757,8 +695,8 @@ public class BuildUi : IDisposable
 		ImGui.Separator();
 		if (ImGui.Button("导出当前记录点到剪贴板"))
 		{
-			Plugin.log.Information("exporting...");
-			Plugin.log.Information($"exported {(from i in Plugin.config.DeepDungeonObjects
+			Plugin.PluginLog.Information("exporting...");
+			Plugin.PluginLog.Information($"exported {(from i in Plugin.config.DeepDungeonObjects
 				group i by i.Territory).Count()} territories, {Plugin.config.DeepDungeonObjects.Count((DeepDungeonObject i) => i.Type == DeepDungeonType.Trap)} traps, {Plugin.config.DeepDungeonObjects.Count((DeepDungeonObject i) => i.Type == DeepDungeonType.AccursedHoard)} hoards.");
 			ImGui.SetClipboardText(Plugin.config.DeepDungeonObjects.ToCompressedString());
 		}
@@ -779,7 +717,7 @@ public class BuildUi : IDisposable
 				catch (Exception ex)
 				{
 					importingError = true;
-					Plugin.log.Warning(ex, "error when importing deep dungeon object list.");
+					Plugin.PluginLog.Warning(ex, "error when importing deep dungeon object list.");
 					errorMessage = ex.Message;
 				}
 			}
@@ -794,7 +732,7 @@ public class BuildUi : IDisposable
 		if (ImGui.Button("正在准备导入..."))
 		{
 			deepDungeonObjectsImportCache = null;
-			Plugin.log.Debug("user canceled importing task.");
+			Plugin.PluginLog.Debug("user canceled importing task.");
 			return;
 		}
 		bool flag = ImGui.SliderInt("树视图展开级别", ref treeLevel, 1, 4, GetFormat(treeLevel));
@@ -870,7 +808,7 @@ public class BuildUi : IDisposable
 		if (ImGui.Button("取消导入##importDecline"))
 		{
 			deepDungeonObjectsImportCache = null;
-			Plugin.log.Debug("user canceled importing task.");
+			Plugin.PluginLog.Debug("user canceled importing task.");
 			return;
 		}
 		ImGui.SameLine();
@@ -880,7 +818,7 @@ public class BuildUi : IDisposable
 			Plugin.config.DeepDungeonObjects.UnionWith(deepDungeonObjectsImportCache);
 			deepDungeonObjectsImportCache = null;
 			int num = Plugin.config.DeepDungeonObjects.Count - count;
-			Plugin.log.Information($"imported {num} deep dungeon object records.");
+			Plugin.PluginLog.Information($"imported {num} deep dungeon object records.");
 		}
 		static string GetFormat(int input)
 		{
@@ -1161,14 +1099,14 @@ public class BuildUi : IDisposable
 			DeepDungeonObject deepDungeonObject = new DeepDungeonObject
 			{
 				Type = DeepDungeonType.AccursedHoard,
-				Base = o->NpcBase,
+				Base = o->BaseId,
 				InstanceId = o->ObjectId,
-				Location = o->Location,
+				Location = o->Position,
 				Territory = Plugin.ClientState.TerritoryType
 			};
 			if (Plugin.config.DeepDungeonObjects.Add(deepDungeonObject))
 			{
-				Plugin.log.Information($"New AccursedHoard recorded! {deepDungeonObject}");
+				Plugin.PluginLog.Information($"New AccursedHoard recorded! {deepDungeonObject}");
 			}
 		}
 		if (DeepDungeonObjectExtension.IsTrap(o) && !trapBlacklist.Contains(o->Location2D))
@@ -1176,14 +1114,14 @@ public class BuildUi : IDisposable
 			DeepDungeonObject deepDungeonObject2 = new DeepDungeonObject
 			{
 				Type = DeepDungeonType.Trap,
-				Base = o->NpcBase,
+				Base = o->BaseId,
 				InstanceId = o->ObjectId,
-				Location = o->Location,
+				Location = o->Position,
 				Territory = Plugin.ClientState.TerritoryType
 			};
 			if (Plugin.config.DeepDungeonObjects.Add(deepDungeonObject2))
 			{
-				Plugin.log.Information($"New Trap recorded! {deepDungeonObject2}");
+				Plugin.PluginLog.Information($"New Trap recorded! {deepDungeonObject2}");
 			}
 		}
 	}
@@ -1226,25 +1164,25 @@ public class BuildUi : IDisposable
 	{
 		if (Plugin.config.OverlayHint_CustomObjectView && Plugin.config.customHighlightObjects.TryGetValue(o->DictionaryName, out var value) && value.Enabled)
 		{
-			SpecialObjectDrawList.Add(((nint)o, ImGui.ColorConvertFloat4ToU32(value.Color), $"{o->MyObjectKind.ToString().ToUpper()} {((o->NpcBase != 0) ? o->NpcBase.ToString() : string.Empty)}\nLv.{o->Character.CharacterData.Level} {o->DictionaryName}"));
+			SpecialObjectDrawList.Add(((nint)o, ImGui.ColorConvertFloat4ToU32(value.Color), $"{o->MyObjectKind.ToString().ToUpper()} {((o->BaseId != 0) ? o->BaseId.ToString() : string.Empty)}\nLv.{o->Character.CharacterData.Level} {o->DictionaryName}"));
 			fgColor = ImGui.ColorConvertFloat4ToU32(value.Color);
 			return true;
 		}
 		if (Plugin.config.OverlayHint_MobHuntView && o->ObjectKind == ObjectKind.BattleNpc)
 		{
-			if (NotoriousMonsters.SRankLazy.Value.Contains(o->NpcBase))
+			if (NotoriousMonsters.SRankLazy.Value.Contains(o->BaseId))
 			{
 				SpecialObjectDrawList.Add(((nint)o, 4278190335u, $"S RANK NOTORIOUS MONSTER\nLv.{o->Character.CharacterData.Level} {o->DictionaryName}"));
 				fgColor = 4278190335u;
 				return true;
 			}
-			if (NotoriousMonsters.ARankLazy.Value.Contains(o->NpcBase))
+			if (NotoriousMonsters.ARankLazy.Value.Contains(o->BaseId))
 			{
 				SpecialObjectDrawList.Add(((nint)o, 4278255615u, $"A RANK NOTORIOUS MONSTER\nLv.{o->Character.CharacterData.Level} {o->DictionaryName}"));
 				fgColor = 4278255615u;
 				return true;
 			}
-			if (NotoriousMonsters.BRankLazy.Value.Contains(o->NpcBase))
+			if (NotoriousMonsters.BRankLazy.Value.Contains(o->BaseId))
 			{
 				SpecialObjectDrawList.Add(((nint)o, 4278255360u, $"B RANK NOTORIOUS MONSTER\nLv.{o->Character.CharacterData.Level} {o->DictionaryName}"));
 				fgColor = 4278255360u;
@@ -1256,7 +1194,7 @@ public class BuildUi : IDisposable
 				fgColor = 4294967040u;
 				return true;
 			}
-			if (o->NpcBase == 882)
+			if (o->BaseId == 882)
 			{
 				SpecialObjectDrawList.Add(((nint)o, 4294901760u, $"ODIN\nLv.{o->Character.CharacterData.Level} {o->DictionaryName}"));
 				fgColor = 4294901760u;
@@ -1272,17 +1210,17 @@ public class BuildUi : IDisposable
 		switch (Plugin.config.Overlay2D_DetailLevel)
 		{
 		case 1:
-			item = (string.IsNullOrEmpty(a->DictionaryName) ? $"{a->ObjectKind} {a->NpcBase}" : a->DictionaryName);
+			item = (string.IsNullOrEmpty(a->DictionaryName) ? $"{a->ObjectKind} {a->BaseId}" : a->DictionaryName);
 			break;
 		case 2:
-			item = (string.IsNullOrEmpty(a->DictionaryName) ? $"{a->ObjectKind} {a->NpcBase}" : $"{a->DictionaryName}\u3000{a->Location.Distance2D(MeWorldPos):F2}m");
+			item = (string.IsNullOrEmpty(a->DictionaryName) ? $"{a->ObjectKind} {a->BaseId}" : $"{a->DictionaryName}\u3000{a->Position.Distance2D(MeWorldPos):F2}m");
 			break;
 		default:
 			throw new ArgumentOutOfRangeException();
 		case 0:
 			break;
 		}
-		DrawList2D.Add((a->Location, foregroundColor, backgroundColor, item));
+		DrawList2D.Add((a->Position, foregroundColor, backgroundColor, item));
 	}
 
 	private unsafe void DrawObject3D(GameObject* obj, uint foregroundColor, uint bgcolor, bool drawLine, ISharedImmediateTexture icon = null)
@@ -1295,10 +1233,10 @@ public class BuildUi : IDisposable
 			flag = true;
 			break;
 		case 1:
-			text = (string.IsNullOrEmpty(obj->DictionaryName) ? $"{obj->ObjectKind} {obj->NpcBase}" : obj->DictionaryName);
+			text = (string.IsNullOrEmpty(obj->DictionaryName) ? $"{obj->ObjectKind} {obj->BaseId}" : obj->DictionaryName);
 			break;
 		case 2:
-			text = (string.IsNullOrEmpty(obj->DictionaryName) ? $"{obj->ObjectKind} {obj->NpcBase}" : obj->DictionaryName) + $"\t{obj->Location.Distance2D(MeWorldPos):F2}m";
+			text = (string.IsNullOrEmpty(obj->DictionaryName) ? $"{obj->ObjectKind} {obj->BaseId}" : obj->DictionaryName) + $"\t{obj->Position.Distance2D(MeWorldPos):F2}m";
 			break;
 		default:
 			throw new ArgumentOutOfRangeException();
@@ -1318,7 +1256,7 @@ public class BuildUi : IDisposable
 				drawLine = true;
 			}
 		}
-        System.Numerics.Vector3 location = obj->Location;
+        System.Numerics.Vector3 location = obj->Position;
 		System.Numerics.Vector2 size = ImGuiHelpers.MainViewport.Size;
 		System.Numerics.Vector2 pos = ImGuiHelpers.MainViewport.Pos;
 		_ = MeScreenPos - ImGuiHelpers.MainViewport.GetCenter();
@@ -1392,7 +1330,7 @@ public class BuildUi : IDisposable
 		ImGui.PushStyleVar(ImGuiStyleVar.WindowRounding, 0f);
 		ImGui.PushStyleVar(ImGuiStyleVar.WindowBorderSize, Plugin.config.OverlayHint_BorderSize);
 		System.Numerics.Vector2 windowPos = Plugin.config.WindowPos;
-		foreach (var item4 in SpecialObjectDrawList.OrderBy(((nint objectPointer, uint fgcolor, string title) i) => ((GameObject*)i.objectPointer)->Location.Distance(MeWorldPos)))
+		foreach (var item4 in SpecialObjectDrawList.OrderBy(((nint objectPointer, uint fgcolor, string title) i) => ((GameObject*)i.objectPointer)->Position.Distance(MeWorldPos)))
 		{
 			var item = item4.objectPointer;
 			var item2 = item4.fgcolor;
@@ -1419,17 +1357,17 @@ public class BuildUi : IDisposable
 			}
 			float num = ptr->Y - MeWorldPos.Y;
             var direction = (num == 0f) ? "" : ((num > 0f) ? "↑" : "↓");
-            ImGui.TextUnformatted($"{text}{ptr->Location.Distance2D(MeWorldPos):F2}m\t{direction}{Math.Abs(num):F2}");
+            ImGui.TextUnformatted($"{text}{ptr->Position.Distance2D(MeWorldPos):F2}m\t{direction}{Math.Abs(num):F2}");
 			windowPos += new System.Numerics.Vector2(0f, ImGui.GetWindowSize().Y);
 			if (Plugin.config.OverlayHint_OpenMapLinkOnAlt && ImGui.GetIO().KeyAlt && ImGui.IsMouseHoveringRect(ImGui.GetWindowPos(), ImGui.GetWindowSize() + ImGui.GetWindowPos()))
 			{
 				try
 				{
-                    Plugin.Gui.OpenMapWithMapLink(new MapLinkPayload(Plugin.ClientState.TerritoryType, Plugin.ClientState.MapId, (int)(ptr->Location.X * 1000f), (int)(ptr->Location.Z * 1000f)));
+                    Plugin.Gui.OpenMapWithMapLink(new MapLinkPayload(Plugin.ClientState.TerritoryType, Plugin.ClientState.MapId, (int)(ptr->Position.X * 1000f), (int)(ptr->Position.Z * 1000f)));
                 }
 				catch (Exception)
 				{
-					Plugin.log.Debug("no map available in this area!");
+					Plugin.PluginLog.Debug("no map available in this area!");
 				}
 			}
 			ImGui.PopStyleColor();
@@ -1441,7 +1379,12 @@ public class BuildUi : IDisposable
 
     private float AdjustRotationToHRotation(float angle)
     {
-        if(angle>0) angle -= (float)Math.PI;
+        /*
+         * akira use HRotation at first, which is a little different from LocalPlayer.Rotation
+         * this func is to compute HRotation based on Rotation
+         * so that I don't have to adjust every place where HRotation is used
+         */
+        if (angle>0) angle -= (float)Math.PI;
         else if(angle<0) angle += (float)Math.PI;
         return angle;
     }
@@ -1532,7 +1475,7 @@ public class BuildUi : IDisposable
 			if (text == "060443.tex" || text == "060443_hr1.tex")
 			{
 				AtkComponentNode* ptr4 = (AtkComponentNode*)ptr->Component->UldManager.NodeList[i];
-				Plugin.log.Verbose($"node found {i}");
+				Plugin.PluginLog.Verbose($"node found {i}");
 				AtkResNode atkResNode2 = ptr4->AtkResNode;
 				System.Numerics.Vector2 vector = new System.Numerics.Vector2(areaMapAddon->X, areaMapAddon->Y);
 				mapOrigin = ImGui.GetMainViewport().Pos + vector + (new System.Numerics.Vector2(atkResNode.X, atkResNode.Y) + new System.Numerics.Vector2(atkResNode2.X, atkResNode2.Y) + new System.Numerics.Vector2(atkResNode2.OriginX, atkResNode2.OriginY)) * globalUiScale;
@@ -1561,12 +1504,12 @@ public class BuildUi : IDisposable
             map = MapSheet.GetRow(Plugin.ClientState.MapId);
             var rawString = map.Id.RawString;
             string text = "ui/map/" + rawString + "/" + rawString.Replace("_", string.Empty).Replace("/", string.Empty) + "_m.tex";
-            ISharedImmediateTexture fromGame = Plugin.textures.GetFromGame(text);
+            ISharedImmediateTexture fromGame = Plugin.TextureProvider.GetFromGame(text);
             textureWrap = fromGame.GetWrapOrDefault();
         }
 		catch (Exception exception)
 		{
-			Plugin.log.Error(exception, "error when get map");
+			Plugin.PluginLog.Error(exception, "error when get map");
 		}
 		ImGui.PushStyleVar(ImGuiStyleVar.WindowPadding, System.Numerics.Vector2.Zero);
 		ImGui.SetNextWindowSizeConstraints(new System.Numerics.Vector2(150f, 150f), new System.Numerics.Vector2(float.MaxValue, float.MaxValue), delegate(ImGuiSizeCallbackData* data)
@@ -1584,9 +1527,9 @@ public class BuildUi : IDisposable
 			imGuiWindowFlags |= ImGuiWindowFlags.NoResize | ImGuiWindowFlags.NoMove;
 		}
 		ImGui.SetNextWindowBgAlpha(Plugin.config.ExternalMap_BgAlpha);
-		System.Numerics.Vector2 IMGUI_windowcenter;
-		System.Numerics.Vector2 MAP_offset;
-		float MAP_SizeFactor;
+		System.Numerics.Vector2 imGuiWindowCenter;
+		System.Numerics.Vector2 mapOffset;
+		float mapSizeFactor;
 		if (ImGui.Begin("maptex", imGuiWindowFlags))
 		{
 			ImDrawListPtr windowDrawList = ImGui.GetWindowDrawList();
@@ -1596,17 +1539,17 @@ public class BuildUi : IDisposable
 			float num2 = windowContentRegionWidth / 2048f;
 			System.Numerics.Vector2 windowPos = ImGui.GetWindowPos();
 			System.Numerics.Vector2[] array = Square4(windowPos, ImGui.GetWindowWidth());
-			IMGUI_windowcenter = ImGui.GetWindowPos() + new System.Numerics.Vector2(windowContentRegionWidth, windowContentRegionWidth) / 2f;
-			MAP_offset = new System.Numerics.Vector2(map.OffsetX, map.OffsetY);
-			MAP_SizeFactor = map.SizeFactor / 100f * num2;
+			imGuiWindowCenter = ImGui.GetWindowPos() + (new System.Numerics.Vector2(windowContentRegionWidth, windowContentRegionWidth) / 2f);
+			mapOffset = new System.Numerics.Vector2(map.OffsetX, map.OffsetY);
+			mapSizeFactor = map.SizeFactor / 100f * num2;
 			windowDrawList.ChannelsSetCurrent(1);
 			if (Plugin.config.ExternalMap_ShowMapInfo)
-			{
-				string text = $" {windowContentRegionWidth / (MAP_SizeFactor * UvZoom) / 2f:F2}m X: {MeWorldPos.X:N3} Y: {MeWorldPos.Y:N3} Z: {MeWorldPos.Z:N3} ";
-				System.Numerics.Vector2 vector = ImGui.CalcTextSize(text);
-				System.Numerics.Vector2 vector2 = ImGui.GetWindowSize() - vector;
-				windowDrawList.AddRectFilled(vector2 + windowPos, windowPos + ImGui.GetWindowSize(), 2147483648u);
-				ImGui.SetCursorPos(vector2);
+            {
+                var text = $" {windowContentRegionWidth / (mapSizeFactor * UvZoom) / 2f:F2}m X: {MeWorldPos.X:N3} Y: {MeWorldPos.Y:N3} Z: {MeWorldPos.Z:N3} ";
+				var textSize = ImGui.CalcTextSize(text);
+				var leftPos = ImGui.GetWindowSize() - textSize;
+				windowDrawList.AddRectFilled(leftPos + windowPos, windowPos + ImGui.GetWindowSize(), 2147483648u);
+				ImGui.SetCursorPos(leftPos);
 				ImGui.TextColored(Vector4.One, text);
 			}
 			if (!Plugin.config.ExternalMap_ClickThrough)
@@ -1635,13 +1578,13 @@ public class BuildUi : IDisposable
 				for (int j = 0; j < 4; j++)
 				{
 					ref System.Numerics.Vector2 reference = ref array[j];
-					reference -= (MeWorldPos.ToVector2() + MAP_offset) * MAP_SizeFactor;
+					reference -= (MeWorldPos.ToVector2() + mapOffset) * mapSizeFactor;
 					if (Plugin.config.ExternalMap_Mode == 2)
 					{
                         rotation = AdjustRotationToHRotation(Plugin.ClientState.LocalPlayer.Rotation);
-                        reference = reference.Rotate(0f - rotation, IMGUI_windowcenter);
+                        reference = reference.Rotate(0f - rotation, imGuiWindowCenter);
 					}
-					reference = reference.Zoom(UvZoom, IMGUI_windowcenter);
+					reference = reference.Zoom(UvZoom, imGuiWindowCenter);
 				}
 				try
 				{
@@ -1652,18 +1595,18 @@ public class BuildUi : IDisposable
 				}
 				foreach (var item in DrawList2D)
 				{
-					System.Numerics.Vector2 pos = WorldToMap(item.worldpos);
-					windowDrawList.DrawMapTextDot(pos, item.name, item.fgcolor, item.bgcolor);
+					var positionOfItem = WorldToMap(item.worldpos);
+					windowDrawList.DrawMapTextDot(positionOfItem, item.name, item.fgcolor, item.bgcolor);
 				}
 				if (Plugin.config.Overlay2D_ShowCenter)
 				{
-					windowDrawList.DrawMapTextDot(IMGUI_windowcenter, (Plugin.config.Overlay2D_DetailLevel > 0) ? "ME" : null, 4294967040u, 4278190080u);
+					windowDrawList.DrawMapTextDot(imGuiWindowCenter, (Plugin.config.Overlay2D_DetailLevel > 0) ? "ME" : null, 4294967040u, 4278190080u);
 					if (Plugin.config.Overlay2D_ShowAssist)
 					{
                         rotation = AdjustRotationToHRotation(Plugin.ClientState.LocalPlayer.Rotation);
-                        float num3 = ((Plugin.config.ExternalMap_Mode == 2) ? 0f : (0f - rotation));
-						windowDrawList.PathArcTo(IMGUI_windowcenter, MAP_SizeFactor * 25f * UvZoom, num3 - (float)Math.PI / 2f - (float)Math.PI / 4f, num3 - (float)Math.PI / 4f, 24);
-						windowDrawList.PathLineTo(IMGUI_windowcenter);
+                        var num3 = ((Plugin.config.ExternalMap_Mode == 2) ? 0f : (0f - rotation));
+						windowDrawList.PathArcTo(imGuiWindowCenter, mapSizeFactor * 25f * UvZoom, num3 - (float)Math.PI / 2f - (float)Math.PI / 4f, num3 - (float)Math.PI / 4f, 24);
+						windowDrawList.PathLineTo(imGuiWindowCenter);
 						windowDrawList.PathStroke(4294967040u, ImDrawFlags.Closed, 2f);
 					}
 				}
@@ -1672,8 +1615,8 @@ public class BuildUi : IDisposable
 			{
 				for (int k = 0; k < 4; k++)
 				{
-					ref System.Numerics.Vector2 reference2 = ref array[k];
-					reference2 = reference2.Zoom(UvZoom, IMGUI_windowcenter + dragPos);
+					ref var reference2 = ref array[k];
+					reference2 = reference2.Zoom(UvZoom, imGuiWindowCenter + dragPos);
 				}
 				try
 				{
@@ -1684,17 +1627,17 @@ public class BuildUi : IDisposable
 				}
 				foreach (var item2 in DrawList2D)
 				{
-					System.Numerics.Vector2 pos2 = WorldToMapNoSnap(item2.worldpos);
+					var pos2 = WorldToMapNoSnap(item2.worldpos);
 					windowDrawList.DrawMapTextDot(pos2, item2.name, item2.fgcolor, item2.bgcolor);
 				}
 				if (Plugin.config.Overlay2D_ShowCenter)
 				{
-					System.Numerics.Vector2 vector3 = WorldToMapNoSnap(MeWorldPos);
+					var vector3 = WorldToMapNoSnap(MeWorldPos);
 					windowDrawList.DrawMapTextDot(vector3, (Plugin.config.Overlay2D_DetailLevel > 0) ? "ME" : null, 4294967040u, 4278190080u);
 					if (Plugin.config.Overlay2D_ShowAssist)
 					{
                         rotation = AdjustRotationToHRotation(Plugin.ClientState.LocalPlayer.Rotation);
-                        windowDrawList.PathArcTo(vector3, MAP_SizeFactor * 25f * UvZoom, 0f - rotation - (float)Math.PI / 2f - (float)Math.PI / 4f, 0f - rotation - (float)Math.PI / 4f, 24);
+                        windowDrawList.PathArcTo(vector3, mapSizeFactor * 25f * UvZoom, 0f - rotation - (float)Math.PI / 2f - (float)Math.PI / 4f, 0f - rotation - (float)Math.PI / 4f, 24);
 						windowDrawList.PathLineTo(vector3);
 						windowDrawList.PathStroke(4294967040u, ImDrawFlags.Closed, 2f);
 					}
@@ -1707,7 +1650,7 @@ public class BuildUi : IDisposable
 					dragPos -= ImGui.GetIO().MouseDelta / UvZoom;
 					if (Plugin.config.ExternalMap_Mode != 0)
 					{
-						dragPos = (MeWorldPos.ToVector2() + MAP_offset) * MAP_SizeFactor;
+						dragPos = (MeWorldPos.ToVector2() + mapOffset) * mapSizeFactor;
 						Plugin.config.ExternalMap_Mode = 0;
 					}
 				}
@@ -1719,17 +1662,18 @@ public class BuildUi : IDisposable
 		ImGui.PopStyleVar();
 		System.Numerics.Vector2 WorldToMap(System.Numerics.Vector3 worldPos)
 		{
-			System.Numerics.Vector2 vector4 = (worldPos - MeWorldPos).ToVector2() * MAP_SizeFactor;
+			System.Numerics.Vector2 vector4 = (worldPos - MeWorldPos).ToVector2() * mapSizeFactor;
 			if (Plugin.config.ExternalMap_Mode == 2)
 			{
                 rotation = AdjustRotationToHRotation(Plugin.ClientState.LocalPlayer.Rotation);
                 vector4 = vector4.Rotate(0f - rotation);
 			}
-			return IMGUI_windowcenter + vector4 * UvZoom;
+			return imGuiWindowCenter + vector4 * UvZoom;
 		}
+
 		System.Numerics.Vector2 WorldToMapNoSnap(System.Numerics.Vector3 worldPos)
 		{
-			return IMGUI_windowcenter + (worldPos.ToVector2() + MAP_offset) * MAP_SizeFactor * UvZoom - dragPos * (UvZoom - 1f);
+			return imGuiWindowCenter + (worldPos.ToVector2() + mapOffset) * mapSizeFactor * UvZoom - dragPos * (UvZoom - 1f);
 		}
 	}
 

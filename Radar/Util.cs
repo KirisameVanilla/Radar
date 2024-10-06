@@ -3,11 +3,9 @@ using System.Collections.Generic;
 using System.Globalization;
 using System.IO;
 using System.IO.Compression;
-using System.Numerics;
 using System.Runtime.InteropServices;
 using System.Security.Cryptography;
 using System.Text;
-using Dalamud.Game;
 using Dalamud.Interface.Textures.TextureWraps;
 using Dalamud.Interface.Utility;
 using ImGuiNET;
@@ -19,33 +17,16 @@ namespace Radar;
 
 internal static class Util
 {
-	/*
-	public static System.Numerics.Vector2 Convert(this SharpDX.Vector2 v)
+	public static Vector3 Convert(this System.Numerics.Vector3 v)
 	{
-		return new System.Numerics.Vector2(v.X, v.Y);
-	}
-
-	public static System.Numerics.Vector3 Convert(this SharpDX.Vector3 v)
-	{
-		return new System.Numerics.Vector3(v.X, v.Y, v.Z);
-	}
-
-	public static SharpDX.Vector2 Convert(this System.Numerics.Vector2 v)
-	{
-		return new SharpDX.Vector2(v.X, v.Y);
-	}
-	*/
-
-	public static SharpDX.Vector3 Convert(this System.Numerics.Vector3 v)
-	{
-		return new SharpDX.Vector3(v.X, v.Y, v.Z);
+		return new Vector3(v.X, v.Y, v.Z);
 	}
 
 	public static bool WorldToScreenEx(System.Numerics.Vector3 worldPos, out System.Numerics.Vector2 screenPos, out float Z, System.Numerics.Vector2 pivot, float trolanceX = 0f, float trolanceY = 0f)
 	{
 		System.Numerics.Vector2 vector = pivot;
-		SharpDX.Vector3 vector2 = worldPos.Convert();
-		SharpDX.Vector3.Transform(ref vector2, ref BuildUi.MatrixSingetonCache, out SharpDX.Vector4 result);
+		Vector3 vector2 = worldPos.Convert();
+		Vector3.Transform(ref vector2, ref BuildUi.MatrixSingetonCache, out SharpDX.Vector4 result);
 		Z = result.W;
 		screenPos = new System.Numerics.Vector2(result.X / Z, result.Y / Z);
 		screenPos.X = 0.5f * BuildUi.ViewPortSizeCache.X * (screenPos.X + 1f) + vector.X;
@@ -65,17 +46,6 @@ internal static class Util
 	{
 		return WorldToScreenEx(worldPos, out screenPos, out Z, ImGui.GetMainViewport().Pos);
 	}
-
-	/*
-	public static bool WorldToScreenEx(System.Numerics.Vector3 worldPos, out System.Numerics.Vector3 screenPos)
-	{
-		System.Numerics.Vector2 screenPos2;
-		float Z;
-		bool result = WorldToScreenEx(worldPos, out screenPos2, out Z, ImGui.GetMainViewport().Pos);
-		screenPos = new System.Numerics.Vector3(screenPos2.X, screenPos2.Y, Z);
-		return result;
-	}
-	*/
 
 	public static System.Numerics.Vector2 GetSize(this IDalamudTextureWrap textureWrap)
 	{
@@ -122,51 +92,12 @@ internal static class Util
 			return 0f;
 		}
 	}
-	/*
-	public static float Distance2D(this SharpDX.Vector3 v, System.Numerics.Vector3 v2)
-	{
-		try
-		{
-			return new System.Numerics.Vector2(v.X - v2.X, v.Z - v2.Z).Length();
-		}
-		catch (Exception)
-		{
-			return 0f;
-		}
-	}
 
-	public static float Distance2D(this SharpDX.Vector3 v, SharpDX.Vector3 v2)
-	{
-		try
-		{
-			return new System.Numerics.Vector2(v.X - v2.X, v.Z - v2.Z).Length();
-		}
-		catch (Exception)
-		{
-			return 0f;
-		}
-	}
-
-	internal static bool TryScanText(this SigScanner SigScanner, string sig, out nint result)
-	{
-		result = IntPtr.Zero;
-		try
-		{
-			result = SigScanner.ScanText(sig);
-			return true;
-		}
-		catch (KeyNotFoundException)
-		{
-			return false;
-		}
-	}
-	*/
-
-	private unsafe static byte[] ReadTerminatedBytes(byte* ptr)
+	private static unsafe byte[] ReadTerminatedBytes(byte* ptr)
 	{
 		if (ptr == null)
 		{
-			return new byte[0];
+			return Array.Empty<byte>();
 		}
 		List<byte> list = new List<byte>();
 		while (*ptr != 0)
@@ -177,7 +108,7 @@ internal static class Util
 		return list.ToArray();
 	}
 
-	internal unsafe static string ReadTerminatedString(byte* ptr)
+	internal static unsafe string ReadTerminatedString(byte* ptr)
 	{
 		return Encoding.UTF8.GetString(ReadTerminatedBytes(ptr));
 	}
@@ -185,16 +116,6 @@ internal static class Util
 	internal static bool ContainsIgnoreCase(this string haystack, string needle)
 	{
 		return CultureInfo.InvariantCulture.CompareInfo.IndexOf(haystack, needle, CompareOptions.IgnoreCase) >= 0;
-	}
-
-	public static uint SetAlpha(this uint color32, uint alpha)
-	{
-		return (color32 << 8 >> 8) + (alpha << 24);
-	}
-
-	public static uint Invert(this uint color32)
-	{
-		return (uint)(-1 - (int)(color32 << 8) >>> 8) + (color32 >> 24 << 24);
 	}
 
 	public static System.Numerics.Vector2 Normalize(this System.Numerics.Vector2 v)
@@ -208,11 +129,6 @@ internal static class Util
 			return v;
 		}
 		return v;
-	}
-
-	public static System.Numerics.Vector2 RotationToNormalizedVector(float rotation)
-	{
-		return new System.Numerics.Vector2((float)Math.Sin(rotation), (float)Math.Cos(rotation));
 	}
 
 	public static System.Numerics.Vector2 Zoom(this System.Numerics.Vector2 vin, float zoom, System.Numerics.Vector2 origin)
@@ -284,7 +200,7 @@ internal static class Util
 		return array;
 	}
 
-	public unsafe static T[] ReadArrayUnmanaged<T>(nint pointer, int length) where T : unmanaged
+	public static unsafe T[] ReadArrayUnmanaged<T>(nint pointer, int length) where T : unmanaged
 	{
 		T[] array = new T[length];
 		for (int i = 0; i < length; i++)
@@ -296,17 +212,12 @@ internal static class Util
 
 	public static void Log(this object o)
 	{
-		Plugin.log.Information((o is nint intPtr) ? ((IntPtr)intPtr).ToInt64().ToString("X") : o.ToString());
+		Plugin.PluginLog.Information((o is nint intPtr) ? ((IntPtr)intPtr).ToInt64().ToString("X") : o.ToString());
 	}
 
 	public static void Log(this object o, string prefix)
 	{
-		Plugin.log.Information(prefix + ": " + ((o is nint intPtr) ? ((IntPtr)intPtr).ToInt64().ToString("X") : o.ToString()));
-	}
-
-	public static string GetRelative(this nint i)
-	{
-		return (((IntPtr)i).ToInt64() - ((IntPtr)Plugin.ImageBase).ToInt64()).ToString("X");
+		Plugin.PluginLog.Information(prefix + ": " + ((o is nint intPtr) ? ((IntPtr)intPtr).ToInt64().ToString("X") : o.ToString()));
 	}
 
 	public static string ToCompressedString<T>(this T obj)

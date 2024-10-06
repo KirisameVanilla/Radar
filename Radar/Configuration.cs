@@ -127,7 +127,7 @@ public class Configuration : IPluginConfiguration
 
 	public Vector2 WindowPos = new Vector2(50f, 50f);
 
-	public Dictionary<string, CustomObjectValue> customHighlightObjects = new Dictionary<string, CustomObjectValue>
+	public Dictionary<string, CustomObjectValue> customHighlightObjects = new ()
 	{
 		["转移灯笼"] = new CustomObjectValue
 		{
@@ -141,7 +141,7 @@ public class Configuration : IPluginConfiguration
 		}
 	};
 
-	public HashSet<DeepDungeonObject> DeepDungeonObjects = new HashSet<DeepDungeonObject>();
+	public HashSet<DeepDungeonObject> DeepDungeonObjects = new();
 
 	public float DeepDungeon_ObjectShowDistance = 100f;
 
@@ -149,7 +149,7 @@ public class Configuration : IPluginConfiguration
 
 	public bool DeepDungeon_ShowObjectCount;
 
-	public List<ConfigSnapShot> profiles = new List<ConfigSnapShot>();
+	public List<ConfigSnapShot> profiles = new();
 
 	[JsonIgnore]
 	private IDalamudPluginInterface pluginInterface;
