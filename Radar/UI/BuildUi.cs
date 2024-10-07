@@ -1325,6 +1325,7 @@ public class BuildUi : IDisposable
 
     private unsafe void DrawSpecialObjectTipWindows()
     {
+        //特殊物体名牌
         ImGui.PushStyleVar(ImGuiStyleVar.WindowRounding, 0f);
         ImGui.PushStyleVar(ImGuiStyleVar.WindowBorderSize, Plugin.config.OverlayHint_BorderSize);
         var windowPos = Plugin.config.WindowPos;
@@ -1338,14 +1339,18 @@ public class BuildUi : IDisposable
             ImGui.PushStyleColor(ImGuiCol.Border, item2);
             ImGui.SetNextWindowBgAlpha(Plugin.config.OverlayHint_BgAlpha);
             ImGui.SetNextWindowPos(windowPos);
-            windowPos.Y += 15f;
-            if (!ImGui.Begin(thisGameObject.Name.TextValue + "static", ImGuiWindowFlags.NoDecoration | ImGuiWindowFlags.NoInputs | ImGuiWindowFlags.AlwaysAutoResize | ImGuiWindowFlags.NoSavedSettings | ImGuiWindowFlags.NoFocusOnAppearing | ImGuiWindowFlags.NoBringToFrontOnFocus))
+            if (!ImGui.Begin( $"{thisGameObject.Name.TextValue} {thisGameObject.EntityId}", ImGuiWindowFlags.NoDecoration | ImGuiWindowFlags.NoInputs | ImGuiWindowFlags.AlwaysAutoResize | ImGuiWindowFlags.NoSavedSettings | ImGuiWindowFlags.NoFocusOnAppearing | ImGuiWindowFlags.NoBringToFrontOnFocus))
             {
+                Plugin.PluginLog.Warning($"Failed");
                 continue;
             }
+            windowPos.Y += 15f;
             var pos2 = ImGui.GetWindowPos() + ImGui.GetCursorPos() + new Vector2(ImGui.GetTextLineHeight(), ImGui.GetTextLineHeight());
             rotation = AdjustRotationToHRotation(Plugin.ClientState.LocalPlayer.Rotation);
+
+            // 指示相对方向的箭头
             ImGui.GetWindowDrawList().DrawArrow(pos2, ImGui.GetTextLineHeightWithSpacing() * 0.618f, item2, (new Vector2(thisGameObject.Position.X, thisGameObject.Position.Z) - MeWorldPos.ToVector2()).Normalize().Rotate(0f - rotation), 5f);
+            
             ImGui.SetCursorPosX(ImGui.GetCursorPosX() + ImGui.GetTextLineHeight() + ImGui.GetTextLineHeightWithSpacing());
             ImGui.TextColored(ImGui.ColorConvertU32ToFloat4(item2), item3 ?? "");
             ImGui.Separator();
