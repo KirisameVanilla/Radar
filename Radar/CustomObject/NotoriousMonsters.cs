@@ -4,7 +4,7 @@ using System.Linq;
 using Lumina.Excel;
 using Lumina.Excel.GeneratedSheets;
 
-namespace Radar;
+namespace Radar.CustomObject;
 
 internal static class NotoriousMonsters
 {

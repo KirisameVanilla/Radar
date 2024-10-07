@@ -4,7 +4,7 @@ using System.Text.Json.Serialization;
 using Radar.Enums;
 using Radar.UI;
 
-namespace Radar;
+namespace Radar.CustomObject;
 
 public record DeepDungeonObject
 {

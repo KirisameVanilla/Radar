@@ -1,6 +1,6 @@
 using System.Numerics;
 
-namespace Radar;
+namespace Radar.CustomObject;
 
 public record CustomObjectValue
 {

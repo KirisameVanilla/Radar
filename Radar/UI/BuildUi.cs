@@ -20,6 +20,7 @@ using FFXIVClientStructs.STD;
 using ImGuiNET;
 using Lumina.Excel;
 using Lumina.Excel.GeneratedSheets;
+using Radar.CustomObject;
 using Radar.Enums;
 using SharpDX;
 using Map = Lumina.Excel.GeneratedSheets.Map;
@@ -452,29 +453,7 @@ public class BuildUi : IDisposable
 
         void CheckEachObject(IGameObject o)
         {
-            MyObjectKind thisObjectMyKind = (MyObjectKind)(o.ObjectKind + 2);
-            switch (o.ObjectKind)
-            {
-                case ObjectKind.None:
-                {
-                    thisObjectMyKind =  MyObjectKind.None;
-                    break;
-                }
-                case ObjectKind.BattleNpc:
-                {
-                    if ((SubKind)o.SubKind == SubKind.Pet)
-                    {
-                        thisObjectMyKind = MyObjectKind.Pet;
-                    }
-
-                    if ((SubKind)o.SubKind == SubKind.Chocobo)
-                    {
-                        thisObjectMyKind = MyObjectKind.Chocobo;
-                    }
-
-                    break;
-                }
-            }
+            var myObjectKind = Util.GetMyObjectKind(o);
 
             if (Plugin.Condition[ConditionFlag.InDeepDungeon])
             {
@@ -487,12 +466,12 @@ public class BuildUi : IDisposable
             {
                 if (!flag)
                 {
-                    if (!Plugin.config.Overlay_ShowKinds[(int)thisObjectMyKind] || (Plugin.config.Overlay_OnlyShowTargetable && (!o.IsTargetable || o.ObjectKind == ObjectKind.MountType)))
+                    if (!Plugin.config.Overlay_ShowKinds[(int)myObjectKind] || (Plugin.config.Overlay_OnlyShowTargetable && (!o.IsTargetable || o.ObjectKind == ObjectKind.MountType)))
                     {
                         return;
                     }
-                    fgColor = ImGui.ColorConvertFloat4ToU32(Plugin.config.KindColors[(int)thisObjectMyKind]);
-                    bgColor = ImGui.ColorConvertFloat4ToU32(Plugin.config.KindColorsBg[(int)thisObjectMyKind]);
+                    fgColor = ImGui.ColorConvertFloat4ToU32(Plugin.config.KindColors[(int)myObjectKind]);
+                    bgColor = ImGui.ColorConvertFloat4ToU32(Plugin.config.KindColorsBg[(int)myObjectKind]);
                 }
                 ISharedImmediateTexture icon = null;
                 if (Plugin.config.Overlay3D_Enabled)
@@ -1161,30 +1140,7 @@ public class BuildUi : IDisposable
     private unsafe bool TryAddSpecialObjectsToDrawList(IGameObject obj, ref uint fgColor, ref uint bgColor)
     {
         string DictionaryName = obj.Name.ToString();
-
-        MyObjectKind thisObjectMyKind = (MyObjectKind)(obj.ObjectKind + 2);
-        switch (obj.ObjectKind)
-        {
-            case ObjectKind.None:
-            {
-                thisObjectMyKind = MyObjectKind.None;
-                break;
-            }
-            case ObjectKind.BattleNpc:
-            {
-                if ((SubKind)obj.SubKind == SubKind.Pet)
-                {
-                    thisObjectMyKind = MyObjectKind.Pet;
-                }
-
-                if ((SubKind)obj.SubKind == SubKind.Chocobo)
-                {
-                    thisObjectMyKind = MyObjectKind.Chocobo;
-                }
-
-                break;
-            }
-        }
+        var myObjectKind = Util.GetMyObjectKind(obj);
 
         if (Plugin.config.NpcBaseMapping.ContainsKey(obj.DataId))
         {
@@ -1195,7 +1151,7 @@ public class BuildUi : IDisposable
 
         if (Plugin.config.OverlayHint_CustomObjectView && Plugin.config.customHighlightObjects.TryGetValue(DictionaryName, out var value) && value.Enabled)
         {
-            SpecialObjectDrawList.Add((obj, ImGui.ColorConvertFloat4ToU32(value.Color), $"{thisObjectMyKind.ToString().ToUpper()} {((obj.DataId != 0) ? obj.DataId.ToString() : string.Empty)}\nLv.{objCharacter.Level} {DictionaryName}"));
+            SpecialObjectDrawList.Add((obj, ImGui.ColorConvertFloat4ToU32(value.Color), $"{myObjectKind.ToString().ToUpper()} {((obj.DataId != 0) ? obj.DataId.ToString() : string.Empty)}\nLv.{objCharacter.Level} {DictionaryName}"));
             fgColor = ImGui.ColorConvertFloat4ToU32(value.Color);
             return true;
         }

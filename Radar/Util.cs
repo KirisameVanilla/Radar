@@ -6,10 +6,14 @@ using System.IO.Compression;
 using System.Runtime.InteropServices;
 using System.Security.Cryptography;
 using System.Text;
+using Dalamud.Game.ClientState.Objects.Enums;
+using Dalamud.Game.ClientState.Objects.Types;
 using Dalamud.Interface.Textures.TextureWraps;
 using Dalamud.Interface.Utility;
 using ImGuiNET;
 using Newtonsoft.Json;
+using Radar.CustomObject;
+using Radar.Enums;
 using Radar.UI;
 using SharpDX;
 
@@ -17,6 +21,34 @@ namespace Radar;
 
 internal static class Util
 {
+    public static MyObjectKind GetMyObjectKind(IGameObject o)
+    {
+        MyObjectKind myObjectKind = (MyObjectKind)(o.ObjectKind + 2);
+        switch (o.ObjectKind)
+        {
+            case ObjectKind.None:
+            {
+                myObjectKind = MyObjectKind.None;
+                break;
+            }
+            case ObjectKind.BattleNpc:
+            {
+                switch (o.SubKind)
+                {
+                    case (byte)SubKind.Pet://宝石兽
+                        myObjectKind = MyObjectKind.Pet;
+                        break;
+                    case (byte)SubKind.Chocobo:
+                        myObjectKind = MyObjectKind.Chocobo;
+                        break;
+                    }
+                break;
+            }
+        }
+
+        return myObjectKind;
+    }
+
 	public static Vector3 Convert(this System.Numerics.Vector3 v)
 	{
 		return new Vector3(v.X, v.Y, v.Z);

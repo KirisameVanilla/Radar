@@ -1,7 +1,7 @@
 using System.Numerics;
 using Dalamud.Game.ClientState.Objects.Types;
 
-namespace Radar;
+namespace Radar.CustomObject;
 
 public static class DeepDungeonObjectExtension
 {
