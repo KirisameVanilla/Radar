@@ -22,8 +22,6 @@ public class Plugin : IDalamudPlugin
 
 	internal BuildUi Ui;
 
-	public static unsafe GameObject** GameObjectList;
-
 	internal static Dictionary<uint, ISharedImmediateTexture> EnpcIcons;
 
 	private static int SaveTimer;
@@ -55,19 +53,21 @@ public class Plugin : IDalamudPlugin
 
 	public string Name => "Radar";
 
-	public unsafe Plugin()
+	public Plugin()
 	{
-		config = ((Configuration)PluginInterface.GetPluginConfig()) ?? new Configuration();
-		config.Initialize(PluginInterface);
-		GameObjectList = (GameObject**)ObjectTable.Address;
-		Framework.Update += Framework_OnUpdateEvent;
-		SetupResources();
-		Ui = new BuildUi();
-		CommandManager = new PluginCommandManager<Plugin>(this, PluginInterface);
-		if (PluginInterface.Reason != PluginLoadReason.Boot)
-		{
-			Ui.ConfigVisible = true;
-		}
+        if(ClientState.LocalPlayer!= null)
+        {
+            config = ((Configuration)PluginInterface.GetPluginConfig()) ?? new Configuration();
+            config.Initialize(PluginInterface);
+            Framework.Update += Framework_OnUpdateEvent;
+            SetupResources();
+            Ui = new BuildUi();
+            CommandManager = new PluginCommandManager<Plugin>(this, PluginInterface);
+            if (PluginInterface.Reason != PluginLoadReason.Boot)
+            {
+                Ui.ConfigVisible = true;
+            }
+        }
 	}
 
 	public void Initialize()

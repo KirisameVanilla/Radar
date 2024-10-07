@@ -11,7 +11,9 @@ using Dalamud.Interface;
 using Dalamud.Interface.Textures;
 using Dalamud.Interface.Textures.TextureWraps;
 using Dalamud.Interface.Utility;
+using FFXIVClientStructs.FFXIV.Client.Game.Character;
 using FFXIVClientStructs.FFXIV.Client.Game.Control;
+using FFXIVClientStructs.FFXIV.Client.Game.Object;
 using FFXIVClientStructs.FFXIV.Client.Graphics.Kernel;
 using FFXIVClientStructs.FFXIV.Component.GUI;
 using FFXIVClientStructs.STD;
@@ -20,6 +22,10 @@ using Lumina.Excel;
 using Lumina.Excel.GeneratedSheets;
 using Radar.Enums;
 using SharpDX;
+using Map = Lumina.Excel.GeneratedSheets.Map;
+using ObjectKind = Dalamud.Game.ClientState.Objects.Enums.ObjectKind;
+using TerritoryType = Lumina.Excel.GeneratedSheets.TerritoryType;
+using Vector2 = System.Numerics.Vector2;
 using Vector4 = System.Numerics.Vector4;
 
 namespace Radar.UI;
@@ -208,19 +214,19 @@ public class BuildUi : IDisposable
 
 	public bool ConfigVisible;
 
-	private System.Numerics.Vector2? mapOrigin = System.Numerics.Vector2.Zero;
+	private Vector2? mapOrigin = Vector2.Zero;
 
 	private float globalUiScale = 1f;
 
-	private System.Numerics.Vector2[] mapPosSize = new System.Numerics.Vector2[2];
+	private Vector2[] mapPosSize = new Vector2[2];
 
-	private static System.Numerics.Vector2 MeScreenPos = ImGuiHelpers.MainViewport.GetCenter();
+	private static Vector2 MeScreenPos = ImGuiHelpers.MainViewport.GetCenter();
 
 	private static System.Numerics.Vector3 MeWorldPos = System.Numerics.Vector3.Zero;
 
 	internal static Matrix MatrixSingetonCache;
 
-	internal static System.Numerics.Vector2 ViewPortSizeCache;
+	internal static Vector2 ViewPortSizeCache;
 
     private ImDrawListPtr foregroundDrawList;
 
@@ -300,8 +306,7 @@ public class BuildUi : IDisposable
 
 	public static DeepDungeonObjectLocationEqualityComparer DeepDungeonObjectLocationEqual { get; set; }
 
-	private List<(nint objectPointer, uint fgcolor, string title)> SpecialObjectDrawList { get; } = new();
-
+    private List<(IGameObject obj, uint fgcolor, string title)> SpecialObjectDrawList { get; } = new();
 
 	private float WorldToMapScale => AreaMap.MapScale * sizeFactorDict[Plugin.ClientState.TerritoryType] / 100f * globalUiScale;
 
@@ -372,7 +377,7 @@ public class BuildUi : IDisposable
 				Matrix4x4 proj = renderCamera->ProjectionMatrix;
 				MatrixSingetonCache = Matrix4x4ToSharpDX(view * proj);
 				Device* device = Device.Instance();
-				ViewPortSizeCache = new System.Numerics.Vector2(device->Width, device->Height);
+				ViewPortSizeCache = new Vector2(device->Width, device->Height);
 				foregroundDrawList = ImGui.GetForegroundDrawList(ImGui.GetMainViewport());
 				backgroundDrawList = ImGui.GetBackgroundDrawList(ImGui.GetMainViewport());
 				RefreshMeScreenPos();
@@ -386,7 +391,7 @@ public class BuildUi : IDisposable
 				{
 					ImGui.PushFont(ImGui.GetIO().Fonts.Fonts[2]);
 				}
-				if (Plugin.GameObjectList != null)
+				if (Plugin.ObjectTable != null)
 				{
 					EnumerateAllObjects();
 				}
@@ -432,95 +437,87 @@ public class BuildUi : IDisposable
 		}
 	}
 
-	private unsafe void EnumerateAllObjects()
-	{
-		for (int i = 1; i < 424; i++)
-		{
-			if (Plugin.GameObjectList[i] != null)
-			{
-				GameObject* o2 = Plugin.GameObjectList[i];
-				CheckEachObject(o2);
-			}
-		}
-        return;
-
-        bool IsTargetable(uint renderFlags, byte targetableFlags)
+    private void EnumerateAllObjects()
+    {
+        foreach (var obj in Plugin.ObjectTable)
         {
-            /*
-             * Analysis of the origin function by ChatGPT: https://pastebin.com/0B8aCHn0
-             */
-            var isRenderFlagSet = ((renderFlags >> 11) & 1u) != 0;
-            var isVisible = !isRenderFlagSet;
-
-            var isTargetableCandidate = (targetableFlags & 2) > 0;
-
-            if (isTargetableCandidate && (isVisible || targetableFlags >= 128))
+            if (obj != null && !obj.Equals(Plugin.ObjectTable.First()))
             {
-                return (renderFlags & 0xFFFFE7F7u) == 0;
+                CheckEachObject(obj);
             }
-
-            return false;
         }
 
-        void CheckEachObject(GameObject* o)
-		{
-			if (Plugin.Condition[ConditionFlag.InDeepDungeon])
-			{
-				AddDeepDungeonObjectRecord(o);
-			}
-			var fgColor = uint.MaxValue;
-			var bgColor = 3204448256u;
-			var flag = TryAddSpecialObjectsToDrawList(o, ref fgColor, ref bgColor);
-			if (Plugin.config.Overlay2D_Enabled || Plugin.config.Overlay3D_Enabled)
-			{
-				if (!flag)
-                {
-                    bool isThisObjectTargetable = IsTargetable(o->RenderFlags, o->TargetableStatus);
-					if (!Plugin.config.Overlay_ShowKinds[(int)o->MyObjectKind] || (Plugin.config.Overlay_OnlyShowTargetable && (!isThisObjectTargetable || o->ObjectKind == ObjectKind.MountType)))
-					{
-						return;
-					}
-					fgColor = ImGui.ColorConvertFloat4ToU32(Plugin.config.KindColors[(int)o->MyObjectKind]);
-					bgColor = ImGui.ColorConvertFloat4ToU32(Plugin.config.KindColorsBg[(int)o->MyObjectKind]);
-				}
-				ISharedImmediateTexture icon = null;
-				if (Plugin.config.Overlay3D_Enabled)
-				{
-					DrawObject3D(o, fgColor, bgColor, Plugin.config.OverlayHint_ShowSpecialObjectLine && flag, icon);
-				}
-				if (Plugin.config.Overlay2D_Enabled)
-				{
-					AddObjectTo2DDrawList(o, fgColor, bgColor, icon);
-				}
-			}
-		}
-	}
+        return;
 
-	private static void RefreshMeScreenPos()
-	{
-		try
+
+        void CheckEachObject(IGameObject o)
         {
-            Util.WorldToScreenEx(Plugin.ClientState.LocalPlayer.Position, out var screenPos, out var _, ImGui.GetMainViewport().Pos);
-            MeScreenPos = screenPos;
-		}
-		catch
-		{
-		}
+            MyObjectKind thisObjectMyKind = (MyObjectKind)(o.ObjectKind + 2);
+            switch (o.ObjectKind)
+            {
+                case ObjectKind.None:
+                {
+                    thisObjectMyKind =  MyObjectKind.None;
+                    break;
+                }
+                case ObjectKind.BattleNpc:
+                {
+                    if ((SubKind)o.SubKind == SubKind.Pet)
+                    {
+                        thisObjectMyKind = MyObjectKind.Pet;
+                    }
+
+                    if ((SubKind)o.SubKind == SubKind.Chocobo)
+                    {
+                        thisObjectMyKind = MyObjectKind.Chocobo;
+                    }
+
+                    break;
+                }
+            }
+
+            if (Plugin.Condition[ConditionFlag.InDeepDungeon])
+            {
+                AddDeepDungeonObjectRecord(o);
+            }
+            var fgColor = uint.MaxValue;
+            var bgColor = 3204448256u;
+            var flag = TryAddSpecialObjectsToDrawList(o, ref fgColor, ref bgColor);
+            if (Plugin.config.Overlay2D_Enabled || Plugin.config.Overlay3D_Enabled)
+            {
+                if (!flag)
+                {
+                    if (!Plugin.config.Overlay_ShowKinds[(int)thisObjectMyKind] || (Plugin.config.Overlay_OnlyShowTargetable && (!o.IsTargetable || o.ObjectKind == ObjectKind.MountType)))
+                    {
+                        return;
+                    }
+                    fgColor = ImGui.ColorConvertFloat4ToU32(Plugin.config.KindColors[(int)thisObjectMyKind]);
+                    bgColor = ImGui.ColorConvertFloat4ToU32(Plugin.config.KindColorsBg[(int)thisObjectMyKind]);
+                }
+                ISharedImmediateTexture icon = null;
+                if (Plugin.config.Overlay3D_Enabled)
+                {
+                    DrawObject3D(o, fgColor, bgColor, Plugin.config.OverlayHint_ShowSpecialObjectLine && flag, icon);
+                }
+                if (Plugin.config.Overlay2D_Enabled)
+                {
+                    AddObjectTo2DDrawList(o, fgColor, bgColor, icon);
+                }
+            }
+        }
+    }
+
+
+    private static void RefreshMeScreenPos()
+	{
+        Util.WorldToScreenEx(Plugin.ClientState.LocalPlayer.Position, out var screenPos, out _, ImGui.GetMainViewport().Pos);
+        MeScreenPos = screenPos;
 	}
 
-	private static unsafe void RefreshMeWorldPos()
+	private static void RefreshMeWorldPos()
 	{
-		try
-		{
-			GameObject* gameObjectList = *Plugin.GameObjectList;
-			if (gameObjectList != null)
-			{
-				MeWorldPos = gameObjectList->Position;
-			}
-		}
-		catch
-		{
-		}
+        var me = Plugin.ObjectTable.First();
+        if (me != null) { MeWorldPos = me.Position; }
 	}
 
 	private static void Config2D()
@@ -636,7 +633,7 @@ public class BuildUi : IDisposable
 				break;
 			}
 			ImGui.TableNextColumn();
-			System.Numerics.Vector4 originalColor = customHighlightObject.Value.Color;
+			Vector4 originalColor = customHighlightObject.Value.Color;
 			ImguiUtil.ColorPickerWithPalette(customHighlightObject.Key.GetHashCode(), string.Empty, ref originalColor, ImGuiColorEditFlags.None);
 			if (originalColor != customHighlightObject.Value.Color)
 			{
@@ -697,7 +694,7 @@ public class BuildUi : IDisposable
 		{
 			Plugin.PluginLog.Information("exporting...");
 			Plugin.PluginLog.Information($"exported {(from i in Plugin.config.DeepDungeonObjects
-				group i by i.Territory).Count()} territories, {Plugin.config.DeepDungeonObjects.Count((DeepDungeonObject i) => i.Type == DeepDungeonType.Trap)} traps, {Plugin.config.DeepDungeonObjects.Count((DeepDungeonObject i) => i.Type == DeepDungeonType.AccursedHoard)} hoards.");
+				group i by i.Territory).Count()} territories, {Plugin.config.DeepDungeonObjects.Count(i => i.Type == DeepDungeonType.Trap)} traps, {Plugin.config.DeepDungeonObjects.Count(i => i.Type == DeepDungeonType.AccursedHoard)} hoards.");
 			ImGui.SetClipboardText(Plugin.config.DeepDungeonObjects.ToCompressedString());
 		}
 		if (deepDungeonObjectsImportCache == null || !deepDungeonObjectsImportCache.Any())
@@ -985,7 +982,7 @@ public class BuildUi : IDisposable
 						ImGui.TableNextColumn();
 						ImGui.TextUnformatted($"{configSnapShot.LastEdit:f}");
 						ImGui.TableNextColumn();
-						System.Numerics.Vector2 size = new System.Numerics.Vector2(ImGui.GetFrameHeight() * 1.5f, ImGui.GetFrameHeight());
+						System.Numerics.Vector2 size = new Vector2(ImGui.GetFrameHeight() * 1.5f, ImGui.GetFrameHeight());
 						if (ImguiUtil.IconButton(FontAwesomeIcon.Upload, $"loadbutton{i}", size))
 						{
 							currentProfile = configSnapShot;
@@ -1088,49 +1085,50 @@ public class BuildUi : IDisposable
 		}
 	}
 
-	private unsafe void AddDeepDungeonObjectRecord(GameObject* o)
-	{
-		if (DeepDungeonObjectExtension.IsSilverCoffer(o))
-		{
-			trapBlacklist.Add(o->Location2D);
-		}
-		if (DeepDungeonObjectExtension.IsAccursedHoard(o))
-		{
-			DeepDungeonObject deepDungeonObject = new DeepDungeonObject
-			{
-				Type = DeepDungeonType.AccursedHoard,
-				Base = o->BaseId,
-				InstanceId = o->ObjectId,
-				Location = o->Position,
-				Territory = Plugin.ClientState.TerritoryType
-			};
-			if (Plugin.config.DeepDungeonObjects.Add(deepDungeonObject))
-			{
-				Plugin.PluginLog.Information($"New AccursedHoard recorded! {deepDungeonObject}");
-			}
-		}
-		if (DeepDungeonObjectExtension.IsTrap(o) && !trapBlacklist.Contains(o->Location2D))
-		{
-			DeepDungeonObject deepDungeonObject2 = new DeepDungeonObject
-			{
-				Type = DeepDungeonType.Trap,
-				Base = o->BaseId,
-				InstanceId = o->ObjectId,
-				Location = o->Position,
-				Territory = Plugin.ClientState.TerritoryType
-			};
-			if (Plugin.config.DeepDungeonObjects.Add(deepDungeonObject2))
-			{
-				Plugin.PluginLog.Information($"New Trap recorded! {deepDungeonObject2}");
-			}
-		}
-	}
+    private void AddDeepDungeonObjectRecord(IGameObject o)
+    {
+        if (DeepDungeonObjectExtension.IsSilverCoffer(o))
+        {
+            trapBlacklist.Add(new Vector2(o.Position.X, o.Position.Z));
+        }
+        if (DeepDungeonObjectExtension.IsAccursedHoard(o))
+        {
+            DeepDungeonObject deepDungeonObject = new DeepDungeonObject
+            {
+                Type = DeepDungeonType.AccursedHoard,
+                Base = o.DataId,
+                InstanceId = (uint)o.GameObjectId,
+                Location = o.Position,
+                Territory = Plugin.ClientState.TerritoryType
+            };
+            if (Plugin.config.DeepDungeonObjects.Add(deepDungeonObject))
+            {
+                Plugin.PluginLog.Information($"New AccursedHoard recorded! {deepDungeonObject}");
+            }
+        }
+        if (DeepDungeonObjectExtension.IsTrap(o) && !trapBlacklist.Contains(new Vector2(o.Position.X, o.Position.Z)))
+        {
+            DeepDungeonObject deepDungeonObject2 = new DeepDungeonObject
+            {
+                Type = DeepDungeonType.Trap,
+                Base = o.DataId,
+                InstanceId = (uint)o.GameObjectId,
+                Location = o.Position,
+                Territory = Plugin.ClientState.TerritoryType
+            };
+            if (Plugin.config.DeepDungeonObjects.Add(deepDungeonObject2))
+            {
+                Plugin.PluginLog.Information($"New Trap recorded! {deepDungeonObject2}");
+            }
+        }
+    }
 
-	private void DrawDeepDungeonObjects()
+
+    private void DrawDeepDungeonObjects()
 	{
 		foreach (IGrouping<DeepDungeonObject, DeepDungeonObject> item in Plugin.config.DeepDungeonObjects.Where((DeepDungeonObject i) => i.Territory != 0 && i.GetBg == GetDeepDungeonBg(Plugin.ClientState.TerritoryType) && i.Location.Distance2D(MeWorldPos.Convert()) < Plugin.config.DeepDungeon_ObjectShowDistance).GroupBy((DeepDungeonObject i) => i, DeepDungeonObjectLocationEqual))
 		{
-			System.Numerics.Vector2 ringCenter;
+			Vector2 ringCenter;
 			if (item.Key.Type == DeepDungeonType.Trap)
 			{
 				if (Plugin.config.DeepDungeon_ShowObjectCount)
@@ -1138,7 +1136,7 @@ public class BuildUi : IDisposable
 					ImDrawListPtr bDL = backgroundDrawList;
 					System.Numerics.Vector3 location = item.Key.Location;
 					string text = $"{item.Count()}";
-					ringCenter = default(System.Numerics.Vector2);
+					ringCenter = default;
 					bDL.DrawRingWorldWithText(location, 0.5f, 24, 2f, 4278190335u, text, ringCenter);
 				}
 				else
@@ -1160,222 +1158,268 @@ public class BuildUi : IDisposable
 		}
 	}
 
-	private unsafe bool TryAddSpecialObjectsToDrawList(GameObject* o, ref uint fgColor, ref uint bgColor)
-	{
-		if (Plugin.config.OverlayHint_CustomObjectView && Plugin.config.customHighlightObjects.TryGetValue(o->DictionaryName, out var value) && value.Enabled)
-		{
-			SpecialObjectDrawList.Add(((nint)o, ImGui.ColorConvertFloat4ToU32(value.Color), $"{o->MyObjectKind.ToString().ToUpper()} {((o->BaseId != 0) ? o->BaseId.ToString() : string.Empty)}\nLv.{o->Character.CharacterData.Level} {o->DictionaryName}"));
-			fgColor = ImGui.ColorConvertFloat4ToU32(value.Color);
-			return true;
-		}
-		if (Plugin.config.OverlayHint_MobHuntView && o->ObjectKind == ObjectKind.BattleNpc)
-		{
-			if (NotoriousMonsters.SRankLazy.Value.Contains(o->BaseId))
-			{
-				SpecialObjectDrawList.Add(((nint)o, 4278190335u, $"S RANK NOTORIOUS MONSTER\nLv.{o->Character.CharacterData.Level} {o->DictionaryName}"));
-				fgColor = 4278190335u;
-				return true;
-			}
-			if (NotoriousMonsters.ARankLazy.Value.Contains(o->BaseId))
-			{
-				SpecialObjectDrawList.Add(((nint)o, 4278255615u, $"A RANK NOTORIOUS MONSTER\nLv.{o->Character.CharacterData.Level} {o->DictionaryName}"));
-				fgColor = 4278255615u;
-				return true;
-			}
-			if (NotoriousMonsters.BRankLazy.Value.Contains(o->BaseId))
-			{
-				SpecialObjectDrawList.Add(((nint)o, 4278255360u, $"B RANK NOTORIOUS MONSTER\nLv.{o->Character.CharacterData.Level} {o->DictionaryName}"));
-				fgColor = 4278255360u;
-				return true;
-			}
-			if (NotoriousMonsters.ListEurekaMobs.Contains(o->Character.NameId))
-			{
-				SpecialObjectDrawList.Add(((nint)o, 4294967040u, $"EUREKA ELEMENTAL\nLv.{o->Character.CharacterData.Level} {o->DictionaryName}"));
-				fgColor = 4294967040u;
-				return true;
-			}
-			if (o->BaseId == 882)
-			{
-				SpecialObjectDrawList.Add(((nint)o, 4294901760u, $"ODIN\nLv.{o->Character.CharacterData.Level} {o->DictionaryName}"));
-				fgColor = 4294901760u;
-				return true;
-			}
-		}
-		return false;
-	}
+    private unsafe bool TryAddSpecialObjectsToDrawList(IGameObject obj, ref uint fgColor, ref uint bgColor)
+    {
+        string DictionaryName = obj.Name.ToString();
 
-	private unsafe void AddObjectTo2DDrawList(GameObject* a, uint foregroundColor, uint backgroundColor, ISharedImmediateTexture icon = null)
-	{
-		string item = null;
-		switch (Plugin.config.Overlay2D_DetailLevel)
-		{
-		case 1:
-			item = (string.IsNullOrEmpty(a->DictionaryName) ? $"{a->ObjectKind} {a->BaseId}" : a->DictionaryName);
-			break;
-		case 2:
-			item = (string.IsNullOrEmpty(a->DictionaryName) ? $"{a->ObjectKind} {a->BaseId}" : $"{a->DictionaryName}\u3000{a->Position.Distance2D(MeWorldPos):F2}m");
-			break;
-		default:
-			throw new ArgumentOutOfRangeException();
-		case 0:
-			break;
-		}
-		DrawList2D.Add((a->Position, foregroundColor, backgroundColor, item));
-	}
-
-	private unsafe void DrawObject3D(GameObject* obj, uint foregroundColor, uint bgcolor, bool drawLine, ISharedImmediateTexture icon = null)
-	{
-		bool flag = false;
-		string text = null;
-		switch (Plugin.config.Overlay3D_DetailLevel)
-		{
-		case 0:
-			flag = true;
-			break;
-		case 1:
-			text = (string.IsNullOrEmpty(obj->DictionaryName) ? $"{obj->ObjectKind} {obj->BaseId}" : obj->DictionaryName);
-			break;
-		case 2:
-			text = (string.IsNullOrEmpty(obj->DictionaryName) ? $"{obj->ObjectKind} {obj->BaseId}" : obj->DictionaryName) + $"\t{obj->Position.Distance2D(MeWorldPos):F2}m";
-			break;
-		default:
-			throw new ArgumentOutOfRangeException();
-		}
-		if (Plugin.config.Overlay3D_DrawObjectLineAll)
-		{
-			drawLine = true;
-		}
-		else
-		{
-			if (Plugin.config.Overlay3D_DrawObjectLineCurrentTarget && Plugin.TargetManager.Target?.Address == (nint?)obj)
-			{
-				drawLine = true;
-			}
-			if (Plugin.config.Overlay3D_DrawObjectLineTargetingYou && Plugin.ClientState.LocalPlayer != null && ((ulong)obj->Character.TargetId == Plugin.ClientState.LocalPlayer.EntityId || (ulong)obj->Character.LookAt.Controller.Params[0].TargetParam.TargetId == Plugin.ClientState.LocalPlayer.EntityId))
-			{
-				drawLine = true;
-			}
-		}
-        System.Numerics.Vector3 location = obj->Position;
-		System.Numerics.Vector2 size = ImGuiHelpers.MainViewport.Size;
-		System.Numerics.Vector2 pos = ImGuiHelpers.MainViewport.Pos;
-		_ = MeScreenPos - ImGuiHelpers.MainViewport.GetCenter();
-		ImGuiHelpers.MainViewport.GetCenter();
-		System.Numerics.Vector2 screenPos;
-		float Z;
-		bool flag2 = Util.WorldToScreenEx(location, out screenPos, out Z, System.Numerics.Vector2.Zero, 200f, 100f);
-		if (flag2 && Z < 0f)
-		{
-			screenPos -= MeScreenPos;
-			screenPos /= size;
-			screenPos = screenPos.Normalize();
-			screenPos *= size;
-			screenPos += MeScreenPos;
-		}
-		else
-		{
-			screenPos += pos;
-		}
-		var screenPosVector = screenPos;
-		_ = Plugin.config.Overlay3D_ClampVector2;
-		var overlay3DClampVector2 = Plugin.config.Overlay3D_ClampVector2;
-		var flag3 = false;
-		if (Plugin.config.Overlay3D_ShowOffscreen && Vector2Intersect.GetBorderClampedVector2(screenPos, overlay3DClampVector2, out var clampedPos))
-		{
-			screenPos = clampedPos;
-			flag3 = true;
-		}
-		if (drawLine)
-		{
-			backgroundDrawList.AddLine(MeScreenPos, screenPosVector, foregroundColor);
-		}
-		if (flag3 || flag)
-		{
-			if (flag3)
-			{
-				System.Numerics.Vector2 _rotation = screenPosVector - ImGui.GetMainViewport().GetCenter();
-				float thickness = Math.Min(Plugin.config.Overlay3D_RingSize * 2f, Plugin.config.Overlay3D_ArrorThickness);
-				if (Plugin.config.Overlay3D_IconStrokeThickness != 0f)
-				{
-					backgroundDrawList.DrawArrow(screenPos, Plugin.config.Overlay3D_ArrowSize, foregroundColor, bgcolor, _rotation, thickness, Plugin.config.Overlay3D_IconStrokeThickness);
-				}
-				else
-				{
-					backgroundDrawList.DrawArrow(screenPos, Plugin.config.Overlay3D_ArrowSize, foregroundColor, _rotation, thickness);
-				}
-			}
-			else
-			{
-				backgroundDrawList.DrawCircleOutlined(screenPos, foregroundColor, bgcolor);
-			}
-		}
-		else if (flag2 && Z > 0f)
-		{
-			if (!string.IsNullOrWhiteSpace(text))
-			{
-				Vector4 nameplateBackgroundColor = ImGui.ColorConvertU32ToFloat4(bgcolor);
-				nameplateBackgroundColor.W = Plugin.config.Overlay3D_NamePlateBgAlpha;
-				backgroundDrawList.DrawTextWithBorderBg(screenPos, text, foregroundColor, ImGui.GetColorU32(nameplateBackgroundColor), Plugin.config.Overlay3D_CenterAlign);
-			}
-			if (icon != null)
-			{
-				backgroundDrawList.DrawIcon(screenPos - new System.Numerics.Vector2(0f, 10f), icon);
-			}
-			backgroundDrawList.AddCircleFilled(screenPos, 4f, foregroundColor, 4);
-		}
-	}
-
-	private unsafe void DrawSpecialObjectTipWindows()
-	{
-		ImGui.PushStyleVar(ImGuiStyleVar.WindowRounding, 0f);
-		ImGui.PushStyleVar(ImGuiStyleVar.WindowBorderSize, Plugin.config.OverlayHint_BorderSize);
-		System.Numerics.Vector2 windowPos = Plugin.config.WindowPos;
-		foreach (var item4 in SpecialObjectDrawList.OrderBy(((nint objectPointer, uint fgcolor, string title) i) => ((GameObject*)i.objectPointer)->Position.Distance(MeWorldPos)))
-		{
-			var item = item4.objectPointer;
-			var item2 = item4.fgcolor;
-			var item3 = item4.title;
-			GameObject* ptr = (GameObject*)item;
-			ImGui.PushStyleColor(ImGuiCol.Border, item2);
-			ImGui.SetNextWindowBgAlpha(Plugin.config.OverlayHint_BgAlpha);
-			ImGui.SetNextWindowPos(windowPos);
-			windowPos.Y += 15f;
-			if (!ImGui.Begin((long)ptr + "static", ImGuiWindowFlags.NoDecoration | ImGuiWindowFlags.NoInputs | ImGuiWindowFlags.AlwaysAutoResize | ImGuiWindowFlags.NoSavedSettings | ImGuiWindowFlags.NoFocusOnAppearing | ImGuiWindowFlags.NoBringToFrontOnFocus))
-			{
-				continue;
-			}
-			System.Numerics.Vector2 pos2 = ImGui.GetWindowPos() + ImGui.GetCursorPos() + new System.Numerics.Vector2(ImGui.GetTextLineHeight(), ImGui.GetTextLineHeight());
-            rotation = AdjustRotationToHRotation(Plugin.ClientState.LocalPlayer.Rotation);
-            ImGui.GetWindowDrawList().DrawArrow(pos2, ImGui.GetTextLineHeightWithSpacing() * 0.618f, item2, (ptr->Location2D - MeWorldPos.ToVector2()).Normalize().Rotate(0f - rotation), 5f);
-			ImGui.SetCursorPosX(ImGui.GetCursorPosX() + ImGui.GetTextLineHeight() + ImGui.GetTextLineHeightWithSpacing());
-			ImGui.TextColored(ImGui.ColorConvertU32ToFloat4(item2), item3 ?? "");
-			ImGui.Separator();
-			string text = string.Empty;
-			if (ptr->ObjectKind == ObjectKind.BattleNpc || ptr->ObjectKind == ObjectKind.Player)
-			{
-				text += $"{ptr->Character.CharacterData.Health:N0}/{ptr->Character.CharacterData.MaxHealth:N0}\t{(float)ptr->Character.CharacterData.Health / (float)ptr->Character.CharacterData.MaxHealth:P}\n";
-			}
-			float num = ptr->Y - MeWorldPos.Y;
-            var direction = (num == 0f) ? "" : ((num > 0f) ? "↑" : "↓");
-            ImGui.TextUnformatted($"{text}{ptr->Position.Distance2D(MeWorldPos):F2}m\t{direction}{Math.Abs(num):F2}");
-			windowPos += new System.Numerics.Vector2(0f, ImGui.GetWindowSize().Y);
-			if (Plugin.config.OverlayHint_OpenMapLinkOnAlt && ImGui.GetIO().KeyAlt && ImGui.IsMouseHoveringRect(ImGui.GetWindowPos(), ImGui.GetWindowSize() + ImGui.GetWindowPos()))
-			{
-				try
-				{
-                    Plugin.Gui.OpenMapWithMapLink(new MapLinkPayload(Plugin.ClientState.TerritoryType, Plugin.ClientState.MapId, (int)(ptr->Position.X * 1000f), (int)(ptr->Position.Z * 1000f)));
+        MyObjectKind thisObjectMyKind = (MyObjectKind)(obj.ObjectKind + 2);
+        switch (obj.ObjectKind)
+        {
+            case ObjectKind.None:
+            {
+                thisObjectMyKind = MyObjectKind.None;
+                break;
+            }
+            case ObjectKind.BattleNpc:
+            {
+                if ((SubKind)obj.SubKind == SubKind.Pet)
+                {
+                    thisObjectMyKind = MyObjectKind.Pet;
                 }
-				catch (Exception)
-				{
-					Plugin.PluginLog.Debug("no map available in this area!");
-				}
-			}
-			ImGui.PopStyleColor();
-			ImGui.End();
-		}
-		ImGui.PopStyleVar(2);
-		SpecialObjectDrawList.Clear();
-	}
+
+                if ((SubKind)obj.SubKind == SubKind.Chocobo)
+                {
+                    thisObjectMyKind = MyObjectKind.Chocobo;
+                }
+
+                break;
+            }
+        }
+
+        if (Plugin.config.NpcBaseMapping.ContainsKey(obj.DataId))
+        {
+            Plugin.config.NpcBaseMapping.TryGetValue(obj.DataId, out DictionaryName);
+        }
+
+        ICharacter objCharacter = *(ICharacter*)(&obj);
+
+        if (Plugin.config.OverlayHint_CustomObjectView && Plugin.config.customHighlightObjects.TryGetValue(DictionaryName, out var value) && value.Enabled)
+        {
+            SpecialObjectDrawList.Add((obj, ImGui.ColorConvertFloat4ToU32(value.Color), $"{thisObjectMyKind.ToString().ToUpper()} {((obj.DataId != 0) ? obj.DataId.ToString() : string.Empty)}\nLv.{objCharacter.Level} {DictionaryName}"));
+            fgColor = ImGui.ColorConvertFloat4ToU32(value.Color);
+            return true;
+        }
+        if (Plugin.config.OverlayHint_MobHuntView && obj.ObjectKind == ObjectKind.BattleNpc)
+        {
+            if (NotoriousMonsters.SRankLazy.Value.Contains(obj.DataId))
+            {
+                SpecialObjectDrawList.Add((obj, 4278190335u, $"S RANK NOTORIOUS MONSTER\nLv.{objCharacter.Level} {DictionaryName}"));
+                fgColor = 4278190335u;
+                return true;
+            }
+            if (NotoriousMonsters.ARankLazy.Value.Contains(obj.DataId))
+            {
+                SpecialObjectDrawList.Add((obj, 4278255615u, $"A RANK NOTORIOUS MONSTER\nLv.{objCharacter.Level} {DictionaryName}"));
+                fgColor = 4278255615u;
+                return true;
+            }
+            if (NotoriousMonsters.BRankLazy.Value.Contains(obj.DataId))
+            {
+                SpecialObjectDrawList.Add((obj, 4278255360u, $"B RANK NOTORIOUS MONSTER\nLv.{objCharacter.Level} {DictionaryName}"));
+                fgColor = 4278255360u;
+                return true;
+            }
+            if (NotoriousMonsters.ListEurekaMobs.Contains(objCharacter.NameId))
+            {
+                SpecialObjectDrawList.Add((obj, 4294967040u, $"EUREKA ELEMENTAL\nLv.{objCharacter.Level} {DictionaryName}"));
+                fgColor = 4294967040u;
+                return true;
+            }
+            if (obj.DataId == 882)
+            {
+                SpecialObjectDrawList.Add((obj, 4294901760u, $"ODIN\nLv.{objCharacter.Level} {DictionaryName}"));
+                fgColor = 4294901760u;
+                return true;
+            }
+        }
+        return false;
+    }
+
+    private void AddObjectTo2DDrawList(IGameObject a, uint foregroundColor, uint backgroundColor, ISharedImmediateTexture icon = null)
+    {
+        string DictionaryName = a.Name.ToString();
+        if (Plugin.config.NpcBaseMapping.ContainsKey(a.DataId))
+        {
+            Plugin.config.NpcBaseMapping.TryGetValue(a.DataId, out DictionaryName);
+        }
+
+        string item = null;
+        switch (Plugin.config.Overlay2D_DetailLevel)
+        {
+            case 1:
+                item = (string.IsNullOrEmpty(DictionaryName) ? $"{a.ObjectKind} {a.DataId}" : DictionaryName);
+                break;
+            case 2:
+                item = (string.IsNullOrEmpty(DictionaryName) ? $"{a.ObjectKind} {a.DataId}" : $"{DictionaryName}\u3000{a.Position.Distance2D(MeWorldPos):F2}m");
+                break;
+            default:
+                throw new ArgumentOutOfRangeException();
+            case 0:
+                break;
+        }
+        DrawList2D.Add((a.Position, foregroundColor, backgroundColor, item));
+    }
+
+    private void DrawObject3D(IGameObject obj, uint foregroundColor, uint bgcolor, bool drawLine, ISharedImmediateTexture icon = null)
+    {
+        string DictionaryName = obj.Name.ToString();
+        if (Plugin.config.NpcBaseMapping.ContainsKey(obj.DataId))
+        {
+            Plugin.config.NpcBaseMapping.TryGetValue(obj.DataId, out DictionaryName);
+        }
+        bool flag = false;
+        string text = null;
+        switch (Plugin.config.Overlay3D_DetailLevel)
+        {
+            case 0:
+                flag = true;
+                break;
+            case 1:
+                text = (string.IsNullOrEmpty(DictionaryName) ? $"{obj.ObjectKind} {obj.DataId}" : DictionaryName);
+                break;
+            case 2:
+                text = (string.IsNullOrEmpty(DictionaryName) ? $"{obj.ObjectKind} {obj.DataId}" : DictionaryName) + $"\t{obj.Position.Distance2D(MeWorldPos):F2}m";
+                break;
+            default:
+                throw new ArgumentOutOfRangeException();
+        }
+        if (Plugin.config.Overlay3D_DrawObjectLineAll)
+        {
+            drawLine = true;
+        }
+        else
+        {
+            if (Plugin.config.Overlay3D_DrawObjectLineCurrentTarget && Plugin.TargetManager.Target?.Address == (nint?)obj.Address)
+            {
+                drawLine = true;
+            }
+            if (Plugin.config.Overlay3D_DrawObjectLineTargetingYou && Plugin.ClientState.LocalPlayer != null && obj.TargetObject!=null && (obj.TargetObject.EntityId == Plugin.ClientState.LocalPlayer.EntityId ))
+            {
+                drawLine = true;
+            }
+        }
+        System.Numerics.Vector3 location = obj.Position;
+        var size = ImGuiHelpers.MainViewport.Size;
+        var pos = ImGuiHelpers.MainViewport.Pos;
+        _ = MeScreenPos - ImGuiHelpers.MainViewport.GetCenter();
+        ImGuiHelpers.MainViewport.GetCenter();
+        Vector2 screenPos;
+        float Z;
+        bool flag2 = Util.WorldToScreenEx(location, out screenPos, out Z, System.Numerics.Vector2.Zero, 200f, 100f);
+        if (flag2 && Z < 0f)
+        {
+            screenPos -= MeScreenPos;
+            screenPos /= size;
+            screenPos = screenPos.Normalize();
+            screenPos *= size;
+            screenPos += MeScreenPos;
+        }
+        else
+        {
+            screenPos += pos;
+        }
+        var screenPosVector = screenPos;
+        _ = Plugin.config.Overlay3D_ClampVector2;
+        var overlay3DClampVector2 = Plugin.config.Overlay3D_ClampVector2;
+        var flag3 = false;
+        if (Plugin.config.Overlay3D_ShowOffscreen && Vector2Intersect.GetBorderClampedVector2(screenPos, overlay3DClampVector2, out var clampedPos))
+        {
+            screenPos = clampedPos;
+            flag3 = true;
+        }
+        if (drawLine)
+        {
+            backgroundDrawList.AddLine(MeScreenPos, screenPosVector, foregroundColor);
+        }
+        if (flag3 || flag)
+        {
+            if (flag3)
+            {
+                var _rotation = screenPosVector - ImGui.GetMainViewport().GetCenter();
+                float thickness = Math.Min(Plugin.config.Overlay3D_RingSize * 2f, Plugin.config.Overlay3D_ArrorThickness);
+                if (Plugin.config.Overlay3D_IconStrokeThickness != 0f)
+                {
+                    backgroundDrawList.DrawArrow(screenPos, Plugin.config.Overlay3D_ArrowSize, foregroundColor, bgcolor, _rotation, thickness, Plugin.config.Overlay3D_IconStrokeThickness);
+                }
+                else
+                {
+                    backgroundDrawList.DrawArrow(screenPos, Plugin.config.Overlay3D_ArrowSize, foregroundColor, _rotation, thickness);
+                }
+            }
+            else
+            {
+                backgroundDrawList.DrawCircleOutlined(screenPos, foregroundColor, bgcolor);
+            }
+        }
+        else if (flag2 && Z > 0f)
+        {
+            if (!string.IsNullOrWhiteSpace(text))
+            {
+                Vector4 nameplateBackgroundColor = ImGui.ColorConvertU32ToFloat4(bgcolor);
+                nameplateBackgroundColor.W = Plugin.config.Overlay3D_NamePlateBgAlpha;
+                backgroundDrawList.DrawTextWithBorderBg(screenPos, text, foregroundColor, ImGui.GetColorU32(nameplateBackgroundColor), Plugin.config.Overlay3D_CenterAlign);
+            }
+            if (icon != null)
+            {
+                backgroundDrawList.DrawIcon(screenPos - new Vector2(0f, 10f), icon);
+            }
+            backgroundDrawList.AddCircleFilled(screenPos, 4f, foregroundColor, 4);
+        }
+    }
+
+    private unsafe void DrawSpecialObjectTipWindows()
+    {
+        ImGui.PushStyleVar(ImGuiStyleVar.WindowRounding, 0f);
+        ImGui.PushStyleVar(ImGuiStyleVar.WindowBorderSize, Plugin.config.OverlayHint_BorderSize);
+        var windowPos = Plugin.config.WindowPos;
+        foreach (var item4 in SpecialObjectDrawList.OrderBy(i => i.obj.Position.Distance(MeWorldPos)))
+        {
+            var thisGameObject = item4.obj;
+            var item2 = item4.fgcolor;
+            var item3 = item4.title;
+            //不能用thisGameObject.Address，会在后面获取NameId的时候炸游戏
+            ICharacter objCharacter = *(ICharacter*)(&thisGameObject);
+            ImGui.PushStyleColor(ImGuiCol.Border, item2);
+            ImGui.SetNextWindowBgAlpha(Plugin.config.OverlayHint_BgAlpha);
+            ImGui.SetNextWindowPos(windowPos);
+            windowPos.Y += 15f;
+            if (!ImGui.Begin(thisGameObject.Name.TextValue + "static", ImGuiWindowFlags.NoDecoration | ImGuiWindowFlags.NoInputs | ImGuiWindowFlags.AlwaysAutoResize | ImGuiWindowFlags.NoSavedSettings | ImGuiWindowFlags.NoFocusOnAppearing | ImGuiWindowFlags.NoBringToFrontOnFocus))
+            {
+                continue;
+            }
+            var pos2 = ImGui.GetWindowPos() + ImGui.GetCursorPos() + new Vector2(ImGui.GetTextLineHeight(), ImGui.GetTextLineHeight());
+            rotation = AdjustRotationToHRotation(Plugin.ClientState.LocalPlayer.Rotation);
+            ImGui.GetWindowDrawList().DrawArrow(pos2, ImGui.GetTextLineHeightWithSpacing() * 0.618f, item2, (new Vector2(thisGameObject.Position.X, thisGameObject.Position.Z) - MeWorldPos.ToVector2()).Normalize().Rotate(0f - rotation), 5f);
+            ImGui.SetCursorPosX(ImGui.GetCursorPosX() + ImGui.GetTextLineHeight() + ImGui.GetTextLineHeightWithSpacing());
+            ImGui.TextColored(ImGui.ColorConvertU32ToFloat4(item2), item3 ?? "");
+            ImGui.Separator();
+            string text = string.Empty;
+            if (thisGameObject.ObjectKind == ObjectKind.BattleNpc || thisGameObject.ObjectKind == ObjectKind.Player)
+            {
+                text += $"{objCharacter.CurrentHp:N0}/{objCharacter.MaxHp:N0}\t{objCharacter.CurrentHp / objCharacter.MaxHp:P}\n";
+            }
+            float num = thisGameObject.Position.Y - MeWorldPos.Y;
+            var direction = (num == 0f) ? "" : ((num > 0f) ? "↑" : "↓");
+            ImGui.TextUnformatted($"{text}{thisGameObject.Position.Distance2D(MeWorldPos):F2}m\t{direction}{Math.Abs(num):F2}");
+            windowPos += new Vector2(0f, ImGui.GetWindowSize().Y);
+            if (Plugin.config.OverlayHint_OpenMapLinkOnAlt && ImGui.GetIO().KeyAlt && ImGui.IsMouseHoveringRect(ImGui.GetWindowPos(), ImGui.GetWindowSize() + ImGui.GetWindowPos()))
+            {
+                try
+                {
+                    Plugin.Gui.OpenMapWithMapLink(new MapLinkPayload(Plugin.ClientState.TerritoryType, Plugin.ClientState.MapId, (int)(thisGameObject.Position.X * 1000f), (int)(thisGameObject.Position.Z * 1000f)));
+                }
+                catch (Exception)
+                {
+                    Plugin.PluginLog.Debug("no map available in this area!");
+                }
+            }
+            ImGui.PopStyleColor();
+            ImGui.End();
+        }
+        ImGui.PopStyleVar(2);
+        SpecialObjectDrawList.Clear();
+    }
+
 
     private float AdjustRotationToHRotation(float angle)
     {
@@ -1392,12 +1436,12 @@ public class BuildUi : IDisposable
 	private void DrawMapOverlay()
 	{
 		RefreshMapOrigin();
-		System.Numerics.Vector2? vector = mapOrigin;
+		Vector2? vector = mapOrigin;
 		if (!vector.HasValue)
 		{
 			return;
 		}
-		System.Numerics.Vector2 valueOrDefault = vector.GetValueOrDefault();
+		Vector2 valueOrDefault = vector.GetValueOrDefault();
 		if (!(valueOrDefault != System.Numerics.Vector2.Zero) || Plugin.ClientState.TerritoryType == 0)
 		{
 			return;
@@ -1574,7 +1618,7 @@ public class BuildUi : IDisposable
 			windowDrawList.ChannelsSetCurrent(0);
 			if (Plugin.config.ExternalMap_Mode != 0)
 			{
-				Square4(System.Numerics.Vector2.Zero, windowContentRegionWidth);
+				Square4(Vector2.Zero, windowContentRegionWidth);
 				for (int j = 0; j < 4; j++)
 				{
 					ref System.Numerics.Vector2 reference = ref array[j];
