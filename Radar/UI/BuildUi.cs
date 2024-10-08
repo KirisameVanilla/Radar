@@ -38,11 +38,7 @@ public class BuildUi : IDisposable
 			{
 				return true;
 			}
-			if ((object)x == null)
-			{
-				return false;
-			}
-			if ((object)y == null)
+			if (x is null || y is null)
 			{
 				return false;
 			}
@@ -147,47 +143,21 @@ public class BuildUi : IDisposable
 
 		public int GetHashCode(ushort obj)
 		{
-			switch (obj)
-			{
-			case 564:
-			case 565:
-				return -10;
-			case 593:
-			case 594:
-			case 595:
-				return -1;
-			case 596:
-			case 597:
-			case 598:
-				return -2;
-			case 599:
-			case 600:
-				return -3;
-			case 601:
-			case 602:
-				return -4;
-			case 603:
-			case 604:
-			case 605:
-			case 606:
-			case 607:
-				return -5;
-			case 772:
-			case 782:
-				return -6;
-			case 773:
-			case 783:
-				return -7;
-			case 774:
-			case 784:
-				return -8;
-			case 775:
-			case 785:
-				return -9;
-			default:
-				return obj;
-			}
-		}
+            return obj switch
+            {
+                564 or 565 => -10,
+                593 or 594 or 595 => -1,
+                596 or 597 or 598 => -2,
+                599 or 600 => -3,
+                601 or 602 => -4,
+                603 or 604 or 605 or 606 or 607 => -5,
+                772 or 782 => -6,
+                773 or 783 => -7,
+                774 or 784 => -8,
+                775 or 785 => -9,
+                _ => obj,
+            };
+        }
 	}
 
 	internal enum DeepDungeonBg
@@ -232,7 +202,7 @@ public class BuildUi : IDisposable
 
 	private ConfigSnapShot currentProfile;
 
-	private Dictionary<ushort, bool> isPvpZone;
+	private Dictionary<ushort, bool> isPvpZoneDict;
 
 	private string newCustomObjectName = string.Empty;
 
@@ -252,7 +222,7 @@ public class BuildUi : IDisposable
 
     #region ColorsVector4
 
-    public static Vector4 RedVector4 = new(1f, 0f, 0f, 1f);
+    private static Vector4 RedVector4 = new(1f, 0f, 0f, 1f);
 
     #endregion
 
@@ -281,10 +251,10 @@ public class BuildUi : IDisposable
     private static readonly ExcelSheet<Map> MapSheet = Plugin.DataManager.GetExcelSheet<Map>();
     #endregion
 
-	private Dictionary<ushort, bool> IsPvpZone => isPvpZone ?? (isPvpZone = TerritoryTypeSheet.ToDictionary((i) => (ushort)i.RowId, (j) => j.IsPvpZone));
+	private Dictionary<ushort, bool> IsPvpZone => isPvpZoneDict ?? (isPvpZoneDict = TerritoryTypeSheet.ToDictionary((i) => (ushort)i.RowId, (j) => j.IsPvpZone));
 
 	private static int FontsSize => ImGui.GetIO().Fonts.Fonts.Size;
-
+    
 	private Dictionary<ushort, string> TerritoryIdToBg
 	{
 		get
@@ -350,22 +320,19 @@ public class BuildUi : IDisposable
 		Plugin.PluginInterface.UiBuilder.OpenConfigUi -= UiBuilder_OnOpenConfigUi;
 		Plugin.PluginInterface.UiBuilder.Draw -= UiBuilder_OnBuildUi;
 		Plugin.ClientState.TerritoryChanged -= TerritoryChanged;
+        GC.SuppressFinalize(this);
 	}
 
 	private unsafe void UiBuilder_OnBuildUi()
 	{
-		bool flag = false;
-		try
-		{
-			if (Plugin.ClientState.TerritoryType != 0)
-			{
-				flag = IsPvpZone[Plugin.ClientState.TerritoryType];
-			}
-		}
-		catch (Exception)
-		{
-		}
-		if (!flag)
+		var isPvpZone = false;
+
+        if (Plugin.ClientState.TerritoryType != 0 && IsPvpZone.TryGetValue(Plugin.ClientState.TerritoryType, out var value))
+        {
+            isPvpZone = value;
+        }
+
+		if (!isPvpZone)
 		{
 			FFXIVClientStructs.FFXIV.Client.Game.Camera* controlCamera = CameraManager.Instance()->GetActiveCamera();
 			FFXIVClientStructs.FFXIV.Client.Graphics.Render.Camera* renderCamera = ((controlCamera != null) ? controlCamera->SceneCamera.RenderCamera : null);
@@ -429,6 +396,8 @@ public class BuildUi : IDisposable
 			DrawConfig();
 		}
 		DrawList2D.Clear();
+        return;
+
 		static Matrix Matrix4x4ToSharpDX(Matrix4x4 ma)
 		{
 			return new Matrix(ma.M11, ma.M12, ma.M13, ma.M14, ma.M21, ma.M22, ma.M23, ma.M24, ma.M31, ma.M32, ma.M33, ma.M34, ma.M41, ma.M42, ma.M43, ma.M44);
@@ -439,7 +408,7 @@ public class BuildUi : IDisposable
     {
         foreach (var obj in Plugin.ObjectTable)
         {
-            if (obj != null && !obj.Equals(Plugin.ObjectTable.First()))
+            if (obj is not null && !obj.Equals(Plugin.ObjectTable.First()))
             {
                 CheckEachObject(obj);
             }
@@ -477,7 +446,7 @@ public class BuildUi : IDisposable
                 }
                 if (Plugin.config.Overlay2D_Enabled)
                 {
-                    AddObjectTo2DDrawList(o, fgColor, bgColor, icon);
+                    AddObjectTo2DDrawList(o, fgColor, bgColor);
                 }
             }
         }
@@ -512,15 +481,15 @@ public class BuildUi : IDisposable
 		DetailLevel overlay2DDetailLevel2 = (DetailLevel)Plugin.config.Overlay2D_DetailLevel;
 		ImGui.SliderInt("信息显示级别##2d", ref overlay2DDetailLevel, 0, 2, overlay2DDetailLevel2.ToString());
 		ImGui.Separator();
-		ImGui.Checkbox("启用外置地图##externalmap", ref Plugin.config.ExternalMap_Enabled);
-		ImGui.Checkbox("锁定位置大小##externalmap", ref Plugin.config.ExternalMap_LockSizePos);
-		ImGui.Checkbox("点击穿透##externalmap", ref Plugin.config.ExternalMap_ClickThrough);
-		ImGui.Checkbox("显示地图信息##externalmap", ref Plugin.config.ExternalMap_ShowMapInfo);
-		ImGui.SliderFloat("地图透明度##externalmap", ref Plugin.config.ExternalMap_MapAlpha, 0f, 1f);
-		ImGui.SliderFloat("背景透明度##externalmap", ref Plugin.config.ExternalMap_BgAlpha, 0f, 1f);
+		ImGui.Checkbox("启用外置地图##externalMap", ref Plugin.config.ExternalMap_Enabled);
+		ImGui.Checkbox("锁定位置大小##externalMap", ref Plugin.config.ExternalMap_LockSizePos);
+		ImGui.Checkbox("点击穿透##externalMap", ref Plugin.config.ExternalMap_ClickThrough);
+		ImGui.Checkbox("显示地图信息##externalMap", ref Plugin.config.ExternalMap_ShowMapInfo);
+		ImGui.SliderFloat("地图透明度##externalMap", ref Plugin.config.ExternalMap_MapAlpha, 0f, 1f);
+		ImGui.SliderFloat("背景透明度##externalMap", ref Plugin.config.ExternalMap_BgAlpha, 0f, 1f);
 		ref int externalMapMode = ref Plugin.config.ExternalMap_Mode;
 		MapMode externalMapMode2 = (MapMode)Plugin.config.ExternalMap_Mode;
-		ImGui.SliderInt("地图模式##externalmap", ref externalMapMode, 0, 2, externalMapMode2.ToString());
+		ImGui.SliderInt("地图模式##externalMap", ref externalMapMode, 0, 2, externalMapMode2.ToString());
 		ImGui.Separator();
 		ImGui.TextUnformatted("名牌设置");
 		if (ImGui.GetIO().Fonts.Fonts.Size > 2)
@@ -639,7 +608,7 @@ public class BuildUi : IDisposable
 		ImGui.TableNextColumn();
 		ImguiUtil.ColorPickerWithPalette(99999, string.Empty, ref newCustomObjectColor, ImGuiColorEditFlags.None);
 		ImGui.TableNextColumn();
-		bool flag = ImguiUtil.IconButton(FontAwesomeIcon.Plus, "##newcustomobjectentry");
+		bool flag = ImguiUtil.IconButton(FontAwesomeIcon.Plus, "##newCustomObjectEntry");
 		ImGui.TableNextColumn();
 		if (num || flag)
 		{
@@ -679,7 +648,7 @@ public class BuildUi : IDisposable
 				group i by i.Territory).Count()} territories, {Plugin.config.DeepDungeonObjects.Count(i => i.Type == DeepDungeonType.Trap)} traps, {Plugin.config.DeepDungeonObjects.Count(i => i.Type == DeepDungeonType.AccursedHoard)} hoards.");
 			ImGui.SetClipboardText(Plugin.config.DeepDungeonObjects.ToCompressedString());
 		}
-		if (deepDungeonObjectsImportCache == null || !deepDungeonObjectsImportCache.Any())
+		if (deepDungeonObjectsImportCache == null || deepDungeonObjectsImportCache.Count == 0)
 		{
 			ImGui.SameLine();
 			if (ImGui.Button("从剪贴板导入已有的记录点"))
@@ -688,7 +657,7 @@ public class BuildUi : IDisposable
 				try
 				{
 					HashSet<DeepDungeonObject> source = ImGui.GetClipboardText().DecompressStringToObject<HashSet<DeepDungeonObject>>();
-					if (source.Any())
+					if (source.Count != 0)
 					{
 						deepDungeonObjectsImportCache = source;
 					}
@@ -717,29 +686,29 @@ public class BuildUi : IDisposable
 		bool flag = ImGui.SliderInt("树视图展开级别", ref treeLevel, 1, 4, GetFormat(treeLevel));
 		IEnumerable<IGrouping<ushort, DeepDungeonObject>> source2 = from i in deepDungeonObjectsImportCache
 			group i by i.Territory;
-		string arg = string.Join(", ", from i in source2
-			select i.Key.ToString() into i
-			orderby i
-			select i);
-		IGrouping<string, DeepDungeonObject>[] array = (from i in deepDungeonObjectsImportCache
-			group i by TerritoryIdToBg[i.Territory] into i
-			orderby i.Key
-			select i).ToArray();
-		ImGui.TextWrapped($"将要导入 {array.Length} 个区域的 {deepDungeonObjectsImportCache.Count} 条记录。({arg})\n包含 {array.Select(i => (from j in i
+
+        string arg = string.Join(", ", source2
+                                       .Select(i => i.Key.ToString())// 选择 Key 并将其转换为字符串
+                                       .OrderBy(i => i));// 按照字符串排序
+        IGrouping<string, DeepDungeonObject>[] array = deepDungeonObjectsImportCache
+                                                       .GroupBy(i => TerritoryIdToBg[i.Territory])// 根据 TerritoryIdToBg[i.Territory] 进行分组
+                                                       .OrderBy(i => i.Key)// 按 Key 排序
+                                                       .ToArray();// 转换为数组
+        ImGui.TextWrapped($"将要导入 {array.Length} 个区域的 {deepDungeonObjectsImportCache.Count} 条记录。({arg})\n包含 {
+            array.Select(i => (from j in i
 			where j.Type == DeepDungeonType.Trap
 			group j by j.Location2D).Count()).Sum()} 个陷阱位置，{array.Select(i => (from j in i
 			where j.Type == DeepDungeonType.AccursedHoard
 			group j by j.Location2D).Count()).Sum()} 个宝藏位置。");
-		if (ImGui.BeginChild("ddobjecttreeview", new Vector2(-1f, (0f - ImGui.GetFrameHeightWithSpacing()) * 2f), border: true))
+		if (ImGui.BeginChild("deepDungeonObjectTreeview", new Vector2(-1f, (0f - ImGui.GetFrameHeightWithSpacing()) * 2f), border: true))
 		{
-			IGrouping<string, DeepDungeonObject>[] array2 = array;
-			foreach (IGrouping<string, DeepDungeonObject> grouping in array2)
+			foreach (IGrouping<string, DeepDungeonObject> grouping in array)
 			{
 				if (flag)
 				{
 					ImGui.SetNextItemOpen(treeLevel > 1);
 				}
-				if (!ImGui.TreeNodeEx(grouping.Key + "##DDTerritoryKey", ImGuiTreeNodeFlags.Framed))
+				if (!ImGui.TreeNodeEx(grouping.Key + "##deepDungeonTerritoryKey", ImGuiTreeNodeFlags.Framed))
 				{
 					continue;
 				}
@@ -770,7 +739,7 @@ public class BuildUi : IDisposable
 						{
 							continue;
 						}
-						foreach (DeepDungeonObject item3 in item2.OrderBy((DeepDungeonObject i) => i.InstanceId))
+						foreach (DeepDungeonObject item3 in item2.OrderBy(i => i.InstanceId))
 						{
 							ImGui.TextUnformatted($"{item3.Territory} : {item3.Base} : {item3.InstanceId:X}");
 						}
@@ -799,6 +768,8 @@ public class BuildUi : IDisposable
 			int num = Plugin.config.DeepDungeonObjects.Count - count;
 			Plugin.PluginLog.Information($"imported {num} deep dungeon object records.");
 		}
+        return;
+
 		static string GetFormat(int input)
 		{
 			return input switch
@@ -946,7 +917,7 @@ public class BuildUi : IDisposable
 					ImGui.TextUnformatted("最后保存时间");
 					ImGui.TableNextColumn();
 					ImGui.TextUnformatted("读取 / 覆盖 / 删除");
-					int num = -1;
+					var num = -1;
 					for (int i = 0; i < Plugin.config.profiles.Count; i++)
 					{
 						ImGui.TableNextRow();
@@ -1015,57 +986,26 @@ public class BuildUi : IDisposable
 
 	internal static DeepDungeonBg GetDeepDungeonBg(ushort territory)
 	{
-		switch (territory)
-		{
-		case 561:
-			return DeepDungeonBg.f1c1;
-		case 562:
-			return DeepDungeonBg.f1c2;
-		case 563:
-			return DeepDungeonBg.f1c3;
-		case 564:
-		case 565:
-			return DeepDungeonBg.f1c4;
-		case 593:
-		case 594:
-		case 595:
-			return DeepDungeonBg.f1c5;
-		case 596:
-		case 597:
-		case 598:
-			return DeepDungeonBg.f1c6;
-		case 599:
-		case 600:
-			return DeepDungeonBg.f1c8;
-		case 601:
-		case 602:
-			return DeepDungeonBg.f1c9;
-		case 603:
-		case 604:
-		case 605:
-		case 606:
-		case 607:
-			return DeepDungeonBg.f1c7;
-		case 770:
-			return DeepDungeonBg.e3c1;
-		case 771:
-			return DeepDungeonBg.e3c2;
-		case 772:
-		case 782:
-			return DeepDungeonBg.e3c3;
-		case 773:
-		case 783:
-			return DeepDungeonBg.e3c4;
-		case 774:
-		case 784:
-			return DeepDungeonBg.e3c5;
-		case 775:
-		case 785:
-			return DeepDungeonBg.e3c6;
-		default:
-			return DeepDungeonBg.notInDeepDungeon;
-		}
-	}
+        return territory switch
+        {
+            561 => DeepDungeonBg.f1c1,
+            562 => DeepDungeonBg.f1c2,
+            563 => DeepDungeonBg.f1c3,
+            564 or 565 => DeepDungeonBg.f1c4,
+            593 or 594 or 595 => DeepDungeonBg.f1c5,
+            596 or 597 or 598 => DeepDungeonBg.f1c6,
+            599 or 600 => DeepDungeonBg.f1c8,
+            601 or 602 => DeepDungeonBg.f1c9,
+            603 or 604 or 605 or 606 or 607 => DeepDungeonBg.f1c7,
+            770 => DeepDungeonBg.e3c1,
+            771 => DeepDungeonBg.e3c2,
+            772 or 782 => DeepDungeonBg.e3c3,
+            773 or 783 => DeepDungeonBg.e3c4,
+            774 or 784 => DeepDungeonBg.e3c5,
+            775 or 785 => DeepDungeonBg.e3c6,
+            _ => DeepDungeonBg.notInDeepDungeon,
+        };
+    }
 
     private void AddDeepDungeonObjectRecord(IGameObject o)
     {
@@ -1140,7 +1080,7 @@ public class BuildUi : IDisposable
 		}
 	}
 
-    private unsafe bool TryAddSpecialObjectsToDrawList(IGameObject obj, ref uint fgColor, ref uint bgColor)
+    private bool TryAddSpecialObjectsToDrawList(IGameObject obj, ref uint fgColor, ref uint bgColor)
     {
         string DictionaryName = obj.Name.ToString();
         var myObjectKind = Util.GetMyObjectKind(obj);
@@ -1150,8 +1090,8 @@ public class BuildUi : IDisposable
             Plugin.config.NpcBaseMapping.TryGetValue(obj.DataId, out DictionaryName);
         }
 
-        ICharacter objCharacter = *(ICharacter*)(&obj);
-
+        ICharacter objCharacter = obj as ICharacter;
+        if (objCharacter is null) return false;
         if (Plugin.config.OverlayHint_CustomObjectView && Plugin.config.customHighlightObjects.TryGetValue(DictionaryName, out var value) && value.Enabled)
         {
             SpecialObjectDrawList.Add((obj, ImGui.ColorConvertFloat4ToU32(value.Color), $"{myObjectKind.ToString().ToUpper()} {((obj.DataId != 0) ? obj.DataId.ToString() : string.Empty)}\nLv.{objCharacter.Level} {DictionaryName}"));
@@ -1194,7 +1134,7 @@ public class BuildUi : IDisposable
         return false;
     }
 
-    private void AddObjectTo2DDrawList(IGameObject a, uint foregroundColor, uint backgroundColor, ISharedImmediateTexture icon = null)
+    private void AddObjectTo2DDrawList(IGameObject a, uint foregroundColor, uint backgroundColor)
     {
         string dictionaryName = a.Name.ToString();
         if (Plugin.config.NpcBaseMapping.ContainsKey(a.DataId))
@@ -1324,7 +1264,7 @@ public class BuildUi : IDisposable
         }
     }
 
-    private unsafe void DrawSpecialObjectTipWindows()
+    private void DrawSpecialObjectTipWindows()
     {
         //特殊物体名牌
         ImGui.PushStyleVar(ImGuiStyleVar.WindowRounding, 0f);
@@ -1335,8 +1275,9 @@ public class BuildUi : IDisposable
             var thisGameObject = item4.obj;
             var item2 = item4.fgcolor;
             var item3 = item4.title;
-            //不能用thisGameObject.Address，会在后面获取NameId的时候炸游戏
-            ICharacter objCharacter = *(ICharacter*)(&thisGameObject);
+            // 不能用thisGameObject.Address，会在后面获取NameId的时候炸游戏
+            ICharacter objCharacter = thisGameObject as ICharacter;
+            // ICharacter objCharacter = *(ICharacter*)(&thisGameObject);
             ImGui.PushStyleColor(ImGuiCol.Border, item2);
             ImGui.SetNextWindowBgAlpha(Plugin.config.OverlayHint_BgAlpha);
             ImGui.SetNextWindowPos(windowPos);
@@ -1359,12 +1300,12 @@ public class BuildUi : IDisposable
             ImGui.TextColored(ImGui.ColorConvertU32ToFloat4(item2), item3 ?? "");
             ImGui.Separator();
             var text = string.Empty;
-            if (thisGameObject.ObjectKind == ObjectKind.BattleNpc || thisGameObject.ObjectKind == ObjectKind.Player)
+            if (thisGameObject.ObjectKind is ObjectKind.BattleNpc or ObjectKind.Player)
             {
                 text += $"{objCharacter.CurrentHp:N0}/{objCharacter.MaxHp:N0}\t{objCharacter.CurrentHp / objCharacter.MaxHp:P}\n";
             }
             var distanceY = thisGameObject.Position.Y - MeWorldPos.Y;
-            var direction = (distanceY == 0f) ? "" : ((distanceY > 0f) ? "↑" : "↓");
+            var direction = (double.Abs(distanceY)<0.1f) ? "" : ((distanceY > 0f) ? "↑" : "↓");
             ImGui.TextUnformatted($"{text}{thisGameObject.Position.Distance2D(MeWorldPos):F2}m\t{direction}{Math.Abs(distanceY):F2}");
             windowPos += new Vector2(0f, ImGui.GetWindowSize().Y);
             if (Plugin.config.OverlayHint_OpenMapLinkOnAlt && ImGui.GetIO().KeyAlt && ImGui.IsMouseHoveringRect(ImGui.GetWindowPos(), ImGui.GetWindowSize() + ImGui.GetWindowPos()))
@@ -1386,7 +1327,7 @@ public class BuildUi : IDisposable
     }
 
 
-    private float AdjustRotationToHRotation(float angle)
+    private static float AdjustRotationToHRotation(float angle)
     {
         /*
          * akira use HRotation at first, which is a little different from LocalPlayer.Rotation
@@ -1427,11 +1368,11 @@ public class BuildUi : IDisposable
             backgroundDrawList.AddCircle(valueOrDefault, WorldToMapScale * 25f, 4294967040u, 0, 1f);
 			backgroundDrawList.AddCircle(valueOrDefault, WorldToMapScale * 125f, 4286611584u, 0, 1f);
 			backgroundDrawList.AddLine(valueOrDefault, 
-                                       valueOrDefault - new Vector2(0f, WorldToMapScale * 25f).Rotate((float)Math.PI / 4f + rotation), 
+                                       valueOrDefault - new Vector2(0f, WorldToMapScale * 25f).Rotate(((float)Math.PI / 4f) + rotation), 
                                        4294967040u, 
                                        1f);
             backgroundDrawList.AddLine(valueOrDefault,
-                                       valueOrDefault - new Vector2(0f, WorldToMapScale * 25f).Rotate(-(float)Math.PI / 4f + rotation),
+                                       valueOrDefault - new Vector2(0f, WorldToMapScale * 25f).Rotate((-(float)Math.PI / 4f) + rotation),
                                        4294967040u,
                                        1f);
         }
@@ -1488,7 +1429,7 @@ public class BuildUi : IDisposable
 				AtkResNode atkResNode2 = ptr4->AtkResNode;
 				Vector2 vector = new Vector2(areaMapAddon->X, areaMapAddon->Y);
 				mapOrigin = ImGui.GetMainViewport().Pos + vector + ((new Vector2(atkResNode.X, atkResNode.Y) + new Vector2(atkResNode2.X, atkResNode2.Y) + new Vector2(atkResNode2.OriginX, atkResNode2.OriginY)) * globalUiScale);
-				mapPosSize[0] = ImGui.GetMainViewport().Pos + vector + new Vector2(atkResNode.X, atkResNode.Y) * globalUiScale;
+				mapPosSize[0] = ImGui.GetMainViewport().Pos + vector + (new Vector2(atkResNode.X, atkResNode.Y) * globalUiScale);
 				mapPosSize[1] = ImGui.GetMainViewport().Pos + vector + new Vector2(atkResNode.X, atkResNode.Y) + (new Vector2((int)atkResNode.Width, atkResNode.Height) * globalUiScale);
 				break;
 			}
@@ -1508,18 +1449,19 @@ public class BuildUi : IDisposable
 			OffsetY = 0
 		};
 		IDalamudTextureWrap textureWrap = null;
-		try
+
+        map = MapSheet.GetRow(Plugin.ClientState.MapId);
+        if (map is null)
         {
-            map = MapSheet.GetRow(Plugin.ClientState.MapId);
-            var rawString = map?.Id.RawString;
-            string text = "ui/map/" + rawString + "/" + rawString?.Replace("_", string.Empty).Replace("/", string.Empty) + "_m.tex";
-            ISharedImmediateTexture fromGame = Plugin.TextureProvider.GetFromGame(text);
-            textureWrap = fromGame.GetWrapOrDefault();
+            Plugin.PluginLog.Error("error when get map");
+            return;
         }
-		catch (Exception exception)
-		{
-			Plugin.PluginLog.Error(exception, "error when get map");
-		}
+        var rawString = map.Id.RawString;
+        string texturePath = "ui/map/" + rawString + "/" + rawString?.Replace("_", string.Empty).Replace("/", string.Empty) + "_m.tex";
+        ISharedImmediateTexture fromGame = Plugin.TextureProvider.GetFromGame(texturePath);
+        textureWrap = fromGame.GetWrapOrDefault();
+
+        
 		ImGui.PushStyleVar(ImGuiStyleVar.WindowPadding, Vector2.Zero);
 		ImGui.SetNextWindowSizeConstraints(new Vector2(150f, 150f), new Vector2(float.MaxValue, float.MaxValue), delegate(ImGuiSizeCallbackData* data)
 		{
@@ -1539,12 +1481,11 @@ public class BuildUi : IDisposable
 		Vector2 imGuiWindowCenter;
 		Vector2 mapOffset;
 		float mapSizeFactor;
-		if (ImGui.Begin("maptex", imGuiWindowFlags))
+		if (ImGui.Begin("mapTexture", imGuiWindowFlags))
 		{
 			ImDrawListPtr windowDrawList = ImGui.GetWindowDrawList();
 			windowDrawList.ChannelsSplit(3);
 			float windowContentRegionWidth = ImGui.GetWindowContentRegionMax().X - ImGui.GetWindowContentRegionMin().X;
-			new Vector2(windowContentRegionWidth, windowContentRegionWidth);
 			float num2 = windowContentRegionWidth / 2048f;
 			Vector2 windowPos = ImGui.GetWindowPos();
 			Vector2[] array = Square4(windowPos, ImGui.GetWindowWidth());
@@ -1595,13 +1536,9 @@ public class BuildUi : IDisposable
 					}
 					reference = reference.Zoom(UvZoom, imGuiWindowCenter);
 				}
-				try
-				{
-					windowDrawList.AddImageQuad(textureWrap.ImGuiHandle, array[0], array[1], array[2], array[3], uv1, uv2, uv3, uv4, ImGui.ColorConvertFloat4ToU32(new Vector4(1f, 1f, 1f, Plugin.config.ExternalMap_MapAlpha)));
-				}
-				catch (Exception)
-				{
-				}
+
+                if (textureWrap is null) { return; }
+				windowDrawList.AddImageQuad(textureWrap.ImGuiHandle, array[0], array[1], array[2], array[3], uv1, uv2, uv3, uv4, ImGui.ColorConvertFloat4ToU32(new Vector4(1f, 1f, 1f, Plugin.config.ExternalMap_MapAlpha)));
 				foreach (var item in DrawList2D)
 				{
 					var positionOfItem = WorldToMap(item.worldpos);
@@ -1614,7 +1551,7 @@ public class BuildUi : IDisposable
 					{
                         rotation = AdjustRotationToHRotation(Plugin.ClientState.LocalPlayer.Rotation);
                         var num3 = ((Plugin.config.ExternalMap_Mode == 2) ? 0f : (0f - rotation));
-						windowDrawList.PathArcTo(imGuiWindowCenter, mapSizeFactor * 25f * UvZoom, num3 - (float)Math.PI / 2f - (float)Math.PI / 4f, num3 - (float)Math.PI / 4f, 24);
+						windowDrawList.PathArcTo(imGuiWindowCenter, mapSizeFactor * 25f * UvZoom, num3 - ((float)Math.PI / 2f) - (float)Math.PI / 4f, num3 - (float)Math.PI / 4f, 24);
 						windowDrawList.PathLineTo(imGuiWindowCenter);
 						windowDrawList.PathStroke(4294967040u, ImDrawFlags.Closed, 2f);
 					}
@@ -1627,13 +1564,8 @@ public class BuildUi : IDisposable
 					ref var reference2 = ref array[k];
 					reference2 = reference2.Zoom(UvZoom, imGuiWindowCenter + dragPos);
 				}
-				try
-				{
-					windowDrawList.AddImageQuad(textureWrap.ImGuiHandle, array[0], array[1], array[2], array[3], uv1, uv2, uv3, uv4, ImGui.ColorConvertFloat4ToU32(new Vector4(1f, 1f, 1f, Plugin.config.ExternalMap_MapAlpha)));
-				}
-				catch (Exception)
-				{
-				}
+                if (textureWrap is null) { return; }
+                windowDrawList.AddImageQuad(textureWrap.ImGuiHandle, array[0], array[1], array[2], array[3], uv1, uv2, uv3, uv4, ImGui.ColorConvertFloat4ToU32(new Vector4(1f, 1f, 1f, Plugin.config.ExternalMap_MapAlpha)));
 				foreach (var item2 in DrawList2D)
 				{
 					var pos2 = WorldToMapNoSnap(item2.worldpos);
@@ -1677,16 +1609,16 @@ public class BuildUi : IDisposable
                 rotation = AdjustRotationToHRotation(Plugin.ClientState.LocalPlayer.Rotation);
                 vector4 = vector4.Rotate(0f - rotation);
 			}
-			return imGuiWindowCenter + vector4 * UvZoom;
+			return imGuiWindowCenter + (vector4 * UvZoom);
 		}
 
 		Vector2 WorldToMapNoSnap(Vector3 worldPos)
 		{
-			return imGuiWindowCenter + (worldPos.ToVector2() + mapOffset) * mapSizeFactor * UvZoom - dragPos * (UvZoom - 1f);
+			return imGuiWindowCenter + ((worldPos.ToVector2() + mapOffset) * mapSizeFactor * UvZoom) - (dragPos * (UvZoom - 1f));
 		}
 	}
 
-	private static Vector2[] Square4(Vector2 ltPos = default(Vector2), float size = 1f)
+	private static Vector2[] Square4(Vector2 ltPos = default, float size = 1f)
 	{
 		return new Vector2[4]
 		{
