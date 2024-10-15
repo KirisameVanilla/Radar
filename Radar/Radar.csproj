@@ -15,8 +15,10 @@
     <AllowUnsafeBlocks>True</AllowUnsafeBlocks>
     <Authors>akira0245, KirisameVanilla</Authors>
     <Version>2.0.6.3</Version>
+    <DalamudLibPath>$(appdata)\XIVLauncher\addon\Hooks\dev\</DalamudLibPath>
   </PropertyGroup>
-
+    
+    
   <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Debug|AnyCPU'">
     <WarningLevel>4</WarningLevel>
   </PropertyGroup>
@@ -27,42 +29,42 @@
 
   <ItemGroup>
     <Reference Include="Dalamud">
-      <HintPath>D:\Games\FFXIVQuickLauncher_CN\XIVLauncherCN\Roaming\addon\Hooks\dev\Dalamud.dll</HintPath>
+      <HintPath>$(DalamudLibPath)Dalamud.dll</HintPath>
       <Private>False</Private>
     </Reference>
 
     <Reference Include="FFXIVClientStructs">
-      <HintPath>D:\Games\FFXIVQuickLauncher_CN\XIVLauncherCN\Roaming\addon\Hooks\dev\FFXIVClientStructs.dll</HintPath>
+      <HintPath>$(DalamudLibPath)FFXIVClientStructs.dll</HintPath>
       <Private>False</Private>
     </Reference>
 
     <Reference Include="ImGui.NET">
-      <HintPath>D:\Games\FFXIVQuickLauncher_CN\XIVLauncherCN\Roaming\addon\Hooks\dev\ImGui.NET.dll</HintPath>
+      <HintPath>$(DalamudLibPath)ImGui.NET.dll</HintPath>
       <Private>False</Private>
     </Reference>
 
     <Reference Include="ImGuiScene">
-      <HintPath>D:\Games\FFXIVQuickLauncher_CN\XIVLauncherCN\Roaming\addon\Hooks\dev\ImGuiScene.dll</HintPath>
+      <HintPath>$(DalamudLibPath)ImGuiScene.dll</HintPath>
       <Private>False</Private>
     </Reference>
 
     <Reference Include="Lumina">
-      <HintPath>D:\Games\FFXIVQuickLauncher_CN\XIVLauncherCN\Roaming\addon\Hooks\dev\Lumina.dll</HintPath>
+      <HintPath>$(DalamudLibPath)Lumina.dll</HintPath>
       <Private>False</Private>
     </Reference>
 
     <Reference Include="Lumina.Excel">
-      <HintPath>D:\Games\FFXIVQuickLauncher_CN\XIVLauncherCN\Roaming\addon\Hooks\dev\Lumina.Excel.dll</HintPath>
+      <HintPath>$(DalamudLibPath)Lumina.Excel.dll</HintPath>
       <Private>False</Private>
     </Reference>
 
     <Reference Include="Newtonsoft.Json">
-      <HintPath>D:\Games\FFXIVQuickLauncher_CN\XIVLauncherCN\Roaming\addon\Hooks\dev\Newtonsoft.Json.dll</HintPath>
+      <HintPath>$(DalamudLibPath)Newtonsoft.Json.dll</HintPath>
       <Private>False</Private>
     </Reference>
 
     <Reference Include="SharpDX.Mathematics">
-      <HintPath>D:\Games\FFXIVQuickLauncher_CN\XIVLauncherCN\Roaming\addon\Hooks\dev\SharpDX.Mathematics.dll</HintPath>
+      <HintPath>$(DalamudLibPath)SharpDX.Mathematics.dll</HintPath>
       <Private>False</Private>
     </Reference>
 

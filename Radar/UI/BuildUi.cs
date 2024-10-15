@@ -1277,6 +1277,7 @@ public class BuildUi : IDisposable
             var item3 = item4.title;
             // 不能用thisGameObject.Address，会在后面获取NameId的时候炸游戏
             ICharacter objCharacter = thisGameObject as ICharacter;
+            if (objCharacter is null) return;
             // ICharacter objCharacter = *(ICharacter*)(&thisGameObject);
             ImGui.PushStyleColor(ImGuiCol.Border, item2);
             ImGui.SetNextWindowBgAlpha(Plugin.config.OverlayHint_BgAlpha);
