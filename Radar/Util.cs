@@ -61,8 +61,8 @@ internal static class Util
 		Vector3.Transform(ref vector2, ref BuildUi.MatrixSingetonCache, out SharpDX.Vector4 result);
 		Z = result.W;
 		screenPos = new System.Numerics.Vector2(result.X / Z, result.Y / Z);
-		screenPos.X = 0.5f * BuildUi.ViewPortSizeCache.X * (screenPos.X + 1f) + vector.X;
-		screenPos.Y = 0.5f * BuildUi.ViewPortSizeCache.Y * (1f - screenPos.Y) + vector.Y;
+		screenPos.X = (0.5f * BuildUi.ViewPortSizeCache.X * (screenPos.X + 1f)) + vector.X;
+		screenPos.Y = (0.5f * BuildUi.ViewPortSizeCache.Y * (1f - screenPos.Y)) + vector.Y;
 		if (Z < 0f)
 		{
 			screenPos = -screenPos + ImGuiHelpers.MainViewport.Pos + ImGuiHelpers.MainViewport.Size;
@@ -140,16 +140,6 @@ internal static class Util
 		return list.ToArray();
 	}
 
-	internal static unsafe string ReadTerminatedString(byte* ptr)
-	{
-		return Encoding.UTF8.GetString(ReadTerminatedBytes(ptr));
-	}
-
-	internal static bool ContainsIgnoreCase(this string haystack, string needle)
-	{
-		return CultureInfo.InvariantCulture.CompareInfo.IndexOf(haystack, needle, CompareOptions.IgnoreCase) >= 0;
-	}
-
 	public static System.Numerics.Vector2 Normalize(this System.Numerics.Vector2 v)
 	{
 		float num = v.Length();
@@ -165,7 +155,7 @@ internal static class Util
 
 	public static System.Numerics.Vector2 Zoom(this System.Numerics.Vector2 vin, float zoom, System.Numerics.Vector2 origin)
 	{
-		return origin + (vin - origin) * zoom;
+		return origin + ((vin - origin) * zoom);
 	}
 
 	public static System.Numerics.Vector2 Rotate(this System.Numerics.Vector2 vin, float rotation, System.Numerics.Vector2 origin)
@@ -178,78 +168,10 @@ internal static class Util
 		return vin.Rotate(new System.Numerics.Vector2((float)Math.Sin(rotation), (float)Math.Cos(rotation)));
 	}
 
-	public static System.Numerics.Vector2 Rotate(this System.Numerics.Vector2 vin, System.Numerics.Vector2 rotation, System.Numerics.Vector2 origin)
-	{
-		return origin + (vin - origin).Rotate(rotation);
-	}
-
 	public static System.Numerics.Vector2 Rotate(this System.Numerics.Vector2 vin, System.Numerics.Vector2 rotation)
 	{
 		rotation = rotation.Normalize();
-		return new System.Numerics.Vector2(rotation.Y * vin.X + rotation.X * vin.Y, rotation.Y * vin.Y - rotation.X * vin.X);
-	}
-
-	public static float ToArc(this System.Numerics.Vector2 vin)
-	{
-		return (float)Math.Sin(vin.X);
-	}
-
-	public static void MassTranspose(System.Numerics.Vector2[] vin, System.Numerics.Vector2 pivot, System.Numerics.Vector2 rotation)
-	{
-		for (int i = 0; i < vin.Length; i++)
-		{
-			vin[i] = (vin[i] - pivot).Rotate(rotation) + pivot;
-		}
-	}
-
-	public static void MassTranspose(System.Numerics.Vector2[] vin, System.Numerics.Vector2 pivot, float rotation)
-	{
-		for (int i = 0; i < vin.Length; i++)
-		{
-			vin[i] = (vin[i] - pivot).Rotate(rotation) + pivot;
-		}
-	}
-
-	public static System.Numerics.Vector2 ToNormalizedVector2(this float rad)
-	{
-		return new System.Numerics.Vector2((float)Math.Sin(rad), (float)Math.Cos(rad));
-	}
-
-	public static System.Numerics.Vector3 ToVector3(this System.Numerics.Vector2 vin)
-	{
-		return new System.Numerics.Vector3(vin.X, 0f, vin.Y);
-	}
-
-	public static T[] ReadArray<T>(nint pointer, int length) where T : struct
-	{
-		int num = Marshal.SizeOf(typeof(T));
-		T[] array = new T[length];
-		for (int i = 0; i < length; i++)
-		{
-			nint ptr = new IntPtr(((IntPtr)pointer).ToInt64() + i * num);
-			array[i] = Marshal.PtrToStructure<T>(ptr);
-		}
-		return array;
-	}
-
-	public static unsafe T[] ReadArrayUnmanaged<T>(nint pointer, int length) where T : unmanaged
-	{
-		T[] array = new T[length];
-		for (int i = 0; i < length; i++)
-		{
-			array[i] = *(T*)(pointer + (nint)i * (nint)sizeof(T));
-		}
-		return array;
-	}
-
-	public static void Log(this object o)
-	{
-		Plugin.PluginLog.Information((o is nint intPtr) ? ((IntPtr)intPtr).ToInt64().ToString("X") : o.ToString());
-	}
-
-	public static void Log(this object o, string prefix)
-	{
-		Plugin.PluginLog.Information(prefix + ": " + ((o is nint intPtr) ? ((IntPtr)intPtr).ToInt64().ToString("X") : o.ToString()));
+		return new System.Numerics.Vector2((rotation.Y * vin.X) + (rotation.X * vin.Y), (rotation.Y * vin.Y) - (rotation.X * vin.X));
 	}
 
 	public static string ToCompressedString<T>(this T obj)
@@ -270,12 +192,6 @@ internal static class Util
 	public static T JsonStringToObject<T>(this string str)
 	{
 		return JsonConvert.DeserializeObject<T>(str);
-	}
-
-	public static byte[] GetSHA1(string s)
-	{
-		byte[] bytes = Encoding.Unicode.GetBytes(s);
-		return SHA1.Create().ComputeHash(bytes);
 	}
 
 	public static string Compress(string s)

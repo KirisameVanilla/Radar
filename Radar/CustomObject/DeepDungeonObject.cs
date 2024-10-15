@@ -19,7 +19,7 @@ public record DeepDungeonObject
 	public DeepDungeonType Type { get; init; }
 
 	[JsonIgnore]
-	internal Vector2 Location2D => new Vector2(Location.X, Location.Z);
+	internal Vector2 Location2D => new(Location.X, Location.Z);
 
 	[JsonIgnore]
 	internal BuildUi.DeepDungeonBg GetBg => BuildUi.GetDeepDungeonBg(Territory);
@@ -37,15 +37,15 @@ public record DeepDungeonObject
 		builder.Append(", ");
 		builder.Append("Territory");
 		builder.Append(" = ");
-		builder.Append(Territory.ToString());
+		builder.Append(Territory);
 		builder.Append(", ");
 		builder.Append("Base");
 		builder.Append(" = ");
-		builder.Append(Base.ToString());
+		builder.Append(Base);
 		builder.Append(", ");
 		builder.Append("InstanceId");
 		builder.Append(" = ");
-		builder.Append(InstanceId.ToString());
+		builder.Append(InstanceId);
 		builder.Append(", ");
 		builder.Append("Type");
 		builder.Append(" = ");

@@ -3,26 +3,21 @@ using System.Collections.Generic;
 using System.Diagnostics;
 using System.Linq;
 using System.Threading.Tasks;
-using Dalamud.Game;
 using Dalamud.Game.ClientState.Objects;
+using Dalamud.Game.Command;
 using Dalamud.Interface.Textures;
 using Dalamud.IoC;
 using Dalamud.Plugin;
 using Dalamud.Plugin.Services;
 using Lumina.Excel;
 using Lumina.Excel.GeneratedSheets;
-using Radar.Attributes;
 using Radar.UI;
 
 namespace Radar;
 
 public class Plugin : IDalamudPlugin
 {
-	internal PluginCommandManager<Plugin> CommandManager;
-
 	internal BuildUi Ui;
-
-	internal static Dictionary<uint, ISharedImmediateTexture> EnpcIcons;
 
 	private static int SaveTimer;
 
@@ -42,62 +37,117 @@ public class Plugin : IDalamudPlugin
 
 	[PluginService] internal static ICondition Condition { get; private set; }
 
-	[PluginService] internal static ICommandManager cmd { get; private set; }
+	[PluginService] internal static ICommandManager CommandManager { get; private set; }
 
 	[PluginService] internal static ITextureProvider TextureProvider { get; private set; }
 
 	[PluginService] internal static IObjectTable ObjectTable { get; private set; }
 
 	[PluginService] internal static IPluginLog PluginLog { get; private set; }
-    internal static Configuration config { get; private set; }
+    internal static Configuration Configuration { get; private set; }
 
-	public string Name => "Radar";
+	public static string Name => "Radar";
 
 	public Plugin()
 	{
         if(ClientState.LocalPlayer!= null)
         {
-            config = ((Configuration)PluginInterface.GetPluginConfig()) ?? new Configuration();
-            config.Initialize(PluginInterface);
+            Configuration = (Configuration)PluginInterface.GetPluginConfig() ?? new Configuration();
+            Configuration.Initialize(PluginInterface);
             Framework.Update += Framework_OnUpdateEvent;
-            SetupResources();
             Ui = new BuildUi();
-            CommandManager = new PluginCommandManager<Plugin>(this, PluginInterface);
             if (PluginInterface.Reason != PluginLoadReason.Boot)
             {
                 Ui.ConfigVisible = true;
             }
         }
-	}
 
-	public void Initialize()
+        var radarInfo = new CommandInfo(OnCommand)
+        {
+            HelpMessage = """
+                          Opens the Radar config window.
+                          /radar map → Toggle external map
+                          /radar hunt → Toggle hunt mobs overlay
+                          /radar 2d → Toggle 2D overlay
+                          /radar 3d → Toggle 3D overlay
+                          /radar custom → Toggle custom object overlay
+                          /radar preset <preset name> → load named preset
+                          /radar preset save → save current config as preset
+                          """,
+            ShowInHelp = true,
+        };
+        CommandManager.AddHandler("/radar", radarInfo);
+    }
+
+	public static void Initialize()
 	{
 	}
+    
 
-	private static void SetupResources()
-	{
-        ExcelSheet<EventIconPriority> eventIconPrioritySheet = DataManager.GetExcelSheet<EventIconPriority>();
-
-        Task.Run(delegate
-		{
-			try
-			{
-				EnpcIcons = (from i in eventIconPrioritySheet?.SelectMany(i => i.Icon)
-					where i != 0
-					select i).ToDictionary((uint i) => i, delegate(uint j)
-				{
-					ITextureProvider textureProvider = TextureProvider;
-					GameIconLookup lookup = new GameIconLookup(j, itemHq: false, hiRes: false, DataManager.Language);
-					return textureProvider.GetFromGameIcon(in lookup);
-				});
-			}
-			catch (Exception exception)
-			{
-				PluginLog.Error(exception, "error when loading enpc icons.");
-			}
-		});
-	}
-
+    private void OnCommand(string command, string arguments)
+    {
+        if (arguments.Length == 0)
+        {
+            Ui.ConfigVisible = !Ui.ConfigVisible;
+            return;
+        }
+        
+        var argumentsSplit = arguments.Split(' ');
+        switch (argumentsSplit[0])
+        {
+            case "map":
+            {
+                Configuration.ExternalMap_Enabled = !Configuration.ExternalMap_Enabled;
+                ChatGui.Print("[Radar] External Map " + (Configuration.ExternalMap_Enabled ? "Enabled" : "Disabled") + ".");
+                break;
+            }
+            case "hunt":
+            {
+                Configuration.OverlayHint_MobHuntView = !Configuration.OverlayHint_MobHuntView;
+                ChatGui.Print("[Radar] Hunt view " + (Configuration.OverlayHint_MobHuntView ? "Enabled" : "Disabled") + ".");
+                break;
+            }
+            case "custom":
+            {
+                Configuration.OverlayHint_CustomObjectView = !Configuration.OverlayHint_CustomObjectView;
+                ChatGui.Print("[Radar] Custom object view " + (Configuration.OverlayHint_CustomObjectView ? "Enabled" : "Disabled") + ".");
+                break;
+            }
+            case "2d":
+            {
+                Configuration.Overlay2D_Enabled = !Configuration.Overlay2D_Enabled;
+                ChatGui.Print("[Radar] 2D overlay " + (Configuration.Overlay2D_Enabled ? "Enabled" : "Disabled") + ".");
+                break;
+            }
+            case "3d":
+            {
+                Configuration.Overlay3D_Enabled = !Configuration.Overlay3D_Enabled;
+                ChatGui.Print("[Radar] 3D overlay " + (Configuration.Overlay3D_Enabled ? "Enabled" : "Disabled") + ".");
+                break;
+            }
+            case "preset":
+            {
+                if (argumentsSplit[1] == "save")
+                {
+                    string text = DateTime.Now.ToString("G");
+                    Configuration.profiles.Add(ConfigSnapShot.GetSnapShot(text, Configuration));
+                    ChatGui.Print("[Radar] config snapshot saved as \"" + text + "\".");
+                    return;
+                }
+                ConfigSnapShot configSnapShot = Configuration.profiles.OrderBy(i=> i.LastEdit).LastOrDefault(i => i.Name == argumentsSplit[1]);
+                if (configSnapShot != null)
+                {
+                    ChatGui.Print("[Radar] loading preset \"" + configSnapShot.Name + "\".");
+                    configSnapShot.RestoreSnapShot(Configuration);
+                }
+                else
+                {
+                    ChatGui.PrintError("[Radar] no preset named \"" + argumentsSplit[1] + "\" found.");
+                }
+                break;
+            }
+        }
+    }
 	private void Framework_OnUpdateEvent(IFramework framework)
 	{
 		SaveTimer++;
@@ -111,7 +161,7 @@ public class Plugin : IDalamudPlugin
 			try
 			{
 				Stopwatch stopwatch = Stopwatch.StartNew();
-				config.Save();
+				Configuration.Save();
 				PluginLog.Verbose($"config saved in {stopwatch.Elapsed.TotalMilliseconds}ms.");
 			}
 			catch (Exception exception)
@@ -120,97 +170,11 @@ public class Plugin : IDalamudPlugin
 			}
 		});
 	}
-
-	[Command("/radar")]
-	[HelpMessage("Open radar config window")]
-	public void ConfigCommand2(string command, string args)
-	{
-		BuildUi ui = Ui;
-		ui.ConfigVisible = !ui.ConfigVisible;
-	}
-
-	[Command("/rmap")]
-	[HelpMessage("Toggle external map")]
-	public void ToggleMap(string command, string args)
-	{
-		Configuration configuration = config;
-		configuration.ExternalMap_Enabled = !configuration.ExternalMap_Enabled;
-		ChatGui.Print("[Radar] External Map " + (config.ExternalMap_Enabled ? "Enabled" : "Disabled") + ".");
-	}
-
-	[Command("/rhunt")]
-	[HelpMessage("Toggle hunt mobs overlay")]
-	public void ShowHunt(string command, string args)
-	{
-		Configuration configuration = config;
-		configuration.OverlayHint_MobHuntView = !configuration.OverlayHint_MobHuntView;
-		ChatGui.Print("[Radar] Hunt view " + (config.OverlayHint_MobHuntView ? "Enabled" : "Disabled") + ".");
-	}
-
-	[Command("/rfinder")]
-	[HelpMessage("Toggle custom object overlay")]
-	public void ShowSpecial(string command, string args)
-	{
-		Configuration configuration = config;
-		configuration.OverlayHint_CustomObjectView = !configuration.OverlayHint_CustomObjectView;
-		ChatGui.Print("[Radar] Custom object view " + (config.OverlayHint_CustomObjectView ? "Enabled" : "Disabled") + ".");
-	}
-
-	[Command("/r2d")]
-	[HelpMessage("Toggle 2D overlay")]
-	public void Toggle2D(string command, string args)
-	{
-		Configuration configuration = config;
-		configuration.Overlay2D_Enabled = !configuration.Overlay2D_Enabled;
-		ChatGui.Print("[Radar] 2D overlay " + (config.Overlay2D_Enabled ? "Enabled" : "Disabled") + ".");
-	}
-
-	[Command("/r3d")]
-	[HelpMessage("Toggle 3D overlay")]
-	public void Toggle3D(string command, string args)
-	{
-		Configuration configuration = config;
-		configuration.Overlay3D_Enabled = !configuration.Overlay3D_Enabled;
-		ChatGui.Print("[Radar] 3D overlay " + (config.Overlay3D_Enabled ? "Enabled" : "Disabled") + ".");
-	}
-
-	[Command("/rpreset")]
-	[HelpMessage("/rpreset <preset name> → load named preset\n/rpreset save → save current config as preset")]
-	public void LoadPreset(string command, string args)
-	{
-		if (args == "save")
-		{
-			string text = DateTime.Now.ToString("G");
-			config.profiles.Add(ConfigSnapShot.GetSnapShot(text, config));
-			ChatGui.Print("[Radar] config snapchot saved as \"" + text + "\".");
-			return;
-		}
-		ConfigSnapShot configSnapShot = config.profiles.OrderBy((ConfigSnapShot i) => i.LastEdit).LastOrDefault((ConfigSnapShot i) => i.Name == args);
-		if (configSnapShot != null)
-		{
-			ChatGui.Print("[Radar] loading preset \"" + configSnapShot.Name + "\".");
-			configSnapShot.RestoreSnapShot(config);
-		}
-		else
-		{
-			ChatGui.PrintError("[Radar] no preset named \"" + args + "\" found.");
-		}
-	}
-
-	protected virtual void Dispose(bool disposing)
-	{
-		if (disposing)
-		{
-			Framework.Update -= Framework_OnUpdateEvent;
-			CommandManager.Dispose();
-			Ui.Dispose();
-			PluginInterface.SavePluginConfig(config);
-		}
-	}
-
 	public void Dispose()
-	{
-		Dispose(disposing: true);
-		GC.SuppressFinalize(this);
+    {
+        CommandManager.RemoveHandler("/radar");
+        Framework.Update -= Framework_OnUpdateEvent;
+        Ui.Dispose();
+        PluginInterface.SavePluginConfig(Configuration);
 	}
 }

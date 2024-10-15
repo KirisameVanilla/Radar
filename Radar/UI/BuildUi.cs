@@ -251,7 +251,7 @@ public class BuildUi : IDisposable
     private static readonly ExcelSheet<Map> MapSheet = Plugin.DataManager.GetExcelSheet<Map>();
     #endregion
 
-	private Dictionary<ushort, bool> IsPvpZone => isPvpZoneDict ?? (isPvpZoneDict = TerritoryTypeSheet.ToDictionary((i) => (ushort)i.RowId, (j) => j.IsPvpZone));
+	private Dictionary<ushort, bool> IsPvpZone => isPvpZoneDict ??= TerritoryTypeSheet.ToDictionary((i) => (ushort)i.RowId, (j) => j.IsPvpZone);
 
 	private static int FontsSize => ImGui.GetIO().Fonts.Fonts.Size;
     
@@ -268,7 +268,7 @@ public class BuildUi : IDisposable
 		}
 	}
 
-	private string[] GetEnumNames => getEnumNames ?? (getEnumNames = Enum.GetNames(typeof(MyObjectKind)));
+	private string[] GetEnumNames => getEnumNames ??= Enum.GetNames(typeof(MyObjectKind));
 
 	public static DeepDungeonTerritoryEqualityComparer DeepDungeonTerritoryEqual { get; set; }
 
@@ -347,12 +347,12 @@ public class BuildUi : IDisposable
 				backgroundDrawList = ImGui.GetBackgroundDrawList(ImGui.GetMainViewport());
 				RefreshMeScreenPos();
 				RefreshMeWorldPos();
-				if (Plugin.config.DeepDungeon_EnableTrapView && Plugin.Condition[ConditionFlag.InDeepDungeon])
+				if (Plugin.Configuration.DeepDungeon_EnableTrapView && Plugin.Condition[ConditionFlag.InDeepDungeon])
 				{
 					DrawDeepDungeonObjects();
 				}
 				bool num = FontsSize > 2;
-				if (num && Plugin.config.Overlay3D_UseLargeFont)
+				if (num && Plugin.Configuration.Overlay3D_UseLargeFont)
 				{
 					ImGui.PushFont(ImGui.GetIO().Fonts.Fonts[2]);
 				}
@@ -360,32 +360,32 @@ public class BuildUi : IDisposable
 				{
 					EnumerateAllObjects();
 				}
-				if (num && Plugin.config.Overlay3D_UseLargeFont)
+				if (num && Plugin.Configuration.Overlay3D_UseLargeFont)
 				{
 					ImGui.PopFont();
 				}
-				if (num && Plugin.config.Overlay2D_UseLargeFont)
+				if (num && Plugin.Configuration.Overlay2D_UseLargeFont)
 				{
 					ImGui.PushFont(ImGui.GetIO().Fonts.Fonts[2]);
 				}
-				if (Plugin.config.Overlay2D_Enabled)
+				if (Plugin.Configuration.Overlay2D_Enabled)
 				{
 					DrawMapOverlay();
 				}
-				if (Plugin.config.ExternalMap_Enabled)
+				if (Plugin.Configuration.ExternalMap_Enabled)
 				{
 					DrawExternalMap();
 				}
-				if (num && Plugin.config.Overlay2D_UseLargeFont)
+				if (num && Plugin.Configuration.Overlay2D_UseLargeFont)
 				{
 					ImGui.PopFont();
 				}
-				if (num && Plugin.config.OverlayHint_LargeFont)
+				if (num && Plugin.Configuration.OverlayHint_LargeFont)
 				{
 					ImGui.PushFont(ImGui.GetIO().Fonts.Fonts[2]);
 				}
 				DrawSpecialObjectTipWindows();
-				if (num && Plugin.config.OverlayHint_LargeFont)
+				if (num && Plugin.Configuration.OverlayHint_LargeFont)
 				{
 					ImGui.PopFont();
 				}
@@ -428,23 +428,23 @@ public class BuildUi : IDisposable
             var fgColor = uint.MaxValue;
             var bgColor = 3204448256u;
             var flag = TryAddSpecialObjectsToDrawList(o, ref fgColor, ref bgColor);
-            if (Plugin.config.Overlay2D_Enabled || Plugin.config.Overlay3D_Enabled)
+            if (Plugin.Configuration.Overlay2D_Enabled || Plugin.Configuration.Overlay3D_Enabled)
             {
                 if (!flag)
                 {
-                    if (!Plugin.config.Overlay_ShowKinds[(int)myObjectKind] || (Plugin.config.Overlay_OnlyShowTargetable && (!o.IsTargetable || o.ObjectKind == ObjectKind.MountType)))
+                    if (!Plugin.Configuration.Overlay_ShowKinds[(int)myObjectKind] || (Plugin.Configuration.Overlay_OnlyShowTargetable && (!o.IsTargetable || o.ObjectKind == ObjectKind.MountType)))
                     {
                         return;
                     }
-                    fgColor = ImGui.ColorConvertFloat4ToU32(Plugin.config.KindColors[(int)myObjectKind]);
-                    bgColor = ImGui.ColorConvertFloat4ToU32(Plugin.config.KindColorsBg[(int)myObjectKind]);
+                    fgColor = ImGui.ColorConvertFloat4ToU32(Plugin.Configuration.KindColors[(int)myObjectKind]);
+                    bgColor = ImGui.ColorConvertFloat4ToU32(Plugin.Configuration.KindColorsBg[(int)myObjectKind]);
                 }
                 ISharedImmediateTexture icon = null;
-                if (Plugin.config.Overlay3D_Enabled)
+                if (Plugin.Configuration.Overlay3D_Enabled)
                 {
-                    DrawObject3D(o, fgColor, bgColor, Plugin.config.OverlayHint_ShowSpecialObjectLine && flag, icon);
+                    DrawObject3D(o, fgColor, bgColor, Plugin.Configuration.OverlayHint_ShowSpecialObjectLine && flag, icon);
                 }
-                if (Plugin.config.Overlay2D_Enabled)
+                if (Plugin.Configuration.Overlay2D_Enabled)
                 {
                     AddObjectTo2DDrawList(o, fgColor, bgColor);
                 }
@@ -474,93 +474,93 @@ public class BuildUi : IDisposable
 	private static void Config2D()
 	{
 		ImGui.TextWrapped("在游戏平面地图上显示物体信息叠加层。");
-		ImGui.Checkbox("启用2D覆盖", ref Plugin.config.Overlay2D_Enabled);
-		ImGui.Checkbox("显示自己##Overlay2D_ShowCenter", ref Plugin.config.Overlay2D_ShowCenter);
-		ImGui.Checkbox("显示辅助圈(25m|125m)", ref Plugin.config.Overlay2D_ShowAssist);
-		ref int overlay2DDetailLevel = ref Plugin.config.Overlay2D_DetailLevel;
-		DetailLevel overlay2DDetailLevel2 = (DetailLevel)Plugin.config.Overlay2D_DetailLevel;
+		ImGui.Checkbox("启用2D覆盖", ref Plugin.Configuration.Overlay2D_Enabled);
+		ImGui.Checkbox("显示自己##Overlay2D_ShowCenter", ref Plugin.Configuration.Overlay2D_ShowCenter);
+		ImGui.Checkbox("显示辅助圈(25m|125m)", ref Plugin.Configuration.Overlay2D_ShowAssist);
+		ref int overlay2DDetailLevel = ref Plugin.Configuration.Overlay2D_DetailLevel;
+		DetailLevel overlay2DDetailLevel2 = (DetailLevel)Plugin.Configuration.Overlay2D_DetailLevel;
 		ImGui.SliderInt("信息显示级别##2d", ref overlay2DDetailLevel, 0, 2, overlay2DDetailLevel2.ToString());
 		ImGui.Separator();
-		ImGui.Checkbox("启用外置地图##externalMap", ref Plugin.config.ExternalMap_Enabled);
-		ImGui.Checkbox("锁定位置大小##externalMap", ref Plugin.config.ExternalMap_LockSizePos);
-		ImGui.Checkbox("点击穿透##externalMap", ref Plugin.config.ExternalMap_ClickThrough);
-		ImGui.Checkbox("显示地图信息##externalMap", ref Plugin.config.ExternalMap_ShowMapInfo);
-		ImGui.SliderFloat("地图透明度##externalMap", ref Plugin.config.ExternalMap_MapAlpha, 0f, 1f);
-		ImGui.SliderFloat("背景透明度##externalMap", ref Plugin.config.ExternalMap_BgAlpha, 0f, 1f);
-		ref int externalMapMode = ref Plugin.config.ExternalMap_Mode;
-		MapMode externalMapMode2 = (MapMode)Plugin.config.ExternalMap_Mode;
+		ImGui.Checkbox("启用外置地图##externalMap", ref Plugin.Configuration.ExternalMap_Enabled);
+		ImGui.Checkbox("锁定位置大小##externalMap", ref Plugin.Configuration.ExternalMap_LockSizePos);
+		ImGui.Checkbox("点击穿透##externalMap", ref Plugin.Configuration.ExternalMap_ClickThrough);
+		ImGui.Checkbox("显示地图信息##externalMap", ref Plugin.Configuration.ExternalMap_ShowMapInfo);
+		ImGui.SliderFloat("地图透明度##externalMap", ref Plugin.Configuration.ExternalMap_MapAlpha, 0f, 1f);
+		ImGui.SliderFloat("背景透明度##externalMap", ref Plugin.Configuration.ExternalMap_BgAlpha, 0f, 1f);
+		ref int externalMapMode = ref Plugin.Configuration.ExternalMap_Mode;
+		MapMode externalMapMode2 = (MapMode)Plugin.Configuration.ExternalMap_Mode;
 		ImGui.SliderInt("地图模式##externalMap", ref externalMapMode, 0, 2, externalMapMode2.ToString());
 		ImGui.Separator();
 		ImGui.TextUnformatted("名牌设置");
 		if (ImGui.GetIO().Fonts.Fonts.Size > 2)
 		{
-			ImGui.Checkbox("大字体##2D", ref Plugin.config.Overlay2D_UseLargeFont);
+			ImGui.Checkbox("大字体##2D", ref Plugin.Configuration.Overlay2D_UseLargeFont);
 		}
-		ImGui.Checkbox("文字描边##Overlay2D_TextStroke", ref Plugin.config.Overlay2D_TextStroke);
+		ImGui.Checkbox("文字描边##Overlay2D_TextStroke", ref Plugin.Configuration.Overlay2D_TextStroke);
 		ImGui.Separator();
 		ImGui.TextUnformatted("标识设置");
-		ImGui.SliderFloat("标识大小##Overlay2D_DotSize", ref Plugin.config.Overlay2D_DotSize, 3f, 15f);
-		ImGui.SliderFloat("标识描边宽度##Overlay2D_DotStroke", ref Plugin.config.Overlay2D_DotStroke, 0f, 5f);
+		ImGui.SliderFloat("标识大小##Overlay2D_DotSize", ref Plugin.Configuration.Overlay2D_DotSize, 3f, 15f);
+		ImGui.SliderFloat("标识描边宽度##Overlay2D_DotStroke", ref Plugin.Configuration.Overlay2D_DotStroke, 0f, 5f);
 	}
 
 	private static void Config3D()
 	{
 		ImGui.TextWrapped("在游戏世界空间显示物体信息叠加层。");
-		ImGui.Checkbox("启用3D覆盖", ref Plugin.config.Overlay3D_Enabled);
-		ImGui.Checkbox("显示屏幕外物体", ref Plugin.config.Overlay3D_ShowOffscreen);
-		ImGui.Checkbox("显示当前目标线", ref Plugin.config.Overlay3D_DrawObjectLineCurrentTarget);
-		ImGui.Checkbox("显示以你为目标的目标线", ref Plugin.config.Overlay3D_DrawObjectLineTargetingYou);
-		ImGui.Checkbox("显示所有物体目标线", ref Plugin.config.Overlay3D_DrawObjectLineAll);
-		ref int overlay3DDetailLevel = ref Plugin.config.Overlay3D_DetailLevel;
-		DetailLevel overlay3DDetailLevel2 = (DetailLevel)Plugin.config.Overlay3D_DetailLevel;
+		ImGui.Checkbox("启用3D覆盖", ref Plugin.Configuration.Overlay3D_Enabled);
+		ImGui.Checkbox("显示屏幕外物体", ref Plugin.Configuration.Overlay3D_ShowOffscreen);
+		ImGui.Checkbox("显示当前目标线", ref Plugin.Configuration.Overlay3D_DrawObjectLineCurrentTarget);
+		ImGui.Checkbox("显示以你为目标的目标线", ref Plugin.Configuration.Overlay3D_DrawObjectLineTargetingYou);
+		ImGui.Checkbox("显示所有物体目标线", ref Plugin.Configuration.Overlay3D_DrawObjectLineAll);
+		ref int overlay3DDetailLevel = ref Plugin.Configuration.Overlay3D_DetailLevel;
+		DetailLevel overlay3DDetailLevel2 = (DetailLevel)Plugin.Configuration.Overlay3D_DetailLevel;
 		ImGui.SliderInt("信息显示级别##3d", ref overlay3DDetailLevel, 0, 2, overlay3DDetailLevel2.ToString());
 		ImGui.Separator();
 		ImGui.TextUnformatted("名牌设置");
 		if (ImGui.GetIO().Fonts.Fonts.Size > 2)
 		{
-			ImGui.Checkbox("大字体##3D", ref Plugin.config.Overlay3D_UseLargeFont);
+			ImGui.Checkbox("大字体##3D", ref Plugin.Configuration.Overlay3D_UseLargeFont);
 		}
-		ImGui.Checkbox("名牌居中显示##3D", ref Plugin.config.Overlay3D_CenterAlign);
-		ImGui.SliderFloat("名牌圆角", ref Plugin.config.Overlay3D_NamePlateRound, 0f, 10f);
-		ImGui.SliderFloat("名牌背景透明度##3D", ref Plugin.config.Overlay3D_NamePlateBgAlpha, 0f, 1f);
+		ImGui.Checkbox("名牌居中显示##3D", ref Plugin.Configuration.Overlay3D_CenterAlign);
+		ImGui.SliderFloat("名牌圆角", ref Plugin.Configuration.Overlay3D_NamePlateRound, 0f, 10f);
+		ImGui.SliderFloat("名牌背景透明度##3D", ref Plugin.Configuration.Overlay3D_NamePlateBgAlpha, 0f, 1f);
 		ImGui.Separator();
 		ImGui.TextUnformatted("标识设置");
-		if (ImGui.RadioButton("方形", Plugin.config.Overlay3D_RingType == RingSegmentsType.Quad))
+		if (ImGui.RadioButton("方形", Plugin.Configuration.Overlay3D_RingType == RingSegmentsType.Quad))
 		{
-			Plugin.config.Overlay3D_RingType = RingSegmentsType.Quad;
+			Plugin.Configuration.Overlay3D_RingType = RingSegmentsType.Quad;
 		}
 		ImGui.SameLine();
-		if (ImGui.RadioButton("六边形", Plugin.config.Overlay3D_RingType == RingSegmentsType.Hexagon))
+		if (ImGui.RadioButton("六边形", Plugin.Configuration.Overlay3D_RingType == RingSegmentsType.Hexagon))
 		{
-			Plugin.config.Overlay3D_RingType = RingSegmentsType.Hexagon;
+			Plugin.Configuration.Overlay3D_RingType = RingSegmentsType.Hexagon;
 		}
 		ImGui.SameLine();
-		if (ImGui.RadioButton("圆形", Plugin.config.Overlay3D_RingType == RingSegmentsType.Circle))
+		if (ImGui.RadioButton("圆形", Plugin.Configuration.Overlay3D_RingType == RingSegmentsType.Circle))
 		{
-			Plugin.config.Overlay3D_RingType = RingSegmentsType.Circle;
+			Plugin.Configuration.Overlay3D_RingType = RingSegmentsType.Circle;
 		}
-		ImGui.DragFloat2("边框保留宽度", ref Plugin.config.Overlay3D_ClampVector2, 0.1f, 0f, 1000f);
-		ImGui.SliderFloat("屏幕内标识大小", ref Plugin.config.Overlay3D_RingSize, 2f, 50f);
-		ImGui.SliderFloat("边缘标识大小", ref Plugin.config.Overlay3D_ArrowSize, 5f, 50f);
-		ImGui.SliderFloat("边缘标识粗细", ref Plugin.config.Overlay3D_ArrorThickness, 0.5f, 50f);
-		ImGui.SliderFloat("标识描边宽度", ref Plugin.config.Overlay3D_IconStrokeThickness, 0f, 10f);
+		ImGui.DragFloat2("边框保留宽度", ref Plugin.Configuration.Overlay3D_ClampVector2, 0.1f, 0f, 1000f);
+		ImGui.SliderFloat("屏幕内标识大小", ref Plugin.Configuration.Overlay3D_RingSize, 2f, 50f);
+		ImGui.SliderFloat("边缘标识大小", ref Plugin.Configuration.Overlay3D_ArrowSize, 5f, 50f);
+		ImGui.SliderFloat("边缘标识粗细", ref Plugin.Configuration.Overlay3D_ArrorThickness, 0.5f, 50f);
+		ImGui.SliderFloat("标识描边宽度", ref Plugin.Configuration.Overlay3D_IconStrokeThickness, 0f, 10f);
 	}
 
 	private void MobHuntAndCustomObjects()
 	{
 		ImGui.TextWrapped("用单独的提示窗口显示狩猎怪和自定义名称的物体。\n需要显示的物体名可以在下方自行添加。");
-		ImGui.Checkbox("显示狩猎怪", ref Plugin.config.OverlayHint_MobHuntView);
-		ImGui.Checkbox("显示自定义物体", ref Plugin.config.OverlayHint_CustomObjectView);
+		ImGui.Checkbox("显示狩猎怪", ref Plugin.Configuration.OverlayHint_MobHuntView);
+		ImGui.Checkbox("显示自定义物体", ref Plugin.Configuration.OverlayHint_CustomObjectView);
 		ImGui.Separator();
 		if (ImGui.GetIO().Fonts.Fonts.Size > 2)
 		{
-			ImGui.Checkbox("大字体##hints", ref Plugin.config.OverlayHint_LargeFont);
+			ImGui.Checkbox("大字体##hints", ref Plugin.Configuration.OverlayHint_LargeFont);
 		}
-		ImGui.Checkbox("显示目标线(3D)##specialObjects", ref Plugin.config.OverlayHint_ShowSpecialObjectLine);
-		ImGui.Checkbox("鼠标悬停在窗口时按Alt打开地图链接", ref Plugin.config.OverlayHint_OpenMapLinkOnAlt);
-		ImGui.DragFloat2("提示窗口位置", ref Plugin.config.WindowPos, 1f, 0f, 10000f);
-		ImGui.SliderFloat("提示窗口边框宽度", ref Plugin.config.OverlayHint_BorderSize, 0f, 5f);
-		ImGui.SliderFloat("窗口背景透明度##overlayHint", ref Plugin.config.OverlayHint_BgAlpha, 0f, 1f);
+		ImGui.Checkbox("显示目标线(3D)##specialObjects", ref Plugin.Configuration.OverlayHint_ShowSpecialObjectLine);
+		ImGui.Checkbox("鼠标悬停在窗口时按Alt打开地图链接", ref Plugin.Configuration.OverlayHint_OpenMapLinkOnAlt);
+		ImGui.DragFloat2("提示窗口位置", ref Plugin.Configuration.WindowPos, 1f, 0f, 10000f);
+		ImGui.SliderFloat("提示窗口边框宽度", ref Plugin.Configuration.OverlayHint_BorderSize, 0f, 5f);
+		ImGui.SliderFloat("窗口背景透明度##overlayHint", ref Plugin.Configuration.OverlayHint_BgAlpha, 0f, 1f);
 		if (!ImGui.BeginTable("CustomObjectTable", 4, ImGuiTableFlags.SizingStretchProp | ImGuiTableFlags.PadOuterX))
 		{
 			return;
@@ -570,14 +570,14 @@ public class BuildUi : IDisposable
 		ImGui.TableSetupColumn("颜色");
 		ImGui.TableSetupColumn("添加/删除");
 		ImGui.TableHeadersRow();
-		foreach (KeyValuePair<string, CustomObjectValue> customHighlightObject in Plugin.config.customHighlightObjects)
+		foreach (KeyValuePair<string, CustomObjectValue> customHighlightObject in Plugin.Configuration.customHighlightObjects)
 		{
 			ImGui.TableNextRow();
 			ImGui.TableNextColumn();
 			bool v = customHighlightObject.Value.Enabled;
 			if (ImGui.Checkbox(customHighlightObject.Key + "##highlightObject", ref v))
 			{
-				Plugin.config.customHighlightObjects[customHighlightObject.Key] = customHighlightObject.Value with
+				Plugin.Configuration.customHighlightObjects[customHighlightObject.Key] = customHighlightObject.Value with
 				{
 					Enabled = v
 				};
@@ -588,7 +588,7 @@ public class BuildUi : IDisposable
 			ImguiUtil.ColorPickerWithPalette(customHighlightObject.Key.GetHashCode(), string.Empty, ref originalColor, ImGuiColorEditFlags.None);
 			if (originalColor != customHighlightObject.Value.Color)
 			{
-				Plugin.config.customHighlightObjects[customHighlightObject.Key] = customHighlightObject.Value with
+				Plugin.Configuration.customHighlightObjects[customHighlightObject.Key] = customHighlightObject.Value with
 				{
 					Color = originalColor
 				};
@@ -597,7 +597,7 @@ public class BuildUi : IDisposable
 			ImGui.TableNextColumn();
 			if (ImguiUtil.IconButton(FontAwesomeIcon.Trash, customHighlightObject.Key + "##delete"))
 			{
-				Plugin.config.customHighlightObjects.Remove(customHighlightObject.Key);
+				Plugin.Configuration.customHighlightObjects.Remove(customHighlightObject.Key);
 				break;
 			}
 		}
@@ -622,7 +622,7 @@ public class BuildUi : IDisposable
 			}
 			else
 			{
-				Plugin.config.customHighlightObjects[newCustomObjectName] = new CustomObjectValue
+				Plugin.Configuration.customHighlightObjects[newCustomObjectName] = new CustomObjectValue
 				{
 					Color = newCustomObjectColor,
 					Enabled = true
@@ -636,17 +636,17 @@ public class BuildUi : IDisposable
 	private void ConfigDeepDungeonRecord()
 	{
 		ImGui.TextWrapped("记录并显示本机深层迷宫攻略过程中出现过的陷阱与宝藏位置。\n你也可以导出自己的记录并与他人共享情报。");
-		ImGui.Checkbox("深层迷宫实体显示", ref Plugin.config.DeepDungeon_EnableTrapView);
-		ImGui.Checkbox("显示计数", ref Plugin.config.DeepDungeon_ShowObjectCount);
+		ImGui.Checkbox("深层迷宫实体显示", ref Plugin.Configuration.DeepDungeon_EnableTrapView);
+		ImGui.Checkbox("显示计数", ref Plugin.Configuration.DeepDungeon_ShowObjectCount);
 		ImGui.Spacing();
-		ImGui.SliderFloat("最远显示距离", ref Plugin.config.DeepDungeon_ObjectShowDistance, 15f, 500f, Plugin.config.DeepDungeon_ObjectShowDistance.ToString("##.0m"), ImGuiSliderFlags.Logarithmic);
+		ImGui.SliderFloat("最远显示距离", ref Plugin.Configuration.DeepDungeon_ObjectShowDistance, 15f, 500f, Plugin.Configuration.DeepDungeon_ObjectShowDistance.ToString("##.0m"), ImGuiSliderFlags.Logarithmic);
 		ImGui.Separator();
 		if (ImGui.Button("导出当前记录点到剪贴板"))
 		{
 			Plugin.PluginLog.Information("exporting...");
-			Plugin.PluginLog.Information($"exported {(from i in Plugin.config.DeepDungeonObjects
-				group i by i.Territory).Count()} territories, {Plugin.config.DeepDungeonObjects.Count(i => i.Type == DeepDungeonType.Trap)} traps, {Plugin.config.DeepDungeonObjects.Count(i => i.Type == DeepDungeonType.AccursedHoard)} hoards.");
-			ImGui.SetClipboardText(Plugin.config.DeepDungeonObjects.ToCompressedString());
+			Plugin.PluginLog.Information($"exported {(from i in Plugin.Configuration.DeepDungeonObjects
+				group i by i.Territory).Count()} territories, {Plugin.Configuration.DeepDungeonObjects.Count(i => i.Type == DeepDungeonType.Trap)} traps, {Plugin.Configuration.DeepDungeonObjects.Count(i => i.Type == DeepDungeonType.AccursedHoard)} hoards.");
+			ImGui.SetClipboardText(Plugin.Configuration.DeepDungeonObjects.ToCompressedString());
 		}
 		if (deepDungeonObjectsImportCache == null || deepDungeonObjectsImportCache.Count == 0)
 		{
@@ -762,10 +762,10 @@ public class BuildUi : IDisposable
 		ImGui.SameLine();
 		if (ImGui.Button("确认导入##importAccept"))
 		{
-			int count = Plugin.config.DeepDungeonObjects.Count;
-			Plugin.config.DeepDungeonObjects.UnionWith(deepDungeonObjectsImportCache);
+			int count = Plugin.Configuration.DeepDungeonObjects.Count;
+			Plugin.Configuration.DeepDungeonObjects.UnionWith(deepDungeonObjectsImportCache);
 			deepDungeonObjectsImportCache = null;
-			int num = Plugin.config.DeepDungeonObjects.Count - count;
+			int num = Plugin.Configuration.DeepDungeonObjects.Count - count;
 			Plugin.PluginLog.Information($"imported {num} deep dungeon object records.");
 		}
         return;
@@ -789,51 +789,51 @@ public class BuildUi : IDisposable
 		ImGui.TextWrapped("按物体类别过滤显示。");
 		if (ImGui.Button("全选"))
 		{
-			for (int i = 0; i < Plugin.config.Overlay_ShowKinds.Length; i++)
+			for (int i = 0; i < Plugin.Configuration.Overlay_ShowKinds.Length; i++)
 			{
-				Plugin.config.Overlay_ShowKinds[i] = true;
+				Plugin.Configuration.Overlay_ShowKinds[i] = true;
 			}
 		}
 		ImGui.SameLine();
 		if (ImGui.Button("全不选"))
 		{
-			for (int j = 0; j < Plugin.config.Overlay_ShowKinds.Length; j++)
+			for (int j = 0; j < Plugin.Configuration.Overlay_ShowKinds.Length; j++)
 			{
-				Plugin.config.Overlay_ShowKinds[j] = false;
+				Plugin.Configuration.Overlay_ShowKinds[j] = false;
 			}
 		}
 		ImGui.SameLine();
 		if (ImGui.Button("反选"))
 		{
-			for (int k = 0; k < Plugin.config.Overlay_ShowKinds.Length; k++)
+			for (int k = 0; k < Plugin.Configuration.Overlay_ShowKinds.Length; k++)
 			{
-				Plugin.config.Overlay_ShowKinds[k] = !Plugin.config.Overlay_ShowKinds[k];
+				Plugin.Configuration.Overlay_ShowKinds[k] = !Plugin.Configuration.Overlay_ShowKinds[k];
 			}
 		}
 		ImGui.SameLine();
 		if (ImGui.Button("玩家"))
 		{
-			for (int l = 0; l < Plugin.config.Overlay_ShowKinds.Length; l++)
+			for (int l = 0; l < Plugin.Configuration.Overlay_ShowKinds.Length; l++)
 			{
-				Plugin.config.Overlay_ShowKinds[l] = false;
+				Plugin.Configuration.Overlay_ShowKinds[l] = false;
 			}
-			Plugin.config.Overlay_ShowKinds[3] = true;
+			Plugin.Configuration.Overlay_ShowKinds[3] = true;
 		}
 		ImGui.SameLine();
 		if (ImGui.Button("NPC"))
 		{
-			for (int m = 0; m < Plugin.config.Overlay_ShowKinds.Length; m++)
+			for (int m = 0; m < Plugin.Configuration.Overlay_ShowKinds.Length; m++)
 			{
-				Plugin.config.Overlay_ShowKinds[m] = false;
+				Plugin.Configuration.Overlay_ShowKinds[m] = false;
 			}
-			Plugin.config.Overlay_ShowKinds[4] = true;
-			Plugin.config.Overlay_ShowKinds[5] = true;
-			Plugin.config.Overlay_ShowKinds[6] = true;
-			Plugin.config.Overlay_ShowKinds[7] = true;
-			Plugin.config.Overlay_ShowKinds[9] = true;
+			Plugin.Configuration.Overlay_ShowKinds[4] = true;
+			Plugin.Configuration.Overlay_ShowKinds[5] = true;
+			Plugin.Configuration.Overlay_ShowKinds[6] = true;
+			Plugin.Configuration.Overlay_ShowKinds[7] = true;
+			Plugin.Configuration.Overlay_ShowKinds[9] = true;
 		}
 		ImGui.SameLine();
-		ImGui.Checkbox("只显示可选中物体", ref Plugin.config.Overlay_OnlyShowTargetable);
+		ImGui.Checkbox("只显示可选中物体", ref Plugin.Configuration.Overlay_OnlyShowTargetable);
 		string[] getEnumNames = GetEnumNames;
 		if (ImGui.BeginTable("ObjectKindTable", 3, ImGuiTableFlags.SizingStretchProp | ImGuiTableFlags.PadOuterX | ImGuiTableFlags.ScrollY))
 		{
@@ -846,11 +846,11 @@ public class BuildUi : IDisposable
 			{
 				ImGui.TableNextRow();
 				ImGui.TableNextColumn();
-				ImGui.Checkbox(getEnumNames[n] + "##ObjectKindCheckbox", ref Plugin.config.Overlay_ShowKinds[n]);
+				ImGui.Checkbox(getEnumNames[n] + "##ObjectKindCheckbox", ref Plugin.Configuration.Overlay_ShowKinds[n]);
 				ImGui.TableNextColumn();
-				ImguiUtil.ColorPickerWithPalette(n, string.Empty, ref Plugin.config.KindColors[n], ImGuiColorEditFlags.AlphaBar | ImGuiColorEditFlags.AlphaPreview);
+				ImguiUtil.ColorPickerWithPalette(n, string.Empty, ref Plugin.Configuration.KindColors[n], ImGuiColorEditFlags.AlphaBar | ImGuiColorEditFlags.AlphaPreview);
 				ImGui.TableNextColumn();
-				ImguiUtil.ColorPickerWithPalette(int.MaxValue - n, string.Empty, ref Plugin.config.KindColorsBg[n], ImGuiColorEditFlags.AlphaBar | ImGuiColorEditFlags.AlphaPreview);
+				ImguiUtil.ColorPickerWithPalette(int.MaxValue - n, string.Empty, ref Plugin.Configuration.KindColorsBg[n], ImGuiColorEditFlags.AlphaBar | ImGuiColorEditFlags.AlphaPreview);
 			}
 			ImGui.EndTable();
 		}
@@ -918,11 +918,11 @@ public class BuildUi : IDisposable
 					ImGui.TableNextColumn();
 					ImGui.TextUnformatted("读取 / 覆盖 / 删除");
 					var num = -1;
-					for (int i = 0; i < Plugin.config.profiles.Count; i++)
+					for (int i = 0; i < Plugin.Configuration.profiles.Count; i++)
 					{
 						ImGui.TableNextRow();
 						ImGui.TableNextColumn();
-						ConfigSnapShot configSnapShot = Plugin.config.profiles[i];
+						ConfigSnapShot configSnapShot = Plugin.Configuration.profiles[i];
 						string input = configSnapShot.Name;
 						ImGui.Selectable($"##selectable{i}", configSnapShot == currentProfile, ImGuiSelectableFlags.SpanAllColumns | ImGuiSelectableFlags.AllowDoubleClick | ImGuiSelectableFlags.AllowItemOverlap, new Vector2(0f, ImGui.GetFrameHeight()));
 						ImGui.SameLine();
@@ -930,7 +930,7 @@ public class BuildUi : IDisposable
 						ImGui.SetNextItemWidth(-1f);
 						if (ImGui.InputText($"##name{i}", ref input, 255u, ImGuiInputTextFlags.AutoSelectAll))
 						{
-							Plugin.config.profiles[i].Name = input;
+							Plugin.Configuration.profiles[i].Name = input;
 						}
 						ImGui.TableNextColumn();
 						ImGui.TextUnformatted($"{configSnapShot.LastEdit:f}");
@@ -939,7 +939,7 @@ public class BuildUi : IDisposable
 						if (ImguiUtil.IconButton(FontAwesomeIcon.Upload, $"loadbutton{i}", size))
 						{
 							currentProfile = configSnapShot;
-							configSnapShot.RestoreSnapShot(Plugin.config);
+							configSnapShot.RestoreSnapShot(Plugin.Configuration);
 						}
 						ImGui.SameLine();
 						ImguiUtil.IconButton(FontAwesomeIcon.Download, $"savebutton{i}", size);
@@ -947,7 +947,7 @@ public class BuildUi : IDisposable
 						{
 							if (ImGui.IsMouseDoubleClicked(ImGuiMouseButton.Left))
 							{
-								Plugin.config.profiles[i] = ConfigSnapShot.GetSnapShot(configSnapShot.Name, Plugin.config);
+								Plugin.Configuration.profiles[i] = ConfigSnapShot.GetSnapShot(configSnapShot.Name, Plugin.Configuration);
 							}
 							ImGui.BeginTooltip();
 							ImGui.TextUnformatted("Double click to overwrite");
@@ -968,12 +968,12 @@ public class BuildUi : IDisposable
 					}
 					if (num != -1)
 					{
-						Plugin.config.profiles.RemoveAt(num);
+						Plugin.Configuration.profiles.RemoveAt(num);
 					}
 					ImGui.EndTable();
 					if (ImGui.Button("保存当前设置为新预设"))
 					{
-						Plugin.config.profiles.Add(ConfigSnapShot.GetSnapShot(DateTime.Now.ToString("G"), Plugin.config));
+						Plugin.Configuration.profiles.Add(ConfigSnapShot.GetSnapShot(DateTime.Now.ToString("G"), Plugin.Configuration));
 					}
 				}
 				ImGui.EndChild();
@@ -1023,7 +1023,7 @@ public class BuildUi : IDisposable
                 Location = o.Position,
                 Territory = Plugin.ClientState.TerritoryType
             };
-            if (Plugin.config.DeepDungeonObjects.Add(deepDungeonObject))
+            if (Plugin.Configuration.DeepDungeonObjects.Add(deepDungeonObject))
             {
                 Plugin.PluginLog.Information($"New AccursedHoard recorded! {deepDungeonObject}");
             }
@@ -1038,7 +1038,7 @@ public class BuildUi : IDisposable
                 Location = o.Position,
                 Territory = Plugin.ClientState.TerritoryType
             };
-            if (Plugin.config.DeepDungeonObjects.Add(deepDungeonObject2))
+            if (Plugin.Configuration.DeepDungeonObjects.Add(deepDungeonObject2))
             {
                 Plugin.PluginLog.Information($"New Trap recorded! {deepDungeonObject2}");
             }
@@ -1048,12 +1048,12 @@ public class BuildUi : IDisposable
 
     private void DrawDeepDungeonObjects()
 	{
-		foreach (IGrouping<DeepDungeonObject, DeepDungeonObject> item in Plugin.config.DeepDungeonObjects.Where((DeepDungeonObject i) => i.Territory != 0 && i.GetBg == GetDeepDungeonBg(Plugin.ClientState.TerritoryType) && i.Location.Distance2D(MeWorldPos.Convert()) < Plugin.config.DeepDungeon_ObjectShowDistance).GroupBy((DeepDungeonObject i) => i, DeepDungeonObjectLocationEqual))
+		foreach (IGrouping<DeepDungeonObject, DeepDungeonObject> item in Plugin.Configuration.DeepDungeonObjects.Where((DeepDungeonObject i) => i.Territory != 0 && i.GetBg == GetDeepDungeonBg(Plugin.ClientState.TerritoryType) && i.Location.Distance2D(MeWorldPos.Convert()) < Plugin.Configuration.DeepDungeon_ObjectShowDistance).GroupBy((DeepDungeonObject i) => i, DeepDungeonObjectLocationEqual))
 		{
 			Vector2 ringCenter;
 			if (item.Key.Type == DeepDungeonType.Trap)
 			{
-				if (Plugin.config.DeepDungeon_ShowObjectCount)
+				if (Plugin.Configuration.DeepDungeon_ShowObjectCount)
 				{
 					ImDrawListPtr bDL = backgroundDrawList;
 					Vector3 location = item.Key.Location;
@@ -1068,7 +1068,7 @@ public class BuildUi : IDisposable
 			}
 			if (item.Key.Type == DeepDungeonType.AccursedHoard)
 			{
-				if (Plugin.config.DeepDungeon_ShowObjectCount)
+				if (Plugin.Configuration.DeepDungeon_ShowObjectCount)
 				{
 					backgroundDrawList.DrawRingWorldWithText(item.Key.Location + new Vector3(0f, 0.1f, 0f), 0.5f, 24, 2f, 4278255615u, $"{item.Count()}", new Vector2(0f, 0f - ImGui.GetTextLineHeight()));
 				}
@@ -1085,20 +1085,19 @@ public class BuildUi : IDisposable
         string DictionaryName = obj.Name.ToString();
         var myObjectKind = Util.GetMyObjectKind(obj);
 
-        if (Plugin.config.NpcBaseMapping.ContainsKey(obj.DataId))
+        if (Plugin.Configuration.NpcBaseMapping.ContainsKey(obj.DataId))
         {
-            Plugin.config.NpcBaseMapping.TryGetValue(obj.DataId, out DictionaryName);
+            Plugin.Configuration.NpcBaseMapping.TryGetValue(obj.DataId, out DictionaryName);
         }
 
-        ICharacter objCharacter = obj as ICharacter;
-        if (objCharacter is null) return false;
-        if (Plugin.config.OverlayHint_CustomObjectView && Plugin.config.customHighlightObjects.TryGetValue(DictionaryName, out var value) && value.Enabled)
+        if (obj is not ICharacter objCharacter) return false;
+        if (Plugin.Configuration.OverlayHint_CustomObjectView && Plugin.Configuration.customHighlightObjects.TryGetValue(DictionaryName, out var value) && value.Enabled)
         {
             SpecialObjectDrawList.Add((obj, ImGui.ColorConvertFloat4ToU32(value.Color), $"{myObjectKind.ToString().ToUpper()} {((obj.DataId != 0) ? obj.DataId.ToString() : string.Empty)}\nLv.{objCharacter.Level} {DictionaryName}"));
             fgColor = ImGui.ColorConvertFloat4ToU32(value.Color);
             return true;
         }
-        if (Plugin.config.OverlayHint_MobHuntView && obj.ObjectKind == ObjectKind.BattleNpc)
+        if (Plugin.Configuration.OverlayHint_MobHuntView && obj.ObjectKind == ObjectKind.BattleNpc)
         {
             if (NotoriousMonsters.SRankLazy.Value.Contains(obj.DataId))
             {
@@ -1137,13 +1136,13 @@ public class BuildUi : IDisposable
     private void AddObjectTo2DDrawList(IGameObject a, uint foregroundColor, uint backgroundColor)
     {
         string dictionaryName = a.Name.ToString();
-        if (Plugin.config.NpcBaseMapping.ContainsKey(a.DataId))
+        if (Plugin.Configuration.NpcBaseMapping.ContainsKey(a.DataId))
         {
-            Plugin.config.NpcBaseMapping.TryGetValue(a.DataId, out dictionaryName);
+            Plugin.Configuration.NpcBaseMapping.TryGetValue(a.DataId, out dictionaryName);
         }
 
         string item = null;
-        switch (Plugin.config.Overlay2D_DetailLevel)
+        switch (Plugin.Configuration.Overlay2D_DetailLevel)
         {
             case 1:
                 item = (string.IsNullOrEmpty(dictionaryName) ? $"{a.ObjectKind} {a.DataId}" : dictionaryName);
@@ -1162,13 +1161,13 @@ public class BuildUi : IDisposable
     private void DrawObject3D(IGameObject obj, uint foregroundColor, uint bgcolor, bool drawLine, ISharedImmediateTexture icon = null)
     {
         string dictionaryName = obj.Name.ToString();
-        if (Plugin.config.NpcBaseMapping.ContainsKey(obj.DataId))
+        if (Plugin.Configuration.NpcBaseMapping.ContainsKey(obj.DataId))
         {
-            Plugin.config.NpcBaseMapping.TryGetValue(obj.DataId, out dictionaryName);
+            Plugin.Configuration.NpcBaseMapping.TryGetValue(obj.DataId, out dictionaryName);
         }
         bool flag = false;
         string text = null;
-        switch (Plugin.config.Overlay3D_DetailLevel)
+        switch (Plugin.Configuration.Overlay3D_DetailLevel)
         {
             case 0:
                 flag = true;
@@ -1182,17 +1181,17 @@ public class BuildUi : IDisposable
             default:
                 throw new ArgumentOutOfRangeException();
         }
-        if (Plugin.config.Overlay3D_DrawObjectLineAll)
+        if (Plugin.Configuration.Overlay3D_DrawObjectLineAll)
         {
             drawLine = true;
         }
         else
         {
-            if (Plugin.config.Overlay3D_DrawObjectLineCurrentTarget && Plugin.TargetManager.Target?.Address == (nint?)obj.Address)
+            if (Plugin.Configuration.Overlay3D_DrawObjectLineCurrentTarget && Plugin.TargetManager.Target?.Address == (nint?)obj.Address)
             {
                 drawLine = true;
             }
-            if (Plugin.config.Overlay3D_DrawObjectLineTargetingYou && Plugin.ClientState.LocalPlayer != null && obj.TargetObject!=null && (obj.TargetObject.EntityId == Plugin.ClientState.LocalPlayer.EntityId ))
+            if (Plugin.Configuration.Overlay3D_DrawObjectLineTargetingYou && Plugin.ClientState.LocalPlayer != null && obj.TargetObject!=null && (obj.TargetObject.EntityId == Plugin.ClientState.LocalPlayer.EntityId ))
             {
                 drawLine = true;
             }
@@ -1216,10 +1215,10 @@ public class BuildUi : IDisposable
             screenPos += pos;
         }
         var screenPosVector = screenPos;
-        _ = Plugin.config.Overlay3D_ClampVector2;
-        var overlay3DClampVector2 = Plugin.config.Overlay3D_ClampVector2;
+        _ = Plugin.Configuration.Overlay3D_ClampVector2;
+        var overlay3DClampVector2 = Plugin.Configuration.Overlay3D_ClampVector2;
         var flag3 = false;
-        if (Plugin.config.Overlay3D_ShowOffscreen && Vector2Intersect.GetBorderClampedVector2(screenPos, overlay3DClampVector2, out var clampedPos))
+        if (Plugin.Configuration.Overlay3D_ShowOffscreen && Vector2Intersect.GetBorderClampedVector2(screenPos, overlay3DClampVector2, out var clampedPos))
         {
             screenPos = clampedPos;
             flag3 = true;
@@ -1233,14 +1232,14 @@ public class BuildUi : IDisposable
             if (flag3)
             {
                 var _rotation = screenPosVector - ImGui.GetMainViewport().GetCenter();
-                float thickness = Math.Min(Plugin.config.Overlay3D_RingSize * 2f, Plugin.config.Overlay3D_ArrorThickness);
-                if (Plugin.config.Overlay3D_IconStrokeThickness != 0f)
+                float thickness = Math.Min(Plugin.Configuration.Overlay3D_RingSize * 2f, Plugin.Configuration.Overlay3D_ArrorThickness);
+                if (Plugin.Configuration.Overlay3D_IconStrokeThickness != 0f)
                 {
-                    backgroundDrawList.DrawArrow(screenPos, Plugin.config.Overlay3D_ArrowSize, foregroundColor, bgcolor, _rotation, thickness, Plugin.config.Overlay3D_IconStrokeThickness);
+                    backgroundDrawList.DrawArrow(screenPos, Plugin.Configuration.Overlay3D_ArrowSize, foregroundColor, bgcolor, _rotation, thickness, Plugin.Configuration.Overlay3D_IconStrokeThickness);
                 }
                 else
                 {
-                    backgroundDrawList.DrawArrow(screenPos, Plugin.config.Overlay3D_ArrowSize, foregroundColor, _rotation, thickness);
+                    backgroundDrawList.DrawArrow(screenPos, Plugin.Configuration.Overlay3D_ArrowSize, foregroundColor, _rotation, thickness);
                 }
             }
             else
@@ -1253,8 +1252,8 @@ public class BuildUi : IDisposable
             if (!string.IsNullOrWhiteSpace(text))
             {
                 Vector4 nameplateBackgroundColor = ImGui.ColorConvertU32ToFloat4(bgcolor);
-                nameplateBackgroundColor.W = Plugin.config.Overlay3D_NamePlateBgAlpha;
-                backgroundDrawList.DrawTextWithBorderBg(screenPos, text, foregroundColor, ImGui.GetColorU32(nameplateBackgroundColor), Plugin.config.Overlay3D_CenterAlign);
+                nameplateBackgroundColor.W = Plugin.Configuration.Overlay3D_NamePlateBgAlpha;
+                backgroundDrawList.DrawTextWithBorderBg(screenPos, text, foregroundColor, ImGui.GetColorU32(nameplateBackgroundColor), Plugin.Configuration.Overlay3D_CenterAlign);
             }
             if (icon != null)
             {
@@ -1268,19 +1267,18 @@ public class BuildUi : IDisposable
     {
         //特殊物体名牌
         ImGui.PushStyleVar(ImGuiStyleVar.WindowRounding, 0f);
-        ImGui.PushStyleVar(ImGuiStyleVar.WindowBorderSize, Plugin.config.OverlayHint_BorderSize);
-        var windowPos = Plugin.config.WindowPos;
+        ImGui.PushStyleVar(ImGuiStyleVar.WindowBorderSize, Plugin.Configuration.OverlayHint_BorderSize);
+        var windowPos = Plugin.Configuration.WindowPos;
         foreach (var item4 in SpecialObjectDrawList.OrderBy(i => i.obj.Position.Distance(MeWorldPos)))
         {
             var thisGameObject = item4.obj;
             var item2 = item4.fgcolor;
             var item3 = item4.title;
             // 不能用thisGameObject.Address，会在后面获取NameId的时候炸游戏
-            ICharacter objCharacter = thisGameObject as ICharacter;
-            if (objCharacter is null) return;
+            if (thisGameObject is not ICharacter objCharacter) return;
             // ICharacter objCharacter = *(ICharacter*)(&thisGameObject);
             ImGui.PushStyleColor(ImGuiCol.Border, item2);
-            ImGui.SetNextWindowBgAlpha(Plugin.config.OverlayHint_BgAlpha);
+            ImGui.SetNextWindowBgAlpha(Plugin.Configuration.OverlayHint_BgAlpha);
             ImGui.SetNextWindowPos(windowPos);
             if (!ImGui.Begin( $"{thisGameObject.Name.TextValue} {thisGameObject.EntityId}", ImGuiWindowFlags.NoDecoration | ImGuiWindowFlags.NoInputs | ImGuiWindowFlags.AlwaysAutoResize | ImGuiWindowFlags.NoSavedSettings | ImGuiWindowFlags.NoFocusOnAppearing | ImGuiWindowFlags.NoBringToFrontOnFocus))
             {
@@ -1309,7 +1307,7 @@ public class BuildUi : IDisposable
             var direction = (double.Abs(distanceY)<0.1f) ? "" : ((distanceY > 0f) ? "↑" : "↓");
             ImGui.TextUnformatted($"{text}{thisGameObject.Position.Distance2D(MeWorldPos):F2}m\t{direction}{Math.Abs(distanceY):F2}");
             windowPos += new Vector2(0f, ImGui.GetWindowSize().Y);
-            if (Plugin.config.OverlayHint_OpenMapLinkOnAlt && ImGui.GetIO().KeyAlt && ImGui.IsMouseHoveringRect(ImGui.GetWindowPos(), ImGui.GetWindowSize() + ImGui.GetWindowPos()))
+            if (Plugin.Configuration.OverlayHint_OpenMapLinkOnAlt && ImGui.GetIO().KeyAlt && ImGui.IsMouseHoveringRect(ImGui.GetWindowPos(), ImGui.GetWindowSize() + ImGui.GetWindowPos()))
             {
                 try
                 {
@@ -1359,11 +1357,11 @@ public class BuildUi : IDisposable
 			Vector2 pos = WorldToMap(valueOrDefault, item.worldpos);
 			backgroundDrawList.DrawMapTextDot(pos, item.name, item.fgcolor, item.bgcolor);
 		}
-		if (Plugin.config.Overlay2D_ShowCenter)
+		if (Plugin.Configuration.Overlay2D_ShowCenter)
 		{
 			backgroundDrawList.DrawMapTextDot(valueOrDefault, "ME", 4294967040u, 4278190080u);
 		}
-		if (Plugin.config.Overlay2D_ShowAssist && Plugin.ClientState.LocalPlayer!=null)
+		if (Plugin.Configuration.Overlay2D_ShowAssist && Plugin.ClientState.LocalPlayer!=null)
         {
             rotation = AdjustRotationToHRotation(Plugin.ClientState.LocalPlayer.Rotation);
             backgroundDrawList.AddCircle(valueOrDefault, WorldToMapScale * 25f, 4294967040u, 0, 1f);
@@ -1470,15 +1468,15 @@ public class BuildUi : IDisposable
 			data->DesiredSize = new Vector2(num4, num4);
 		});
 		ImGuiWindowFlags imGuiWindowFlags = ImGuiWindowFlags.NoTitleBar | ImGuiWindowFlags.NoScrollbar | ImGuiWindowFlags.NoScrollWithMouse | ImGuiWindowFlags.NoDocking;
-		if (Plugin.config.ExternalMap_ClickThrough)
+		if (Plugin.Configuration.ExternalMap_ClickThrough)
 		{
 			imGuiWindowFlags |= ImGuiWindowFlags.NoMouseInputs;
 		}
-		if (Plugin.config.ExternalMap_LockSizePos)
+		if (Plugin.Configuration.ExternalMap_LockSizePos)
 		{
 			imGuiWindowFlags |= ImGuiWindowFlags.NoResize | ImGuiWindowFlags.NoMove;
 		}
-		ImGui.SetNextWindowBgAlpha(Plugin.config.ExternalMap_BgAlpha);
+		ImGui.SetNextWindowBgAlpha(Plugin.Configuration.ExternalMap_BgAlpha);
 		Vector2 imGuiWindowCenter;
 		Vector2 mapOffset;
 		float mapSizeFactor;
@@ -1494,7 +1492,7 @@ public class BuildUi : IDisposable
 			mapOffset = new Vector2(map.OffsetX, map.OffsetY);
 			mapSizeFactor = map.SizeFactor / 100f * num2;
 			windowDrawList.ChannelsSetCurrent(1);
-			if (Plugin.config.ExternalMap_ShowMapInfo)
+			if (Plugin.Configuration.ExternalMap_ShowMapInfo)
             {
                 var text = $" {windowContentRegionWidth / (mapSizeFactor * UvZoom) / 2f:F2}m X: {MeWorldPos.X:N3} Y: {MeWorldPos.Y:N3} Z: {MeWorldPos.Z:N3} ";
 				var textSize = ImGui.CalcTextSize(text);
@@ -1503,13 +1501,13 @@ public class BuildUi : IDisposable
 				ImGui.SetCursorPos(leftPos);
 				ImGui.TextColored(Vector4.One, text);
 			}
-			if (!Plugin.config.ExternalMap_ClickThrough)
+			if (!Plugin.Configuration.ExternalMap_ClickThrough)
 			{
 				ImGui.SetCursorPos(new Vector2(5f, 5f));
-				if (ImguiUtil.IconButton((Plugin.config.ExternalMap_Mode == 0) ? FontAwesomeIcon.Expand : ((Plugin.config.ExternalMap_Mode == 1) ? FontAwesomeIcon.Crosshairs : FontAwesomeIcon.LocationArrow), "ToggleSnap", new Vector2(25f, 25f)))
+				if (ImguiUtil.IconButton((Plugin.Configuration.ExternalMap_Mode == 0) ? FontAwesomeIcon.Expand : ((Plugin.Configuration.ExternalMap_Mode == 1) ? FontAwesomeIcon.Crosshairs : FontAwesomeIcon.LocationArrow), "ToggleSnap", new Vector2(25f, 25f)))
 				{
-					Plugin.config.ExternalMap_Mode++;
-					Plugin.config.ExternalMap_Mode = Plugin.config.ExternalMap_Mode % 3;
+					Plugin.Configuration.ExternalMap_Mode++;
+					Plugin.Configuration.ExternalMap_Mode = Plugin.Configuration.ExternalMap_Mode % 3;
 				}
 				ImGui.SetCursorPosX(5f);
 				if (ImguiUtil.IconButton(FontAwesomeIcon.PlusCircle, "zoom++", new Vector2(25f, 25f)))
@@ -1523,14 +1521,14 @@ public class BuildUi : IDisposable
 				}
 			}
 			windowDrawList.ChannelsSetCurrent(0);
-			if (Plugin.config.ExternalMap_Mode != 0)
+			if (Plugin.Configuration.ExternalMap_Mode != 0)
 			{
 				Square4(Vector2.Zero, windowContentRegionWidth);
 				for (int j = 0; j < 4; j++)
 				{
 					ref Vector2 reference = ref array[j];
 					reference -= (MeWorldPos.ToVector2() + mapOffset) * mapSizeFactor;
-					if (Plugin.config.ExternalMap_Mode == 2)
+					if (Plugin.Configuration.ExternalMap_Mode == 2)
 					{
                         rotation = AdjustRotationToHRotation(Plugin.ClientState.LocalPlayer.Rotation);
                         reference = reference.Rotate(0f - rotation, imGuiWindowCenter);
@@ -1539,20 +1537,20 @@ public class BuildUi : IDisposable
 				}
 
                 if (textureWrap is null) { return; }
-				windowDrawList.AddImageQuad(textureWrap.ImGuiHandle, array[0], array[1], array[2], array[3], uv1, uv2, uv3, uv4, ImGui.ColorConvertFloat4ToU32(new Vector4(1f, 1f, 1f, Plugin.config.ExternalMap_MapAlpha)));
+				windowDrawList.AddImageQuad(textureWrap.ImGuiHandle, array[0], array[1], array[2], array[3], uv1, uv2, uv3, uv4, ImGui.ColorConvertFloat4ToU32(new Vector4(1f, 1f, 1f, Plugin.Configuration.ExternalMap_MapAlpha)));
 				foreach (var item in DrawList2D)
 				{
 					var positionOfItem = WorldToMap(item.worldpos);
 					windowDrawList.DrawMapTextDot(positionOfItem, item.name, item.fgcolor, item.bgcolor);
 				}
-				if (Plugin.config.Overlay2D_ShowCenter)
+				if (Plugin.Configuration.Overlay2D_ShowCenter)
 				{
-					windowDrawList.DrawMapTextDot(imGuiWindowCenter, (Plugin.config.Overlay2D_DetailLevel > 0) ? "ME" : null, 4294967040u, 4278190080u);
-					if (Plugin.config.Overlay2D_ShowAssist)
+					windowDrawList.DrawMapTextDot(imGuiWindowCenter, (Plugin.Configuration.Overlay2D_DetailLevel > 0) ? "ME" : null, 4294967040u, 4278190080u);
+					if (Plugin.Configuration.Overlay2D_ShowAssist)
 					{
                         rotation = AdjustRotationToHRotation(Plugin.ClientState.LocalPlayer.Rotation);
-                        var num3 = ((Plugin.config.ExternalMap_Mode == 2) ? 0f : (0f - rotation));
-						windowDrawList.PathArcTo(imGuiWindowCenter, mapSizeFactor * 25f * UvZoom, num3 - ((float)Math.PI / 2f) - (float)Math.PI / 4f, num3 - (float)Math.PI / 4f, 24);
+                        var num3 = ((Plugin.Configuration.ExternalMap_Mode == 2) ? 0f : (0f - rotation));
+						windowDrawList.PathArcTo(imGuiWindowCenter, mapSizeFactor * 25f * UvZoom, num3 - ((float)Math.PI / 2f) - ((float)Math.PI / 4f), num3 - ((float)Math.PI / 4f), 24);
 						windowDrawList.PathLineTo(imGuiWindowCenter);
 						windowDrawList.PathStroke(4294967040u, ImDrawFlags.Closed, 2f);
 					}
@@ -1566,20 +1564,20 @@ public class BuildUi : IDisposable
 					reference2 = reference2.Zoom(UvZoom, imGuiWindowCenter + dragPos);
 				}
                 if (textureWrap is null) { return; }
-                windowDrawList.AddImageQuad(textureWrap.ImGuiHandle, array[0], array[1], array[2], array[3], uv1, uv2, uv3, uv4, ImGui.ColorConvertFloat4ToU32(new Vector4(1f, 1f, 1f, Plugin.config.ExternalMap_MapAlpha)));
+                windowDrawList.AddImageQuad(textureWrap.ImGuiHandle, array[0], array[1], array[2], array[3], uv1, uv2, uv3, uv4, ImGui.ColorConvertFloat4ToU32(new Vector4(1f, 1f, 1f, Plugin.Configuration.ExternalMap_MapAlpha)));
 				foreach (var item2 in DrawList2D)
 				{
 					var pos2 = WorldToMapNoSnap(item2.worldpos);
 					windowDrawList.DrawMapTextDot(pos2, item2.name, item2.fgcolor, item2.bgcolor);
 				}
-				if (Plugin.config.Overlay2D_ShowCenter)
+				if (Plugin.Configuration.Overlay2D_ShowCenter)
 				{
 					var vector3 = WorldToMapNoSnap(MeWorldPos);
-					windowDrawList.DrawMapTextDot(vector3, (Plugin.config.Overlay2D_DetailLevel > 0) ? "ME" : null, 4294967040u, 4278190080u);
-					if (Plugin.config.Overlay2D_ShowAssist)
+					windowDrawList.DrawMapTextDot(vector3, (Plugin.Configuration.Overlay2D_DetailLevel > 0) ? "ME" : null, 4294967040u, 4278190080u);
+					if (Plugin.Configuration.Overlay2D_ShowAssist)
 					{
                         rotation = AdjustRotationToHRotation(Plugin.ClientState.LocalPlayer.Rotation);
-                        windowDrawList.PathArcTo(vector3, mapSizeFactor * 25f * UvZoom, 0f - rotation - (float)Math.PI / 2f - (float)Math.PI / 4f, 0f - rotation - (float)Math.PI / 4f, 24);
+                        windowDrawList.PathArcTo(vector3, mapSizeFactor * 25f * UvZoom, 0f - rotation - ((float)Math.PI / 2f) - ((float)Math.PI / 4f), 0f - rotation - ((float)Math.PI / 4f), 24);
 						windowDrawList.PathLineTo(vector3);
 						windowDrawList.PathStroke(4294967040u, ImDrawFlags.Closed, 2f);
 					}
@@ -1590,10 +1588,10 @@ public class BuildUi : IDisposable
 				if (ImGui.IsMouseDown(ImGuiMouseButton.Right) || ImGui.IsMouseDown(ImGuiMouseButton.Middle))
 				{
 					dragPos -= ImGui.GetIO().MouseDelta / UvZoom;
-					if (Plugin.config.ExternalMap_Mode != 0)
+					if (Plugin.Configuration.ExternalMap_Mode != 0)
 					{
 						dragPos = (MeWorldPos.ToVector2() + mapOffset) * mapSizeFactor;
-						Plugin.config.ExternalMap_Mode = 0;
+						Plugin.Configuration.ExternalMap_Mode = 0;
 					}
 				}
 				UvZoom += UvZoom * ImGui.GetIO().MouseWheel * 0.1f;
@@ -1605,7 +1603,7 @@ public class BuildUi : IDisposable
 		Vector2 WorldToMap(Vector3 worldPos)
 		{
 			Vector2 vector4 = (worldPos - MeWorldPos).ToVector2() * mapSizeFactor;
-			if (Plugin.config.ExternalMap_Mode == 2)
+			if (Plugin.Configuration.ExternalMap_Mode == 2)
 			{
                 rotation = AdjustRotationToHRotation(Plugin.ClientState.LocalPlayer.Rotation);
                 vector4 = vector4.Rotate(0f - rotation);

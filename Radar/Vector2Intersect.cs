@@ -14,10 +14,10 @@ internal static class Vector2Intersect
 		Vector2 vector2 = mainViewport.Pos + new Vector2(mainViewport.Size.X - clampSize.X, clampSize.Y);
 		Vector2 vector3 = mainViewport.Pos + new Vector2(clampSize.X, mainViewport.Size.Y - clampSize.Y);
 		Vector2 vector4 = mainViewport.Pos + mainViewport.Size - clampSize;
-		FindIntersection(vector, vector2, center, screenpos, out var lines_intersect, out var segmentsIntersect, out var intersection, out var closeP, out var closeP2);
-		FindIntersection(vector2, vector4, center, screenpos, out lines_intersect, out var segmentsIntersect2, out var intersection2, out closeP2, out closeP);
-		FindIntersection(vector4, vector3, center, screenpos, out lines_intersect, out var segmentsIntersect3, out var intersection3, out closeP, out closeP2);
-		FindIntersection(vector3, vector, center, screenpos, out lines_intersect, out var segmentsIntersect4, out var intersection4, out closeP2, out closeP);
+		FindIntersection(vector, vector2, center, screenpos, out var lines_intersect, out var segmentsIntersect, out var intersection, out var _closeP, out var _closeP2);
+		FindIntersection(vector2, vector4, center, screenpos, out lines_intersect, out var segmentsIntersect2, out var intersection2, out _closeP2, out _closeP);
+		FindIntersection(vector4, vector3, center, screenpos, out lines_intersect, out var segmentsIntersect3, out var intersection3, out _closeP, out _closeP2);
+		FindIntersection(vector3, vector, center, screenpos, out lines_intersect, out var segmentsIntersect4, out var intersection4, out _closeP2, out _closeP);
 		if (segmentsIntersect)
 		{
 			clampedPos = intersection;
@@ -48,8 +48,8 @@ internal static class Vector2Intersect
 		float num2 = p2.Y - p1.Y;
 		float num3 = p4.X - p3.X;
 		float num4 = p4.Y - p3.Y;
-		float num5 = num2 * num3 - num * num4;
-		float num6 = ((p1.X - p3.X) * num4 + (p3.Y - p1.Y) * num3) / num5;
+		float num5 = (num2 * num3) - (num * num4);
+		float num6 = (((p1.X - p3.X) * num4) + ((p3.Y - p1.Y) * num3)) / num5;
 		if (float.IsInfinity(num6))
 		{
 			lines_intersect = false;
@@ -60,8 +60,8 @@ internal static class Vector2Intersect
 			return;
 		}
 		lines_intersect = true;
-		float num7 = ((p3.X - p1.X) * num2 + (p1.Y - p3.Y) * num) / (0f - num5);
-		intersection = new Vector2(p1.X + num * num6, p1.Y + num2 * num6);
+		float num7 = (((p3.X - p1.X) * num2) + ((p1.Y - p3.Y) * num)) / (0f - num5);
+		intersection = new Vector2(p1.X + (num * num6), p1.Y + (num2 * num6));
 		segmentsIntersect = num6 >= 0f && num6 <= 1f && num7 >= 0f && num7 <= 1f;
 		if (num6 < 0f)
 		{
@@ -79,7 +79,7 @@ internal static class Vector2Intersect
 		{
 			num7 = 1f;
 		}
-		closeP1 = new Vector2(p1.X + num * num6, p1.Y + num2 * num6);
-		closeP2 = new Vector2(p3.X + num3 * num7, p3.Y + num4 * num7);
+		closeP1 = new Vector2(p1.X + (num * num6), p1.Y + (num2 * num6));
+		closeP2 = new Vector2(p3.X + (num3 * num7), p3.Y + (num4 * num7));
 	}
 }

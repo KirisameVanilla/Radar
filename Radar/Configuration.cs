@@ -69,7 +69,7 @@ public class Configuration : IPluginConfiguration
 
 	public float Overlay2D_DotStroke = 1f;
 
-	public Vector4 Overlay2D_StrokeColor = new Vector4(0f, 0f, 0f, 1f);
+	public Vector4 Overlay2D_StrokeColor = new(0f, 0f, 0f, 1f);
 
 	public bool Overlay2D_UseLargeFont;
 
@@ -101,8 +101,8 @@ public class Configuration : IPluginConfiguration
 
 	public Vector4[] KindColorsBg = Enumerable.Repeat(new Vector4(0f, 0f, 0f, 0.75f), 20).ToArray();
 
-	public Dictionary<uint, string> NpcBaseMapping = new Dictionary<uint, string>
-	{
+	public Dictionary<uint, string> NpcBaseMapping = new()
+    {
 		[2007358u] = "宝箱（金）",
 		[2007357u] = "宝箱（银）",
 		[2006020u] = "宝箱（拟态怪）",
@@ -116,7 +116,7 @@ public class Configuration : IPluginConfiguration
 		[2009504u] = "獭獭陷阱"
 	};
 
-	public Vector2 Overlay3D_ClampVector2 = new Vector2(40f, 40f);
+	public Vector2 Overlay3D_ClampVector2 = new(40f, 40f);
 
 	public float Overlay3D_RingSize = 6f;
 
@@ -126,7 +126,7 @@ public class Configuration : IPluginConfiguration
 
 	public float Overlay3D_IconStrokeThickness = 3f;
 
-	public Vector2 WindowPos = new Vector2(50f, 50f);
+	public Vector2 WindowPos = new(50f, 50f);
 
 	public Dictionary<string, CustomObjectValue> customHighlightObjects = new ()
 	{

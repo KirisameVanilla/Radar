@@ -37,7 +37,7 @@ public class ConfigSnapShot
 		var type = configInstance.GetType();
 		foreach (var item2 in from i in type.GetFields()
 			where i.GetCustomAttribute(typeof(JsonIgnoreAttribute)) == null
-			select (Name: i.Name, i.GetValue(savedCopy)))
+			select (i.Name, i.GetValue(savedCopy)))
 		{
 			object item = item2.Item2;
 			if (item2.Item2 != null)

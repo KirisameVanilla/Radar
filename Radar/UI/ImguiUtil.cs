@@ -73,9 +73,9 @@ internal static class ImguiUtil
 
 	public static void DrawCircleOutlined(this ImDrawListPtr drawList, Vector2 screenPos, uint fgcol, uint bgcol)
 	{
-		var overlay3D_RingType = (int)Plugin.config.Overlay3D_RingType;
-		var overlay3D_RingSize = Plugin.config.Overlay3D_RingSize;
-		var overlay3D_IconStrokeThickness = Plugin.config.Overlay3D_IconStrokeThickness;
+		var overlay3D_RingType = (int)Plugin.Configuration.Overlay3D_RingType;
+		var overlay3D_RingSize = Plugin.Configuration.Overlay3D_RingSize;
+		var overlay3D_IconStrokeThickness = Plugin.Configuration.Overlay3D_IconStrokeThickness;
 		drawList.AddCircleFilled(screenPos, overlay3D_RingSize, fgcol, overlay3D_RingType);
 		drawList.AddCircle(screenPos, overlay3D_RingSize, bgcol, overlay3D_RingType, overlay3D_IconStrokeThickness / 2f);
 	}
@@ -119,8 +119,8 @@ internal static class ImguiUtil
 		{
 			pos -= new Vector2(vector.X, 0f) / 2f;
 		}
-		drawList.AddRectFilled(pos, pos + vector, bgcol, Plugin.config.Overlay3D_NamePlateRound);
-		drawList.AddRect(pos, pos + vector, col, Plugin.config.Overlay3D_NamePlateRound);
+		drawList.AddRectFilled(pos, pos + vector, bgcol, Plugin.Configuration.Overlay3D_NamePlateRound);
+		drawList.AddRect(pos, pos + vector, col, Plugin.Configuration.Overlay3D_NamePlateRound);
 		drawList.AddText(pos + new Vector2(ImGui.GetStyle().ItemSpacing.X / 2f + 0.5f, -0.5f), col, text);
 	}
 
@@ -149,12 +149,12 @@ internal static class ImguiUtil
 	{
 		if (!string.IsNullOrWhiteSpace(str))
 		{
-			drawList.DrawText(pos, str, fgcolor, Plugin.config.Overlay2D_TextStroke, centerAlignX: true, bgcolor);
+			drawList.DrawText(pos, str, fgcolor, Plugin.Configuration.Overlay2D_TextStroke, centerAlignX: true, bgcolor);
 		}
-		drawList.AddCircleFilled(pos, Plugin.config.Overlay2D_DotSize, fgcolor);
-		if (Plugin.config.Overlay2D_DotStroke != 0f)
+		drawList.AddCircleFilled(pos, Plugin.Configuration.Overlay2D_DotSize, fgcolor);
+		if (Plugin.Configuration.Overlay2D_DotStroke != 0f)
 		{
-			drawList.AddCircle(pos, Plugin.config.Overlay2D_DotSize, bgcolor, 0, Plugin.config.Overlay2D_DotStroke);
+			drawList.AddCircle(pos, Plugin.Configuration.Overlay2D_DotSize, bgcolor, 0, Plugin.Configuration.Overlay2D_DotStroke);
 		}
 	}
 
