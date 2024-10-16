@@ -1048,7 +1048,9 @@ public class BuildUi : IDisposable
 
     private void DrawDeepDungeonObjects()
 	{
-		foreach (IGrouping<DeepDungeonObject, DeepDungeonObject> item in Plugin.Configuration.DeepDungeonObjects.Where((DeepDungeonObject i) => i.Territory != 0 && i.GetBg == GetDeepDungeonBg(Plugin.ClientState.TerritoryType) && i.Location.Distance2D(MeWorldPos.Convert()) < Plugin.Configuration.DeepDungeon_ObjectShowDistance).GroupBy((DeepDungeonObject i) => i, DeepDungeonObjectLocationEqual))
+		foreach (IGrouping<DeepDungeonObject, DeepDungeonObject> item in Plugin.Configuration.DeepDungeonObjects.Where(i => i.Territory != 0 && 
+                          i.GetBg == GetDeepDungeonBg(Plugin.ClientState.TerritoryType) && 
+                          i.Location.Distance2D(MeWorldPos.Convert()) < Plugin.Configuration.DeepDungeon_ObjectShowDistance).GroupBy((DeepDungeonObject i) => i, DeepDungeonObjectLocationEqual))
 		{
 			Vector2 ringCenter;
 			if (item.Key.Type == DeepDungeonType.Trap)
@@ -1090,15 +1092,16 @@ public class BuildUi : IDisposable
             Plugin.Configuration.NpcBaseMapping.TryGetValue(obj.DataId, out DictionaryName);
         }
 
-        if (obj is not ICharacter objCharacter) return false;
+        ICharacter objCharacter = obj as ICharacter;
         if (Plugin.Configuration.OverlayHint_CustomObjectView && Plugin.Configuration.customHighlightObjects.TryGetValue(DictionaryName, out var value) && value.Enabled)
         {
-            SpecialObjectDrawList.Add((obj, ImGui.ColorConvertFloat4ToU32(value.Color), $"{myObjectKind.ToString().ToUpper()} {((obj.DataId != 0) ? obj.DataId.ToString() : string.Empty)}\nLv.{objCharacter.Level} {DictionaryName}"));
+            SpecialObjectDrawList.Add((obj, ImGui.ColorConvertFloat4ToU32(value.Color), $"{myObjectKind.ToString().ToUpper()} {((obj.DataId != 0) ? obj.DataId.ToString() : string.Empty)}\nLv.{objCharacter?.Level} {DictionaryName}"));
             fgColor = ImGui.ColorConvertFloat4ToU32(value.Color);
             return true;
         }
         if (Plugin.Configuration.OverlayHint_MobHuntView && obj.ObjectKind == ObjectKind.BattleNpc)
         {
+            if (objCharacter is null) return false;
             if (NotoriousMonsters.SRankLazy.Value.Contains(obj.DataId))
             {
                 SpecialObjectDrawList.Add((obj, 4278190335u, $"S RANK NOTORIOUS MONSTER\nLv.{objCharacter.Level} {DictionaryName}"));
