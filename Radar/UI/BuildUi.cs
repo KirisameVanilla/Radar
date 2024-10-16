@@ -1084,18 +1084,19 @@ public class BuildUi : IDisposable
 
     private bool TryAddSpecialObjectsToDrawList(IGameObject obj, ref uint fgColor, ref uint bgColor)
     {
-        string DictionaryName = obj.Name.ToString();
+        string dictionaryName = obj.Name.ToString();
         var myObjectKind = Util.GetMyObjectKind(obj);
 
         if (Plugin.Configuration.NpcBaseMapping.ContainsKey(obj.DataId))
         {
-            Plugin.Configuration.NpcBaseMapping.TryGetValue(obj.DataId, out DictionaryName);
+            // 只是用于显示Name属性相同的obj的不同真实名字
+            Plugin.Configuration.NpcBaseMapping.TryGetValue(obj.DataId, out dictionaryName);
         }
 
         ICharacter objCharacter = obj as ICharacter;
-        if (Plugin.Configuration.OverlayHint_CustomObjectView && Plugin.Configuration.customHighlightObjects.TryGetValue(DictionaryName, out var value) && value.Enabled)
+        if (Plugin.Configuration.OverlayHint_CustomObjectView && Plugin.Configuration.customHighlightObjects.TryGetValue(dictionaryName, out var value) && value.Enabled)
         {
-            SpecialObjectDrawList.Add((obj, ImGui.ColorConvertFloat4ToU32(value.Color), $"{myObjectKind.ToString().ToUpper()} {((obj.DataId != 0) ? obj.DataId.ToString() : string.Empty)}\nLv.{objCharacter?.Level} {DictionaryName}"));
+            SpecialObjectDrawList.Add((obj, ImGui.ColorConvertFloat4ToU32(value.Color), $"{myObjectKind.ToString().ToUpper()} {((obj.DataId != 0) ? obj.DataId.ToString() : string.Empty)}\nLv.{objCharacter?.Level} {dictionaryName}"));
             fgColor = ImGui.ColorConvertFloat4ToU32(value.Color);
             return true;
         }
@@ -1104,31 +1105,31 @@ public class BuildUi : IDisposable
             if (objCharacter is null) return false;
             if (NotoriousMonsters.SRankLazy.Value.Contains(obj.DataId))
             {
-                SpecialObjectDrawList.Add((obj, 4278190335u, $"S RANK NOTORIOUS MONSTER\nLv.{objCharacter.Level} {DictionaryName}"));
+                SpecialObjectDrawList.Add((obj, 4278190335u, $"S RANK NOTORIOUS MONSTER\nLv.{objCharacter.Level} {dictionaryName}"));
                 fgColor = 4278190335u;
                 return true;
             }
             if (NotoriousMonsters.ARankLazy.Value.Contains(obj.DataId))
             {
-                SpecialObjectDrawList.Add((obj, 4278255615u, $"A RANK NOTORIOUS MONSTER\nLv.{objCharacter.Level} {DictionaryName}"));
+                SpecialObjectDrawList.Add((obj, 4278255615u, $"A RANK NOTORIOUS MONSTER\nLv.{objCharacter.Level} {dictionaryName}"));
                 fgColor = 4278255615u;
                 return true;
             }
             if (NotoriousMonsters.BRankLazy.Value.Contains(obj.DataId))
             {
-                SpecialObjectDrawList.Add((obj, 4278255360u, $"B RANK NOTORIOUS MONSTER\nLv.{objCharacter.Level} {DictionaryName}"));
+                SpecialObjectDrawList.Add((obj, 4278255360u, $"B RANK NOTORIOUS MONSTER\nLv.{objCharacter.Level} {dictionaryName}"));
                 fgColor = 4278255360u;
                 return true;
             }
             if (NotoriousMonsters.ListEurekaMobs.Contains(objCharacter.NameId))
             {
-                SpecialObjectDrawList.Add((obj, 4294967040u, $"EUREKA ELEMENTAL\nLv.{objCharacter.Level} {DictionaryName}"));
+                SpecialObjectDrawList.Add((obj, 4294967040u, $"EUREKA ELEMENTAL\nLv.{objCharacter.Level} {dictionaryName}"));
                 fgColor = 4294967040u;
                 return true;
             }
             if (obj.DataId == 882)
             {
-                SpecialObjectDrawList.Add((obj, 4294901760u, $"ODIN\nLv.{objCharacter.Level} {DictionaryName}"));
+                SpecialObjectDrawList.Add((obj, 4294901760u, $"ODIN\nLv.{objCharacter.Level} {dictionaryName}"));
                 fgColor = 4294901760u;
                 return true;
             }
