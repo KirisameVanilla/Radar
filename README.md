@@ -1,4 +1,4 @@
-### 目前正在尝试重构，欢迎PR
+### Radar
 ```
-https://raw.githubusercontent.com/KirisameVanilla/DalamudPlugins/main/pluginmaster.json
+https://kirisamevanilla.github.io/ffxiv/dalamudrepo.json
 ```
