@@ -19,7 +19,7 @@ public class ConfigSnapShot
 
 	public static ConfigSnapShot GetSnapShot(string name, Configuration configInstance)
 	{
-		Configuration configuration = configInstance.CloneJson();
+		Configuration configuration = Newtonsoft.Json.JsonConvert.DeserializeObject<Configuration>(Newtonsoft.Json.JsonConvert.SerializeObject(configInstance));
 		configuration.DeepDungeonObjects = null;
 		configuration.NpcBaseMapping = null;
 		configuration.profiles = null;
@@ -33,8 +33,8 @@ public class ConfigSnapShot
 
 	public void RestoreSnapShot(Configuration configInstance)
 	{
-		Configuration savedCopy = Saved.CloneJson();
-		var type = configInstance.GetType();
+		Configuration savedCopy = Newtonsoft.Json.JsonConvert.DeserializeObject<Configuration>(Newtonsoft.Json.JsonConvert.SerializeObject(Saved));
+        var type = configInstance.GetType();
 		foreach (var item2 in from i in type.GetFields()
 			where i.GetCustomAttribute(typeof(JsonIgnoreAttribute)) == null
 			select (i.Name, i.GetValue(savedCopy)))
