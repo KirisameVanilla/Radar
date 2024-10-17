@@ -1305,7 +1305,10 @@ public class BuildUi : IDisposable
             var text = string.Empty;
             if (thisGameObject.ObjectKind is ObjectKind.BattleNpc or ObjectKind.Player)
             {
-                text += $"{objCharacter.CurrentHp:N0}/{objCharacter.MaxHp:N0}\t{objCharacter.CurrentHp / objCharacter.MaxHp:P}\n";
+                var currentHp = objCharacter.CurrentHp;
+                var maxHp = objCharacter.MaxHp;
+                var percent = currentHp * 1.0 / maxHp;
+                text += $"{currentHp:N0}/{maxHp:N0}\t{percent:P}\n";
             }
             var distanceY = thisGameObject.Position.Y - MeWorldPos.Y;
             var direction = (double.Abs(distanceY)<0.1f) ? "" : ((distanceY > 0f) ? "↑" : "↓");
