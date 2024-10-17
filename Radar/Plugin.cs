@@ -50,16 +50,13 @@ public class Plugin : IDalamudPlugin
 
 	public Plugin()
 	{
-        if(ClientState.LocalPlayer!= null)
-        {
-            Configuration = (Configuration)PluginInterface.GetPluginConfig() ?? new Configuration();
-            Configuration.Initialize(PluginInterface);
-            Framework.Update += Framework_OnUpdateEvent;
-            Ui = new BuildUi();
-            if (PluginInterface.Reason != PluginLoadReason.Boot)
-            {
-                Ui.ConfigVisible = true;
-            }
+        Configuration = (Configuration)PluginInterface.GetPluginConfig() ?? new Configuration();
+        Configuration.Initialize(PluginInterface);
+        Framework.Update += Framework_OnUpdateEvent;
+        Ui = new BuildUi();
+        if (PluginInterface.Reason != PluginLoadReason.Boot)
+        { 
+            Ui.ConfigVisible = true;
         }
 
         var radarInfo = new CommandInfo(OnCommand)
