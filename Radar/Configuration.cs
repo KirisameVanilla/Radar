@@ -29,7 +29,13 @@ public class Configuration : IPluginConfiguration
 
 	public bool OverlayHint_MobHuntView = true;
 
-	public bool OverlayHint_CustomObjectView = true;
+    public bool OverlayHintShowRankS = true;
+
+    public bool OverlayHintShowRankA = true;
+
+    public bool OverlayHintShowRankB = true;
+
+    public bool OverlayHint_CustomObjectView = true;
 
 	public bool OverlayHint_OpenMapLinkOnAlt = true;
 

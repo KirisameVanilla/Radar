@@ -550,6 +550,16 @@ public class BuildUi : IDisposable
 	{
 		ImGui.TextWrapped("用单独的提示窗口显示狩猎怪和自定义名称的物体。\n需要显示的物体名可以在下方自行添加。");
 		ImGui.Checkbox("显示狩猎怪", ref Plugin.Configuration.OverlayHint_MobHuntView);
+        if (Plugin.Configuration.OverlayHint_MobHuntView)
+        {
+            ImGui.SameLine();
+            ImGui.Checkbox("显示S怪", ref Plugin.Configuration.OverlayHintShowRankS);
+            ImGui.SameLine();
+            ImGui.Checkbox("显示A怪", ref Plugin.Configuration.OverlayHintShowRankA);
+            ImGui.SameLine();
+            ImGui.Checkbox("显示B怪", ref Plugin.Configuration.OverlayHintShowRankB);
+        }
+        ImGui.Separator();
 		ImGui.Checkbox("显示自定义物体", ref Plugin.Configuration.OverlayHint_CustomObjectView);
 		ImGui.Separator();
 		if (ImGui.GetIO().Fonts.Fonts.Size > 2)
@@ -1103,19 +1113,19 @@ public class BuildUi : IDisposable
         if (Plugin.Configuration.OverlayHint_MobHuntView && obj.ObjectKind == ObjectKind.BattleNpc)
         {
             if (objCharacter is null) return false;
-            if (NotoriousMonsters.SRankLazy.Value.Contains(obj.DataId))
+            if (NotoriousMonsters.SRankLazy.Value.Contains(obj.DataId) && Plugin.Configuration.OverlayHintShowRankS)
             {
                 SpecialObjectDrawList.Add((obj, 4278190335u, $"S RANK NOTORIOUS MONSTER\nLv.{objCharacter.Level} {dictionaryName}"));
                 fgColor = 4278190335u;
                 return true;
             }
-            if (NotoriousMonsters.ARankLazy.Value.Contains(obj.DataId))
+            if (NotoriousMonsters.ARankLazy.Value.Contains(obj.DataId) && Plugin.Configuration.OverlayHintShowRankA)
             {
                 SpecialObjectDrawList.Add((obj, 4278255615u, $"A RANK NOTORIOUS MONSTER\nLv.{objCharacter.Level} {dictionaryName}"));
                 fgColor = 4278255615u;
                 return true;
             }
-            if (NotoriousMonsters.BRankLazy.Value.Contains(obj.DataId))
+            if (NotoriousMonsters.BRankLazy.Value.Contains(obj.DataId) && Plugin.Configuration.OverlayHintShowRankB)
             {
                 SpecialObjectDrawList.Add((obj, 4278255360u, $"B RANK NOTORIOUS MONSTER\nLv.{objCharacter.Level} {dictionaryName}"));
                 fgColor = 4278255360u;
@@ -1273,15 +1283,15 @@ public class BuildUi : IDisposable
         ImGui.PushStyleVar(ImGuiStyleVar.WindowRounding, 0f);
         ImGui.PushStyleVar(ImGuiStyleVar.WindowBorderSize, Plugin.Configuration.OverlayHint_BorderSize);
         var windowPos = Plugin.Configuration.WindowPos;
-        foreach (var item4 in SpecialObjectDrawList.OrderBy(i => i.obj.Position.Distance(MeWorldPos)))
+        foreach (var specialObjectTuple in SpecialObjectDrawList.OrderBy(i => i.obj.Position.Distance(MeWorldPos)))
         {
-            var thisGameObject = item4.obj;
-            var item2 = item4.fgcolor;
-            var item3 = item4.title;
+            var thisGameObject = specialObjectTuple.obj;
+            var fgcolor = specialObjectTuple.fgcolor;
+            var nameString = specialObjectTuple.title;
             // 不能用thisGameObject.Address，会在后面获取NameId的时候炸游戏
             if (thisGameObject is not ICharacter objCharacter) return;
             // ICharacter objCharacter = *(ICharacter*)(&thisGameObject);
-            ImGui.PushStyleColor(ImGuiCol.Border, item2);
+            ImGui.PushStyleColor(ImGuiCol.Border, fgcolor);
             ImGui.SetNextWindowBgAlpha(Plugin.Configuration.OverlayHint_BgAlpha);
             ImGui.SetNextWindowPos(windowPos);
             if (!ImGui.Begin( $"{thisGameObject.Name.TextValue} {thisGameObject.EntityId}", ImGuiWindowFlags.NoDecoration | ImGuiWindowFlags.NoInputs | ImGuiWindowFlags.AlwaysAutoResize | ImGuiWindowFlags.NoSavedSettings | ImGuiWindowFlags.NoFocusOnAppearing | ImGuiWindowFlags.NoBringToFrontOnFocus))
@@ -1297,10 +1307,10 @@ public class BuildUi : IDisposable
             rotation = AdjustRotationToHRotation(Plugin.ClientState.LocalPlayer.Rotation);
 
             // 指示相对方向的箭头
-            ImGui.GetWindowDrawList().DrawArrow(pos2, ImGui.GetTextLineHeightWithSpacing() * 0.618f, item2, (new Vector2(thisGameObject.Position.X, thisGameObject.Position.Z) - MeWorldPos.ToVector2()).Normalize().Rotate(0f - rotation), 5f);
+            ImGui.GetWindowDrawList().DrawArrow(pos2, ImGui.GetTextLineHeightWithSpacing() * 0.618f, fgcolor, (new Vector2(thisGameObject.Position.X, thisGameObject.Position.Z) - MeWorldPos.ToVector2()).Normalize().Rotate(0f - rotation), 5f);
             
             ImGui.SetCursorPosX(ImGui.GetCursorPosX() + ImGui.GetTextLineHeight() + ImGui.GetTextLineHeightWithSpacing());
-            ImGui.TextColored(ImGui.ColorConvertU32ToFloat4(item2), item3 ?? "");
+            ImGui.TextColored(ImGui.ColorConvertU32ToFloat4(fgcolor), nameString ?? "");
             ImGui.Separator();
             var text = string.Empty;
             if (thisGameObject.ObjectKind is ObjectKind.BattleNpc or ObjectKind.Player)
@@ -1331,7 +1341,6 @@ public class BuildUi : IDisposable
         ImGui.PopStyleVar(2);
         SpecialObjectDrawList.Clear();
     }
-
 
     private static float AdjustRotationToHRotation(float angle)
     {
