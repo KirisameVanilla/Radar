@@ -5,7 +5,7 @@ using System.Text.Json.Serialization;
 using Dalamud.Configuration;
 using Dalamud.Plugin;
 using Radar.CustomObject;
-using Radar.Enums;
+using static Radar.RadarEnum;
 
 namespace Radar;
 

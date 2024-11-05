@@ -17,7 +17,7 @@ namespace Radar;
 
 public class Plugin : IDalamudPlugin
 {
-	internal BuildUi Ui;
+	internal MainUi MainUi;
 
 	private static int SaveTimer;
 
@@ -53,10 +53,10 @@ public class Plugin : IDalamudPlugin
         Configuration = (Configuration)PluginInterface.GetPluginConfig() ?? new Configuration();
         Configuration.Initialize(PluginInterface);
         Framework.Update += Framework_OnUpdateEvent;
-        Ui = new BuildUi();
+        MainUi = new MainUi();
         if (PluginInterface.Reason != PluginLoadReason.Boot)
         { 
-            Ui.ConfigVisible = true;
+            MainUi.ConfigVisible = true;
         }
 
         var radarInfo = new CommandInfo(OnCommand)
@@ -85,7 +85,7 @@ public class Plugin : IDalamudPlugin
     {
         if (arguments.Length == 0)
         {
-            Ui.ConfigVisible = !Ui.ConfigVisible;
+            MainUi.ConfigVisible = !MainUi.ConfigVisible;
             return;
         }
         
@@ -171,7 +171,7 @@ public class Plugin : IDalamudPlugin
     {
         CommandManager.RemoveHandler("/radar");
         Framework.Update -= Framework_OnUpdateEvent;
-        Ui.Dispose();
+        MainUi.Dispose();
         PluginInterface.SavePluginConfig(Configuration);
 	}
 }

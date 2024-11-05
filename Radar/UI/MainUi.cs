@@ -17,8 +17,8 @@ using FFXIVClientStructs.STD;
 using ImGuiNET;
 using Lumina.Excel;
 using Radar.CustomObject;
-using Radar.Enums;
 using SharpDX;
+using static Radar.RadarEnum;
 using Map = Lumina.Excel.GeneratedSheets.Map;
 using ObjectKind = Dalamud.Game.ClientState.Objects.Enums.ObjectKind;
 using TerritoryType = Lumina.Excel.GeneratedSheets.TerritoryType;
@@ -28,7 +28,7 @@ using Vector4 = System.Numerics.Vector4;
 
 namespace Radar.UI;
 
-public class BuildUi : IDisposable
+public class MainUi : IDisposable
 {
 	public class DeepDungeonObjectLocationEqualityComparer : IEqualityComparer<DeepDungeonObject>
 	{
@@ -293,7 +293,7 @@ public class BuildUi : IDisposable
 
     private float rotation;
 
-	public BuildUi()
+	public MainUi()
 	{
 		sizeFactorDict = TerritoryTypeSheet.ToDictionary(k => k.RowId, v => v.Map.Value.SizeFactor);
 		DeepDungeonTerritoryEqual = new DeepDungeonTerritoryEqualityComparer();
@@ -1232,7 +1232,7 @@ public class BuildUi : IDisposable
         _ = Plugin.Configuration.Overlay3D_ClampVector2;
         var overlay3DClampVector2 = Plugin.Configuration.Overlay3D_ClampVector2;
         var flag3 = false;
-        if (Plugin.Configuration.Overlay3D_ShowOffscreen && Vector2Intersect.GetBorderClampedVector2(screenPos, overlay3DClampVector2, out var clampedPos))
+        if (Plugin.Configuration.Overlay3D_ShowOffscreen && Util.GetBorderClampedVector2(screenPos, overlay3DClampVector2, out var clampedPos))
         {
             screenPos = clampedPos;
             flag3 = true;
