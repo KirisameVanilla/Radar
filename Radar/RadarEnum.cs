@@ -56,5 +56,11 @@ public enum DeepDungeonType
     CairnOfReturn,
     CairnOfPassage
 }
+
+public enum SubKind : byte
+{
+    Pet = 2,
+    Chocobo,
+}
 }
 

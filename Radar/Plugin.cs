@@ -1,16 +1,12 @@
 using System;
-using System.Collections.Generic;
 using System.Diagnostics;
 using System.Linq;
 using System.Threading.Tasks;
 using Dalamud.Game.ClientState.Objects;
 using Dalamud.Game.Command;
-using Dalamud.Interface.Textures;
 using Dalamud.IoC;
 using Dalamud.Plugin;
 using Dalamud.Plugin.Services;
-using Lumina.Excel;
-using Lumina.Excel.GeneratedSheets;
 using Radar.UI;
 
 namespace Radar;

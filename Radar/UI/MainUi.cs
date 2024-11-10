@@ -477,9 +477,8 @@ public class MainUi : IDisposable
 		ImGui.Checkbox("启用2D覆盖", ref Plugin.Configuration.Overlay2D_Enabled);
 		ImGui.Checkbox("显示自己##Overlay2D_ShowCenter", ref Plugin.Configuration.Overlay2D_ShowCenter);
 		ImGui.Checkbox("显示辅助圈(25m|125m)", ref Plugin.Configuration.Overlay2D_ShowAssist);
-		ref int overlay2DDetailLevel = ref Plugin.Configuration.Overlay2D_DetailLevel;
 		DetailLevel overlay2DDetailLevel2 = (DetailLevel)Plugin.Configuration.Overlay2D_DetailLevel;
-		ImGui.SliderInt("信息显示级别##2d", ref overlay2DDetailLevel, 0, 2, overlay2DDetailLevel2.ToString());
+		ImGui.SliderInt("信息显示级别##2d", ref Plugin.Configuration.Overlay2D_DetailLevel, 0, 2, overlay2DDetailLevel2.ToString());
 		ImGui.Separator();
 		ImGui.Checkbox("启用外置地图##externalMap", ref Plugin.Configuration.ExternalMap_Enabled);
 		ImGui.Checkbox("锁定位置大小##externalMap", ref Plugin.Configuration.ExternalMap_LockSizePos);
@@ -487,9 +486,8 @@ public class MainUi : IDisposable
 		ImGui.Checkbox("显示地图信息##externalMap", ref Plugin.Configuration.ExternalMap_ShowMapInfo);
 		ImGui.SliderFloat("地图透明度##externalMap", ref Plugin.Configuration.ExternalMap_MapAlpha, 0f, 1f);
 		ImGui.SliderFloat("背景透明度##externalMap", ref Plugin.Configuration.ExternalMap_BgAlpha, 0f, 1f);
-		ref int externalMapMode = ref Plugin.Configuration.ExternalMap_Mode;
 		MapMode externalMapMode2 = (MapMode)Plugin.Configuration.ExternalMap_Mode;
-		ImGui.SliderInt("地图模式##externalMap", ref externalMapMode, 0, 2, externalMapMode2.ToString());
+		ImGui.SliderInt("地图模式##externalMap", ref Plugin.Configuration.ExternalMap_Mode, 0, 2, externalMapMode2.ToString());
 		ImGui.Separator();
 		ImGui.TextUnformatted("名牌设置");
 		if (ImGui.GetIO().Fonts.Fonts.Size > 2)
@@ -511,9 +509,8 @@ public class MainUi : IDisposable
 		ImGui.Checkbox("显示当前目标线", ref Plugin.Configuration.Overlay3D_DrawObjectLineCurrentTarget);
 		ImGui.Checkbox("显示以你为目标的目标线", ref Plugin.Configuration.Overlay3D_DrawObjectLineTargetingYou);
 		ImGui.Checkbox("显示所有物体目标线", ref Plugin.Configuration.Overlay3D_DrawObjectLineAll);
-		ref int overlay3DDetailLevel = ref Plugin.Configuration.Overlay3D_DetailLevel;
 		DetailLevel overlay3DDetailLevel2 = (DetailLevel)Plugin.Configuration.Overlay3D_DetailLevel;
-		ImGui.SliderInt("信息显示级别##3d", ref overlay3DDetailLevel, 0, 2, overlay3DDetailLevel2.ToString());
+		ImGui.SliderInt("信息显示级别##3d", ref Plugin.Configuration.Overlay3D_DetailLevel, 0, 2, overlay3DDetailLevel2.ToString());
 		ImGui.Separator();
 		ImGui.TextUnformatted("名牌设置");
 		if (ImGui.GetIO().Fonts.Fonts.Size > 2)
@@ -614,13 +611,13 @@ public class MainUi : IDisposable
 		ImGui.TableNextRow();
 		ImGui.TableNextColumn();
 		ImGui.SetNextItemWidth(-1f);
-		bool num = ImGui.InputTextWithHint("##newName", "要添加的物体名，留空添加当前目标名", ref newCustomObjectName, 255u, ImGuiInputTextFlags.EnterReturnsTrue);
+		bool isInput = ImGui.InputTextWithHint("##newName", "要添加的物体名，留空添加当前目标名", ref newCustomObjectName, 255u, ImGuiInputTextFlags.EnterReturnsTrue);
 		ImGui.TableNextColumn();
 		ImguiUtil.ColorPickerWithPalette(99999, string.Empty, ref newCustomObjectColor, ImGuiColorEditFlags.None);
 		ImGui.TableNextColumn();
-		bool flag = ImguiUtil.IconButton(FontAwesomeIcon.Plus, "##newCustomObjectEntry");
+		bool isAddButtonPressed = ImguiUtil.IconButton(FontAwesomeIcon.Plus, "##newCustomObjectEntry");
 		ImGui.TableNextColumn();
-		if (num || flag)
+		if (isInput || isAddButtonPressed)
 		{
 			if (string.IsNullOrWhiteSpace(newCustomObjectName))
 			{
@@ -873,7 +870,7 @@ public class MainUi : IDisposable
 		{
 			if (ImGui.BeginTabItem("显示类别"))
 			{
-				if (ImGui.BeginChild("显示类别childwindow"))
+				if (ImGui.BeginChild("显示类别##childWindow"))
 				{
 					ConfigObjectKind();
 					ImGui.EndChild();
@@ -882,7 +879,7 @@ public class MainUi : IDisposable
 			}
 			if (ImGui.BeginTabItem("特殊物体"))
 			{
-				if (ImGui.BeginChild("狩猎&自定义childwindow"))
+				if (ImGui.BeginChild("狩猎&自定义##childWindow"))
 				{
 					MobHuntAndCustomObjects();
 					ImGui.EndChild();
@@ -891,7 +888,7 @@ public class MainUi : IDisposable
 			}
 			if (ImGui.BeginTabItem("2D覆盖"))
 			{
-				if (ImGui.BeginChild("config2dchild"))
+				if (ImGui.BeginChild("config2d##child"))
 				{
 					Config2D();
 					ImGui.EndChild();
@@ -900,7 +897,7 @@ public class MainUi : IDisposable
 			}
 			if (ImGui.BeginTabItem("3D覆盖"))
 			{
-				if (ImGui.BeginChild("config3dchild"))
+				if (ImGui.BeginChild("config3d##child"))
 				{
 					Config3D();
 					ImGui.EndChild();
@@ -946,13 +943,13 @@ public class MainUi : IDisposable
 						ImGui.TextUnformatted($"{configSnapShot.LastEdit:f}");
 						ImGui.TableNextColumn();
 						Vector2 size = new Vector2(ImGui.GetFrameHeight() * 1.5f, ImGui.GetFrameHeight());
-						if (ImguiUtil.IconButton(FontAwesomeIcon.Upload, $"loadbutton{i}", size))
+						if (ImguiUtil.IconButton(FontAwesomeIcon.Upload, $"loadButton{i}", size))
 						{
 							currentProfile = configSnapShot;
 							configSnapShot.RestoreSnapShot(Plugin.Configuration);
 						}
 						ImGui.SameLine();
-						ImguiUtil.IconButton(FontAwesomeIcon.Download, $"savebutton{i}", size);
+						ImguiUtil.IconButton(FontAwesomeIcon.Download, $"saveButton{i}", size);
 						if (ImGui.IsItemHovered())
 						{
 							if (ImGui.IsMouseDoubleClicked(ImGuiMouseButton.Left))
@@ -964,7 +961,7 @@ public class MainUi : IDisposable
 							ImGui.EndTooltip();
 						}
 						ImGui.SameLine();
-						ImguiUtil.IconButton(FontAwesomeIcon.Trash, $"deletebutton{i}", size);
+						ImguiUtil.IconButton(FontAwesomeIcon.Trash, $"deleteButton{i}", size);
 						if (ImGui.IsItemHovered())
 						{
 							if (ImGui.IsMouseDoubleClicked(ImGuiMouseButton.Left))
@@ -1523,7 +1520,7 @@ public class MainUi : IDisposable
 				if (ImguiUtil.IconButton((Plugin.Configuration.ExternalMap_Mode == 0) ? FontAwesomeIcon.Expand : ((Plugin.Configuration.ExternalMap_Mode == 1) ? FontAwesomeIcon.Crosshairs : FontAwesomeIcon.LocationArrow), "ToggleSnap", new Vector2(25f, 25f)))
 				{
 					Plugin.Configuration.ExternalMap_Mode++;
-					Plugin.Configuration.ExternalMap_Mode = Plugin.Configuration.ExternalMap_Mode % 3;
+					Plugin.Configuration.ExternalMap_Mode %= 3;
 				}
 				ImGui.SetCursorPosX(5f);
 				if (ImguiUtil.IconButton(FontAwesomeIcon.PlusCircle, "zoom++", new Vector2(25f, 25f)))
@@ -1579,7 +1576,7 @@ public class MainUi : IDisposable
 					ref var reference2 = ref array[k];
 					reference2 = reference2.Zoom(UvZoom, imGuiWindowCenter + dragPos);
 				}
-                if (textureWrap is null) { return; }
+                if (textureWrap is null) return;
                 windowDrawList.AddImageQuad(textureWrap.ImGuiHandle, array[0], array[1], array[2], array[3], uv1, uv2, uv3, uv4, ImGui.ColorConvertFloat4ToU32(new Vector4(1f, 1f, 1f, Plugin.Configuration.ExternalMap_MapAlpha)));
 				foreach (var item2 in DrawList2D)
 				{

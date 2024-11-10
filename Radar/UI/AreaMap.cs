@@ -1,8 +1,5 @@
 using System;
-using System.Numerics;
-using Dalamud.Interface.Utility;
 using FFXIVClientStructs.FFXIV.Component.GUI;
-using FFXIVClientStructs.STD;
 
 namespace Radar.UI;
 
