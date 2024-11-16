@@ -19,9 +19,9 @@ using Lumina.Excel;
 using Radar.CustomObject;
 using SharpDX;
 using static Radar.RadarEnum;
-using Map = Lumina.Excel.GeneratedSheets.Map;
+using Map = Lumina.Excel.Sheets.Map;
 using ObjectKind = Dalamud.Game.ClientState.Objects.Enums.ObjectKind;
-using TerritoryType = Lumina.Excel.GeneratedSheets.TerritoryType;
+using TerritoryType = Lumina.Excel.Sheets.TerritoryType;
 using Vector2 = System.Numerics.Vector2;
 using Vector3 = System.Numerics.Vector3;
 using Vector4 = System.Numerics.Vector4;
@@ -261,7 +261,7 @@ public class MainUi : IDisposable
 		{
 			if (territoryIdToBg == null)
 			{
-				territoryIdToBg = TerritoryTypeSheet.ToDictionary((i) => (ushort)i.RowId, (j) => j?.Bg?.RawString);
+                territoryIdToBg = TerritoryTypeSheet.ToDictionary((i) => (ushort)i.RowId, (j) => j.Bg.ExtractText());
 				territoryIdToBg[0] = "未记录区域（数据不可用）";
 			}
 			return territoryIdToBg;
@@ -1454,21 +1454,12 @@ public class MainUi : IDisposable
 		{
 			return;
 		}
-		Map map = new Map
-		{
-			SizeFactor = 100,
-			OffsetX = 0,
-			OffsetY = 0
-		};
+
 		IDalamudTextureWrap textureWrap = null;
 
-        map = MapSheet.GetRow(Plugin.ClientState.MapId);
-        if (map is null)
-        {
-            Plugin.PluginLog.Error("error when get map");
-            return;
-        }
-        var rawString = map.Id.RawString;
+        Map map = MapSheet.GetRow(Plugin.ClientState.MapId);
+
+        var rawString = map.Id.ToString();
         string texturePath = "ui/map/" + rawString + "/" + rawString?.Replace("_", string.Empty).Replace("/", string.Empty) + "_m.tex";
         ISharedImmediateTexture fromGame = Plugin.TextureProvider.GetFromGame(texturePath);
         textureWrap = fromGame.GetWrapOrDefault();
