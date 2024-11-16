@@ -1,4 +1,4 @@
-﻿<?xml version="1.0" encoding="utf-8"?>
+<?xml version="1.0" encoding="utf-8"?>
 <Project>
 	<Target Name="PackagePlugin" AfterTargets="Build" Condition="'$(Configuration)' == 'Debug'">
 		<DalamudPackager
@@ -8,7 +8,7 @@
 			MakeZip="false"/>
 	</Target>
 
-	<Target Name="PackagePlugin" AfterTargets="Build" Condition="'$(Configuration)' == 'Release'">
+	<Target Name="PackagePlugin" AfterTargets="Build" Condition="'$(Configuration)' == 'SE' Or '$(Configuration)' == 'SQ'">
 		<DalamudPackager
 			ProjectDir="$(ProjectDir)"
 			OutputPath="$(OutputPath)"
