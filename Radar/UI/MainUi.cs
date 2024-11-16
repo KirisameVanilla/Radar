@@ -1290,7 +1290,7 @@ public class MainUi : IDisposable
             var fgcolor = specialObjectTuple.fgcolor;
             var nameString = specialObjectTuple.title;
             // 不能用thisGameObject.Address，会在后面获取NameId的时候炸游戏
-            if (thisGameObject is not ICharacter objCharacter) return;
+            if (thisGameObject is not ICharacter objCharacter) continue;
             ImGui.PushStyleColor(ImGuiCol.Border, fgcolor);
             ImGui.SetNextWindowBgAlpha(Plugin.Configuration.OverlayHint_BgAlpha);
             ImGui.SetNextWindowPos(windowPos);
