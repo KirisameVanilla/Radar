@@ -4,6 +4,7 @@
     <GenerateAssemblyInfo>False</GenerateAssemblyInfo>
     <TargetFramework>net8.0-windows8.0</TargetFramework>
     <PlatformTarget>x64</PlatformTarget>
+    <Configurations>Debug;SQ;SE</Configurations>
   </PropertyGroup>
 
   <ItemGroup>
@@ -15,10 +16,12 @@
     <AllowUnsafeBlocks>True</AllowUnsafeBlocks>
     <Authors>akira0245, KirisameVanilla</Authors>
     <Version>2.1.0.0</Version>
-    <DalamudLibPath>$(appdata)\XIVLauncher\addon\Hooks\dev\</DalamudLibPath>
-    <RepositoryUrl>https://github.com/KirisameVanilla/Radar_decompiled</RepositoryUrl>
+    <DalamudLibPath Condition=" '$(Configuration)' == 'SE'">$(appdata)\XIVLauncher\addon\Hooks\dev\</DalamudLibPath>
+    <DalamudLibPath Condition=" '$(Configuration)' == 'SQ'">$(appdata)\XIVLauncherCN\addon\Hooks\dev\</DalamudLibPath>
+    <DalamudLibPath Condition=" '$(Configuration)' == 'Debug'">$(appdata)\XIVLauncher\addon\Hooks\dev\</DalamudLibPath>
+    <RepositoryUrl>https://github.com/KirisameVanilla/Radar</RepositoryUrl>
     <RepositoryType>git</RepositoryType>
-    <PackageProjectUrl>https://github.com/KirisameVanilla/Radar_decompiled</PackageProjectUrl>
+    <PackageProjectUrl>https://github.com/KirisameVanilla/Radar</PackageProjectUrl>
   </PropertyGroup>
     
     
