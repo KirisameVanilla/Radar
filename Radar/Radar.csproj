@@ -14,7 +14,7 @@
     <LangVersion>11.0</LangVersion>
     <AllowUnsafeBlocks>True</AllowUnsafeBlocks>
     <Authors>akira0245, KirisameVanilla</Authors>
-    <Version>2.0.6.8</Version>
+    <Version>2.1.0.0</Version>
     <DalamudLibPath>$(appdata)\XIVLauncher\addon\Hooks\dev\</DalamudLibPath>
     <RepositoryUrl>https://github.com/KirisameVanilla/Radar_decompiled</RepositoryUrl>
     <RepositoryType>git</RepositoryType>
