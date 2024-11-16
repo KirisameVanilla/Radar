@@ -1277,6 +1277,10 @@ public class MainUi : IDisposable
     private void DrawSpecialObjectTipWindows()
     {
         //特殊物体名牌
+        if (Plugin.ClientState.LocalPlayer == null)
+        {
+            return;
+        }
         ImGui.PushStyleVar(ImGuiStyleVar.WindowRounding, 0f);
         ImGui.PushStyleVar(ImGuiStyleVar.WindowBorderSize, Plugin.Configuration.OverlayHint_BorderSize);
         var windowPos = Plugin.Configuration.WindowPos;
@@ -1287,7 +1291,6 @@ public class MainUi : IDisposable
             var nameString = specialObjectTuple.title;
             // 不能用thisGameObject.Address，会在后面获取NameId的时候炸游戏
             if (thisGameObject is not ICharacter objCharacter) return;
-            // ICharacter objCharacter = *(ICharacter*)(&thisGameObject);
             ImGui.PushStyleColor(ImGuiCol.Border, fgcolor);
             ImGui.SetNextWindowBgAlpha(Plugin.Configuration.OverlayHint_BgAlpha);
             ImGui.SetNextWindowPos(windowPos);
@@ -1297,10 +1300,6 @@ public class MainUi : IDisposable
             }
             windowPos.Y += 15f;
             var pos2 = ImGui.GetWindowPos() + ImGui.GetCursorPos() + new Vector2(ImGui.GetTextLineHeight(), ImGui.GetTextLineHeight());
-            if (Plugin.ClientState.LocalPlayer == null)
-            {
-                return;
-            }
             rotation = AdjustRotationToHRotation(Plugin.ClientState.LocalPlayer.Rotation);
 
             // 指示相对方向的箭头
@@ -1319,7 +1318,7 @@ public class MainUi : IDisposable
             }
             var distanceY = thisGameObject.Position.Y - MeWorldPos.Y;
             var direction = (double.Abs(distanceY)<0.1f) ? "" : ((distanceY > 0f) ? "↑" : "↓");
-            ImGui.TextUnformatted($"{text}{thisGameObject.Position.Distance2D(MeWorldPos):F2}m\t{direction}{Math.Abs(distanceY):F2}");
+            ImGui.TextUnformatted($"{text}{thisGameObject.Position.Distance2D(MeWorldPos):F2}m\t{direction}{Math.Abs(distanceY):F1}m");
             windowPos += new Vector2(0f, ImGui.GetWindowSize().Y);
             if (Plugin.Configuration.OverlayHint_OpenMapLinkOnAlt && ImGui.GetIO().KeyAlt && ImGui.IsMouseHoveringRect(ImGui.GetWindowPos(), ImGui.GetWindowSize() + ImGui.GetWindowPos()))
             {
