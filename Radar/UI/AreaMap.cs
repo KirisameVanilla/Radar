@@ -11,5 +11,5 @@ internal static class AreaMap
 
     public static unsafe bool MapVisible => HasMap && AreaMapAddon->IsVisible;
 
-	public static unsafe ref float MapScale => ref *(float*)((byte*)AreaMapAddon + 972);
+	public static unsafe ref float MapScale => ref *(float*)((byte*)AreaMapAddon + 980);
 }
