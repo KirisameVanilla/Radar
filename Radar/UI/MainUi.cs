@@ -1091,7 +1091,7 @@ public class MainUi : IDisposable
 
     private bool TryAddSpecialObjectsToDrawList(IGameObject obj, ref uint fgColor, ref uint bgColor)
     {
-        string dictionaryName = obj.Name.ToString();
+        string dictionaryName = obj.Name.TextValue;
         var myObjectKind = Util.GetMyObjectKind(obj);
 
         if (Plugin.Configuration.NpcBaseMapping.ContainsKey(obj.DataId))
@@ -1146,7 +1146,7 @@ public class MainUi : IDisposable
 
     private void AddObjectTo2DDrawList(IGameObject a, uint foregroundColor, uint backgroundColor)
     {
-        string dictionaryName = a.Name.ToString();
+        string dictionaryName = a.Name.TextValue;
         if (Plugin.Configuration.NpcBaseMapping.ContainsKey(a.DataId))
         {
             Plugin.Configuration.NpcBaseMapping.TryGetValue(a.DataId, out dictionaryName);
@@ -1171,7 +1171,7 @@ public class MainUi : IDisposable
 
     private void DrawObject3D(IGameObject obj, uint foregroundColor, uint bgcolor, bool drawLine, ISharedImmediateTexture icon = null)
     {
-        string dictionaryName = obj.Name.ToString();
+        string dictionaryName = obj.Name.TextValue;
         if (Plugin.Configuration.NpcBaseMapping.ContainsKey(obj.DataId))
         {
             Plugin.Configuration.NpcBaseMapping.TryGetValue(obj.DataId, out dictionaryName);
@@ -1458,7 +1458,7 @@ public class MainUi : IDisposable
 
         Map map = MapSheet.GetRow(Plugin.ClientState.MapId);
 
-        var rawString = map.Id.ToString();
+        var rawString = map.Id.ExtractText();
         string texturePath = "ui/map/" + rawString + "/" + rawString?.Replace("_", string.Empty).Replace("/", string.Empty) + "_m.tex";
         ISharedImmediateTexture fromGame = Plugin.TextureProvider.GetFromGame(texturePath);
         textureWrap = fromGame.GetWrapOrDefault();
