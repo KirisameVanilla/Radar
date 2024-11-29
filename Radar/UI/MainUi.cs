@@ -160,57 +160,41 @@ public class MainUi : IDisposable
         }
 	}
 
+    #region VARIABLE
 
-	private Vector2? mapOrigin = Vector2.Zero;
-
+    private Vector2? mapOrigin = Vector2.Zero;
 	private float globalUiScale = 1f;
-
 	private Vector2[] mapPosSize = new Vector2[2];
-
 	private static Vector2 MeScreenPos = ImGuiHelpers.MainViewport.GetCenter();
-
 	private static Vector3 MeWorldPos = Vector3.Zero;
-
 	internal static Matrix MatrixSingetonCache;
-
 	internal static Vector2 ViewPortSizeCache;
-
     private ImDrawListPtr foregroundDrawList;
-
 	private ImDrawListPtr backgroundDrawList;
-
 	private Dictionary<ushort, bool> isPvpZoneDict;
-
 	private Dictionary<ushort, string> territoryIdToBg;
-
     private HashSet<Vector2> hoardBlackList = new();
-
 	private HashSet<Vector2> trapBlacklist = new();
-
 	private readonly Dictionary<uint, ushort> sizeFactorDict;
-
 	private Vector2 dragPos = Vector2.Zero;
-
 	private float uvZoom1 = 1f;
-
 	private readonly Vector2 uv1 = new(0f, -1f);
-
 	private readonly Vector2 uv2 = new(1f, -1f);
-
 	private readonly Vector2 uv3 = new(1f, 0f);
-
 	private readonly Vector2 uv4 = new(0f, 0f);
-
 	private List<(Vector3 worldpos, uint fgcolor, uint bgcolor, string name)> DrawList2D { get; } = new();
-
-    #region ExcelSheets
+    private static int FontsSize => ImGui.GetIO().Fonts.Fonts.Size;
+    private Dictionary<ushort, bool> IsPvpZone => isPvpZoneDict 
+                                                      ??= TerritoryTypeSheet.ToDictionary(
+                                                          i => (ushort)i.RowId, 
+                                                          j => j.IsPvpZone
+                                                          );
     private static readonly ExcelSheet<TerritoryType> TerritoryTypeSheet = Plugin.DataManager.GetExcelSheet<TerritoryType>();
-    private static readonly ExcelSheet<Map> MapSheet = Plugin.DataManager.GetExcelSheet<Map>();
+    private static readonly ExcelSheet<Map>           MapSheet           = Plugin.DataManager.GetExcelSheet<Map>();
+
     #endregion
 
-	private Dictionary<ushort, bool> IsPvpZone => isPvpZoneDict ??= TerritoryTypeSheet.ToDictionary((i) => (ushort)i.RowId, (j) => j.IsPvpZone);
-
-	private static int FontsSize => ImGui.GetIO().Fonts.Fonts.Size;
+	
     
 	private Dictionary<ushort, string> TerritoryIdToBg
 	{

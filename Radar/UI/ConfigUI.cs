@@ -11,34 +11,32 @@ namespace Radar.UI;
 
 public class ConfigUI : IDisposable
 {
+    #region VARIABLE
+
+    public bool ConfigVisible;
+    private string newCustomObjectName = string.Empty;
+    private Vector4 newCustomObjectColor = Vector4.One;
+
+    #endregion
+
+    #region BASE
 
     public ConfigUI()
     {
         Plugin.PluginInterface.UiBuilder.OpenConfigUi += UiBuilder_OnOpenConfigUi;
         Plugin.PluginInterface.UiBuilder.Draw += BuildUI;
     }
-
-    private void UiBuilder_OnOpenConfigUi()
-    {
-        ConfigVisible = !ConfigVisible;
-    }
-
+    
     public void Dispose()
     {
         Plugin.PluginInterface.UiBuilder.OpenConfigUi -= UiBuilder_OnOpenConfigUi;
         Plugin.PluginInterface.UiBuilder.Draw -= BuildUI;
     }
 
+    #endregion
 
-    public bool ConfigVisible;
+    #region SettingsTabs
 
-    private void BuildUI()
-    {
-        if (ConfigVisible)
-        {
-            DrawConfig();
-        }
-    }
     private static void Config2D()
     {
         ImGui.TextWrapped("在游戏平面地图上显示物体信息叠加层。");
@@ -110,9 +108,6 @@ public class ConfigUI : IDisposable
         ImGui.SliderFloat("边缘标识粗细", ref Plugin.Configuration.Overlay3D_ArrorThickness, 0.5f, 50f);
         ImGui.SliderFloat("标识描边宽度", ref Plugin.Configuration.Overlay3D_IconStrokeThickness, 0f, 10f);
     }
-
-    private string newCustomObjectName = string.Empty;
-    private Vector4 newCustomObjectColor = Vector4.One;
 
     private void MobHuntAndCustomObjects()
     {
@@ -210,7 +205,6 @@ public class ConfigUI : IDisposable
         }
         ImGui.EndTable();
     }
-    private string[] GetEnumNames => Enum.GetNames(typeof(MyObjectKind));
 
     private void ConfigObjectKind()
     {
@@ -262,7 +256,7 @@ public class ConfigUI : IDisposable
         }
         ImGui.SameLine();
         ImGui.Checkbox("只显示可选中物体", ref Plugin.Configuration.Overlay_OnlyShowTargetable);
-        string[] getEnumNames = GetEnumNames;
+        string[] getEnumNames = Enum.GetNames(typeof(MyObjectKind));
         if (ImGui.BeginTable("ObjectKindTable", 3, ImGuiTableFlags.SizingStretchProp | ImGuiTableFlags.PadOuterX | ImGuiTableFlags.ScrollY))
         {
             ImGui.TableSetupScrollFreeze(0, 1);
@@ -330,4 +324,18 @@ public class ConfigUI : IDisposable
         ImGui.End();
     }
 
+    #endregion
+
+    private void UiBuilder_OnOpenConfigUi()
+    {
+        ConfigVisible = !ConfigVisible;
+    }
+    
+    private void BuildUI()
+    {
+        if (ConfigVisible)
+        {
+            DrawConfig();
+        }
+    }
 }
