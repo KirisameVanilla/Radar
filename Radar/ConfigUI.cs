@@ -1,13 +1,14 @@
+using System;
+using System.Collections.Generic;
+using System.Numerics;
 using Dalamud.Game.ClientState.Objects.Types;
 using Dalamud.Interface;
 using ImGuiNET;
 using Radar.CustomObject;
-using System;
-using System.Collections.Generic;
-using System.Numerics;
+using Radar.Utils;
 using static Radar.RadarEnum;
 
-namespace Radar.UI;
+namespace Radar;
 
 public class ConfigUI : IDisposable
 {

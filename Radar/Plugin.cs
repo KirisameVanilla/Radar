@@ -7,13 +7,12 @@ using Dalamud.Game.Command;
 using Dalamud.IoC;
 using Dalamud.Plugin;
 using Dalamud.Plugin.Services;
-using Radar.UI;
 
 namespace Radar;
 
 public class Plugin : IDalamudPlugin
 {
-	internal MainUi MainUi;
+	internal Radar Radar;
     internal ConfigUI ConfigUi;
 
     private static int SaveTimer;
@@ -50,7 +49,7 @@ public class Plugin : IDalamudPlugin
         Configuration = (Configuration)PluginInterface.GetPluginConfig() ?? new Configuration();
         Configuration.Initialize(PluginInterface);
         Framework.Update += Framework_OnUpdateEvent;
-        MainUi = new MainUi();
+        Radar = new Radar();
         ConfigUi = new ConfigUI();
         if (PluginInterface.Reason != PluginLoadReason.Boot)
         { 
@@ -141,7 +140,7 @@ public class Plugin : IDalamudPlugin
     {
         CommandManager.RemoveHandler("/radar");
         Framework.Update -= Framework_OnUpdateEvent;
-        MainUi.Dispose();
+        Radar.Dispose();
         PluginInterface.SavePluginConfig(Configuration);
 	}
 }

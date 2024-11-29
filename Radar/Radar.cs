@@ -17,6 +17,7 @@ using FFXIVClientStructs.STD;
 using ImGuiNET;
 using Lumina.Excel;
 using Radar.CustomObject;
+using Radar.Utils;
 using SharpDX;
 using static Radar.RadarEnum;
 using Map = Lumina.Excel.Sheets.Map;
@@ -26,9 +27,9 @@ using Vector2 = System.Numerics.Vector2;
 using Vector3 = System.Numerics.Vector3;
 using Vector4 = System.Numerics.Vector4;
 
-namespace Radar.UI;
+namespace Radar;
 
-public class MainUi : IDisposable
+public class Radar : IDisposable
 {
 	public class DeepDungeonObjectLocationEqualityComparer : IEqualityComparer<DeepDungeonObject>
 	{
@@ -183,40 +184,9 @@ public class MainUi : IDisposable
 	private readonly Vector2 uv3 = new(1f, 0f);
 	private readonly Vector2 uv4 = new(0f, 0f);
 	private List<(Vector3 worldpos, uint fgcolor, uint bgcolor, string name)> DrawList2D { get; } = new();
-    private static int FontsSize => ImGui.GetIO().Fonts.Fonts.Size;
-    private Dictionary<ushort, bool> IsPvpZone => isPvpZoneDict 
-                                                      ??= TerritoryTypeSheet.ToDictionary(
-                                                          i => (ushort)i.RowId, 
-                                                          j => j.IsPvpZone
-                                                          );
-    private static readonly ExcelSheet<TerritoryType> TerritoryTypeSheet = Plugin.DataManager.GetExcelSheet<TerritoryType>();
-    private static readonly ExcelSheet<Map>           MapSheet           = Plugin.DataManager.GetExcelSheet<Map>();
-
-    #endregion
-
-	
-    
-	private Dictionary<ushort, string> TerritoryIdToBg
-	{
-		get
-		{
-			if (territoryIdToBg == null)
-			{
-                territoryIdToBg = TerritoryTypeSheet.ToDictionary((i) => (ushort)i.RowId, (j) => j.Bg.ExtractText());
-				territoryIdToBg[0] = "未记录区域（数据不可用）";
-			}
-			return territoryIdToBg;
-		}
-	}
-
-	public static DeepDungeonTerritoryEqualityComparer DeepDungeonTerritoryEqual { get; set; }
-
-	public static DeepDungeonObjectLocationEqualityComparer DeepDungeonObjectLocationEqual { get; set; }
-
     private List<(IGameObject obj, uint fgcolor, string title)> SpecialObjectDrawList { get; } = new();
-
-	private float WorldToMapScale => AreaMap.MapScale * sizeFactorDict[Plugin.ClientState.TerritoryType] / 100f * globalUiScale;
-
+    private static int FontsSize => ImGui.GetIO().Fonts.Fonts.Size;
+    private float WorldToMapScale => AreaMap.MapScale * sizeFactorDict[Plugin.ClientState.TerritoryType] / 100f * globalUiScale;
 	private ref float UvZoom
 	{
 		get
@@ -229,10 +199,22 @@ public class MainUi : IDisposable
 			return ref uvZoom1;
 		}
 	}
-
     private float rotation;
+    private Dictionary<ushort, bool> IsPvpZone => isPvpZoneDict 
+                                                      ??= TerritoryTypeSheet.ToDictionary(
+                                                          i => (ushort)i.RowId, 
+                                                          j => j.IsPvpZone
+                                                      );
+    private static readonly ExcelSheet<TerritoryType> TerritoryTypeSheet = Plugin.DataManager.GetExcelSheet<TerritoryType>();
+    private static readonly ExcelSheet<Map>           MapSheet           = Plugin.DataManager.GetExcelSheet<Map>();
 
-	public MainUi()
+    #endregion
+
+	public static DeepDungeonTerritoryEqualityComparer DeepDungeonTerritoryEqual { get; set; }
+
+	public static DeepDungeonObjectLocationEqualityComparer DeepDungeonObjectLocationEqual { get; set; }
+
+	public Radar()
 	{
 		sizeFactorDict = TerritoryTypeSheet.ToDictionary(k => k.RowId, v => v.Map.Value.SizeFactor);
 		DeepDungeonTerritoryEqual = new DeepDungeonTerritoryEqualityComparer();
@@ -240,8 +222,6 @@ public class MainUi : IDisposable
 		Plugin.ClientState.TerritoryChanged += TerritoryChanged;
 		Plugin.PluginInterface.UiBuilder.Draw += UiBuilder_OnBuildUi;
 	}
-
-	
 
 	private void TerritoryChanged(ushort territoryId)
 	{

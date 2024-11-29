@@ -8,12 +8,10 @@ using Dalamud.Interface.Textures.TextureWraps;
 using Dalamud.Interface.Utility;
 using ImGuiNET;
 using Newtonsoft.Json;
-using Radar.CustomObject;
-using Radar.UI;
 using SharpDX;
 using static Radar.RadarEnum;
 
-namespace Radar;
+namespace Radar.Utils;
 
 internal static class Util
 {
@@ -54,18 +52,18 @@ internal static class Util
 	{
 		System.Numerics.Vector2 vector = pivot;
 		Vector3 vector2 = worldPos.Convert();
-		Vector3.Transform(ref vector2, ref MainUi.MatrixSingetonCache, out SharpDX.Vector4 result);
+		Vector3.Transform(ref vector2, ref Radar.MatrixSingetonCache, out SharpDX.Vector4 result);
 		Z = result.W;
 		screenPos = new System.Numerics.Vector2(result.X / Z, result.Y / Z);
-		screenPos.X = (0.5f * MainUi.ViewPortSizeCache.X * (screenPos.X + 1f)) + vector.X;
-		screenPos.Y = (0.5f * MainUi.ViewPortSizeCache.Y * (1f - screenPos.Y)) + vector.Y;
+		screenPos.X = (0.5f * Radar.ViewPortSizeCache.X * (screenPos.X + 1f)) + vector.X;
+		screenPos.Y = (0.5f * Radar.ViewPortSizeCache.Y * (1f - screenPos.Y)) + vector.Y;
 		if (Z < 0f)
 		{
 			screenPos = -screenPos + ImGuiHelpers.MainViewport.Pos + ImGuiHelpers.MainViewport.Size;
 		}
-		if (screenPos.X > vector.X - trolanceX && screenPos.X < vector.X + MainUi.ViewPortSizeCache.X + trolanceX && screenPos.Y > vector.Y - trolanceY)
+		if (screenPos.X > vector.X - trolanceX && screenPos.X < vector.X + Radar.ViewPortSizeCache.X + trolanceX && screenPos.Y > vector.Y - trolanceY)
 		{
-			return screenPos.Y < vector.Y + MainUi.ViewPortSizeCache.Y + trolanceY;
+			return screenPos.Y < vector.Y + Radar.ViewPortSizeCache.Y + trolanceY;
 		}
 		return false;
 	}

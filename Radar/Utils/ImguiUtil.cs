@@ -7,7 +7,7 @@ using Dalamud.Interface.Textures.TextureWraps;
 using Dalamud.Interface.Utility;
 using ImGuiNET;
 
-namespace Radar.UI;
+namespace Radar.Utils;
 
 internal static class ImguiUtil
 {

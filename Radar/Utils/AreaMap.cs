@@ -1,7 +1,7 @@
 using System;
 using FFXIVClientStructs.FFXIV.Component.GUI;
 
-namespace Radar.UI;
+namespace Radar.Utils;
 
 internal static class AreaMap
 {

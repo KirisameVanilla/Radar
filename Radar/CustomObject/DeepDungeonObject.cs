@@ -1,7 +1,6 @@
 using System.Numerics;
 using System.Text;
 using System.Text.Json.Serialization;
-using Radar.UI;
 using static Radar.RadarEnum;
 
 namespace Radar.CustomObject;
@@ -22,7 +21,7 @@ public record DeepDungeonObject
 	internal Vector2 Location2D => new(Location.X, Location.Z);
 
 	[JsonIgnore]
-	internal DeepDungeonBg GetBg => MainUi.GetDeepDungeonBg(Territory);
+	internal DeepDungeonBg GetBg => Radar.GetDeepDungeonBg(Territory);
 
 	public override string ToString()
 	{
