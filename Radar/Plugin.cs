@@ -14,8 +14,9 @@ namespace Radar;
 public class Plugin : IDalamudPlugin
 {
 	internal MainUi MainUi;
+    internal ConfigUI ConfigUi;
 
-	private static int SaveTimer;
+    private static int SaveTimer;
 
 	[PluginService] internal static IDalamudPluginInterface PluginInterface { get; private set; }
 
@@ -50,9 +51,10 @@ public class Plugin : IDalamudPlugin
         Configuration.Initialize(PluginInterface);
         Framework.Update += Framework_OnUpdateEvent;
         MainUi = new MainUi();
+        ConfigUi = new ConfigUI();
         if (PluginInterface.Reason != PluginLoadReason.Boot)
         { 
-            MainUi.ConfigVisible = true;
+            ConfigUi.ConfigVisible = true;
         }
 
         var radarInfo = new CommandInfo(OnCommand)
@@ -64,24 +66,17 @@ public class Plugin : IDalamudPlugin
                           /radar 2d → Toggle 2D overlay
                           /radar 3d → Toggle 3D overlay
                           /radar custom → Toggle custom object overlay
-                          /radar preset <preset name> → load named preset
-                          /radar preset save → save current config as preset
                           """,
             ShowInHelp = true,
         };
         CommandManager.AddHandler("/radar", radarInfo);
     }
 
-	public static void Initialize()
-	{
-	}
-    
-
     private void OnCommand(string command, string arguments)
     {
         if (arguments.Length == 0)
         {
-            MainUi.ConfigVisible = !MainUi.ConfigVisible;
+            ConfigUi.ConfigVisible = !ConfigUi.ConfigVisible;
             return;
         }
         
@@ -116,27 +111,6 @@ public class Plugin : IDalamudPlugin
             {
                 Configuration.Overlay3D_Enabled = !Configuration.Overlay3D_Enabled;
                 ChatGui.Print("[Radar] 3D overlay " + (Configuration.Overlay3D_Enabled ? "Enabled" : "Disabled") + ".");
-                break;
-            }
-            case "preset":
-            {
-                if (argumentsSplit[1] == "save")
-                {
-                    string text = DateTime.Now.ToString("G");
-                    Configuration.profiles.Add(ConfigSnapShot.GetSnapShot(text, Configuration));
-                    ChatGui.Print("[Radar] config snapshot saved as \"" + text + "\".");
-                    return;
-                }
-                ConfigSnapShot configSnapShot = Configuration.profiles.OrderBy(i=> i.LastEdit).LastOrDefault(i => i.Name == argumentsSplit[1]);
-                if (configSnapShot != null)
-                {
-                    ChatGui.Print("[Radar] loading preset \"" + configSnapShot.Name + "\".");
-                    configSnapShot.RestoreSnapShot(Configuration);
-                }
-                else
-                {
-                    ChatGui.PrintError("[Radar] no preset named \"" + argumentsSplit[1] + "\" found.");
-                }
                 break;
             }
         }

@@ -156,8 +156,6 @@ public class Configuration : IPluginConfiguration
 
 	public bool DeepDungeon_ShowObjectCount;
 
-	public List<ConfigSnapShot> profiles = new();
-
 	[JsonIgnore]
 	private IDalamudPluginInterface pluginInterface;
 
