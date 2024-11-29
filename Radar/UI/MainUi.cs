@@ -160,26 +160,6 @@ public class MainUi : IDisposable
         }
 	}
 
-	internal enum DeepDungeonBg
-	{
-		notInDeepDungeon,
-		f1c1,
-		f1c2,
-		f1c3,
-		f1c4,
-		f1c5,
-		f1c6,
-		f1c8,
-		f1c9,
-		f1c7,
-		e3c1,
-		e3c2,
-		e3c3,
-		e3c4,
-		e3c5,
-		e3c6
-	}
-
 	public bool ConfigVisible;
 
 	private Vector2? mapOrigin = Vector2.Zero;

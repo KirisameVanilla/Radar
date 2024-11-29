@@ -22,7 +22,7 @@ public record DeepDungeonObject
 	internal Vector2 Location2D => new(Location.X, Location.Z);
 
 	[JsonIgnore]
-	internal MainUi.DeepDungeonBg GetBg => MainUi.GetDeepDungeonBg(Territory);
+	internal DeepDungeonBg GetBg => MainUi.GetDeepDungeonBg(Territory);
 
 	public override string ToString()
 	{
