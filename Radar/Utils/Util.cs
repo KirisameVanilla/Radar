@@ -1,13 +1,9 @@
 using System;
-using System.IO;
-using System.IO.Compression;
-using System.Text;
 using Dalamud.Game.ClientState.Objects.Enums;
 using Dalamud.Game.ClientState.Objects.Types;
 using Dalamud.Interface.Textures.TextureWraps;
 using Dalamud.Interface.Utility;
 using ImGuiNET;
-using Newtonsoft.Json;
 using SharpDX;
 using static Radar.RadarEnum;
 
@@ -17,28 +13,19 @@ internal static class Util
 {
     public static MyObjectKind GetMyObjectKind(IGameObject o)
     {
-        MyObjectKind myObjectKind = (MyObjectKind)(o.ObjectKind + 2);
-        switch (o.ObjectKind)
+        var myObjectKind = (MyObjectKind)(o.ObjectKind + 2);
+        myObjectKind = o.ObjectKind switch
         {
-            case ObjectKind.None:
+            ObjectKind.None => MyObjectKind.None,
+            ObjectKind.BattleNpc => o.SubKind switch
             {
-                myObjectKind = MyObjectKind.None;
-                break;
-            }
-            case ObjectKind.BattleNpc:
-            {
-                switch (o.SubKind)
-                {
-                    case (byte)SubKind.Pet://宝石兽
-                        myObjectKind = MyObjectKind.Pet;
-                        break;
-                    case (byte)SubKind.Chocobo:
-                        myObjectKind = MyObjectKind.Chocobo;
-                        break;
-                    }
-                break;
-            }
-        }
+                (byte)SubKind.Pet => MyObjectKind.Pet, // 宝石兽
+                (byte)SubKind.Chocobo => MyObjectKind.Chocobo,
+                _ => myObjectKind,
+            },
+            _ => myObjectKind
+        };
+
 
         return myObjectKind;
     }
@@ -107,7 +94,7 @@ internal static class Util
 		}
 	}
 
-	public static float Distance2D(this System.Numerics.Vector3 v, SharpDX.Vector3 v2)
+	public static float Distance2D(this System.Numerics.Vector3 v, Vector3 v2)
 	{
 		try
 		{
@@ -152,49 +139,6 @@ internal static class Util
 		rotation = rotation.Normalize();
 		return new System.Numerics.Vector2((rotation.Y * vin.X) + (rotation.X * vin.Y), (rotation.Y * vin.Y) - (rotation.X * vin.X));
 	}
-
-	public static string ToCompressedString<T>(this T obj)
-	{
-		return Compress(obj.ToJsonString());
-	}
-
-	public static T DecompressStringToObject<T>(this string compressedString)
-	{
-		return Decompress(compressedString).JsonStringToObject<T>();
-	}
-
-	public static string ToJsonString(this object obj)
-	{
-		return JsonConvert.SerializeObject(obj);
-	}
-
-	public static T JsonStringToObject<T>(this string str)
-	{
-		return JsonConvert.DeserializeObject<T>(str);
-	}
-
-	public static string Compress(string s)
-	{
-		using MemoryStream memoryStream2 = new MemoryStream(Encoding.Unicode.GetBytes(s));
-		using MemoryStream memoryStream = new MemoryStream();
-		using (GZipStream destination = new GZipStream(memoryStream, CompressionLevel.Optimal))
-		{
-			memoryStream2.CopyTo(destination);
-		}
-		return System.Convert.ToBase64String(memoryStream.ToArray());
-	}
-
-	public static string Decompress(string s)
-	{
-		using MemoryStream stream = new MemoryStream(System.Convert.FromBase64String(s));
-		using MemoryStream memoryStream = new MemoryStream();
-		using (GZipStream gZipStream = new GZipStream(stream, CompressionMode.Decompress))
-		{
-			gZipStream.CopyTo(memoryStream);
-		}
-		return Encoding.Unicode.GetString(memoryStream.ToArray());
-	}
-
     public static bool GetBorderClampedVector2(System.Numerics.Vector2 screenpos, System.Numerics.Vector2 clampSize, out System.Numerics.Vector2 clampedPos)
     {
         ImGuiViewportPtr mainViewport = ImGuiHelpers.MainViewport;
