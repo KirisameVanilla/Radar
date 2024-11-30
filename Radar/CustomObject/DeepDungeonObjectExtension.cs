@@ -7,15 +7,13 @@ public static class DeepDungeonObjectExtension
 {
     public static bool IsTrap(IGameObject obj)
     {
-        if (obj.DataId == 6388 && obj.Position != Vector3.Zero)
+        return obj switch
         {
-            return true;
-        }
-        if ((obj.DataId >= 2007182 && obj.DataId <= 2007186) || obj.DataId == 2009504)
-        {
-            return true;
-        }
-        return false;
+            { DataId: 6388, Position: var p } when p != Vector3.Zero => true,
+            { DataId: >= 2007182 and <= 2007186 } => true,
+            { DataId: 2009504 } => true,
+            _ => false
+        };
     }
 
     public static bool IsAccursedHoard(IGameObject obj)
