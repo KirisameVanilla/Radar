@@ -16,18 +16,7 @@ public static class DeepDungeonObjectExtension
         };
     }
 
-    public static bool IsAccursedHoard(IGameObject obj)
-    {
-        if (obj.DataId != 2007542)
-        {
-            return obj.DataId == 2007543;
-        }
-        return true;
-    }
+    public static bool IsAccursedHoard(IGameObject obj) => obj.DataId == 2007542 || obj.DataId == 2007543;
 
-    public static bool IsSilverCoffer(IGameObject obj)
-    {
-        return obj.DataId == 2007357;
-    }
-
+    public static bool IsSilverCoffer(IGameObject obj) => obj.DataId == 2007357;
 }

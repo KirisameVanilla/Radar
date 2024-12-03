@@ -11,19 +11,7 @@ namespace Radar;
 
 public class Configuration : IPluginConfiguration
 {
-	public bool Config_ShowActorTable;
-
-	public bool ActorTable_ShowIndex;
-
-	public bool ActorTable_ShowPointerVtbl;
-
-	public bool Overlay_ForceVisible;
-
 	public bool[] Overlay_ShowKinds = Enumerable.Repeat(element: true, 20).ToArray();
-
-	public bool Overlay_FrontlineGcView;
-
-	public bool Overlay_GcAllyAsGreen;
 
 	public bool Overlay_OnlyShowTargetable = true;
 
@@ -75,8 +63,6 @@ public class Configuration : IPluginConfiguration
 
 	public float Overlay2D_DotStroke = 1f;
 
-	public Vector4 Overlay2D_StrokeColor = new(0f, 0f, 0f, 1f);
-
 	public bool Overlay2D_UseLargeFont;
 
 	public bool Overlay3D_Enabled = true;
@@ -88,8 +74,6 @@ public class Configuration : IPluginConfiguration
 	public bool Overlay3D_DrawObjectLineCurrentTarget;
 
 	public bool Overlay3D_DrawObjectLineTargetingYou;
-
-	public float Overlay3D_ObjectLineThickness = 1f;
 
 	public bool Overlay3D_ShowOffscreen = true;
 
