@@ -196,22 +196,8 @@ internal static class Util
         float num7 = (((p3.X - p1.X) * num2) + ((p1.Y - p3.Y) * num)) / (0f - num5);
         intersection = new System.Numerics.Vector2(p1.X + (num * num6), p1.Y + (num2 * num6));
         segmentsIntersect = num6 >= 0f && num6 <= 1f && num7 >= 0f && num7 <= 1f;
-        if (num6 < 0f)
-        {
-            num6 = 0f;
-        }
-        else if (num6 > 1f)
-        {
-            num6 = 1f;
-        }
-        if (num7 < 0f)
-        {
-            num7 = 0f;
-        }
-        else if (num7 > 1f)
-        {
-            num7 = 1f;
-        }
+        num6 = float.Clamp(num6, 0f, 1f);
+        num7 = float.Clamp(num7, 0f, 1f);
         closeP1 = new System.Numerics.Vector2(p1.X + (num * num6), p1.Y + (num2 * num6));
         closeP2 = new System.Numerics.Vector2(p3.X + (num3 * num7), p3.Y + (num4 * num7));
     }
