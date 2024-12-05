@@ -25,14 +25,16 @@ public class ConfigUI : IDisposable
 
     public ConfigUI()
     {
-        Plugin.PluginInterface.UiBuilder.OpenConfigUi += UiBuilder_OnOpenConfigUi;
-        Plugin.PluginInterface.UiBuilder.Draw += BuildUI;
+        Plugin.PluginInterface.UiBuilder.OpenConfigUi += OnOpenConfigUi;
+        Plugin.PluginInterface.UiBuilder.OpenMainUi += OnOpenConfigUi;
+        Plugin.PluginInterface.UiBuilder.Draw += DrawConfig;
     }
     
     public void Dispose()
     {
-        Plugin.PluginInterface.UiBuilder.OpenConfigUi -= UiBuilder_OnOpenConfigUi;
-        Plugin.PluginInterface.UiBuilder.Draw -= BuildUI;
+        Plugin.PluginInterface.UiBuilder.OpenConfigUi -= OnOpenConfigUi;
+        Plugin.PluginInterface.UiBuilder.OpenMainUi -= OnOpenConfigUi;
+        Plugin.PluginInterface.UiBuilder.Draw -= DrawConfig;
     }
 
     #endregion
@@ -299,6 +301,7 @@ public class ConfigUI : IDisposable
 
     private void DrawConfig()
     {
+        if (!ConfigVisible) return;
         ImGui.SetNextWindowSize(new Vector2(480f, 640f), ImGuiCond.FirstUseEver);
         if (ImGui.Begin("Radar config###Radar config", ref ConfigVisible) && ImGui.BeginTabBar("tabbar", ImGuiTabBarFlags.Reorderable | ImGuiTabBarFlags.AutoSelectNewTabs))
         {
@@ -345,16 +348,5 @@ public class ConfigUI : IDisposable
 
     #endregion
 
-    private void UiBuilder_OnOpenConfigUi()
-    {
-        ConfigVisible = !ConfigVisible;
-    }
-    
-    private void BuildUI()
-    {
-        if (ConfigVisible)
-        {
-            DrawConfig();
-        }
-    }
+    private void OnOpenConfigUi() => ConfigVisible ^= true;
 }

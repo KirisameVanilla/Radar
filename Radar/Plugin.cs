@@ -113,7 +113,7 @@ public class Plugin : IDalamudPlugin
             }
         }
     }
-	private void Framework_OnUpdateEvent(IFramework framework)
+	private static void Framework_OnUpdateEvent(IFramework framework)
 	{
 		SaveTimer++;
 		if (SaveTimer % 3600 != 0)
