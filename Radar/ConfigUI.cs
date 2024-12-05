@@ -1,5 +1,6 @@
 using System;
 using System.Collections.Generic;
+using System.Linq;
 using System.Numerics;
 using Dalamud.Game.ClientState.Objects.Types;
 using Dalamud.Interface;
@@ -141,19 +142,33 @@ public class ConfigUI : IDisposable
         }
         ImGui.TableSetupScrollFreeze(0, 1);
         ImGui.TableSetupColumn("自定义物体名");
+        ImGui.TableSetupColumn("启用");
         ImGui.TableSetupColumn("颜色");
         ImGui.TableSetupColumn("添加/删除");
         ImGui.TableHeadersRow();
-        foreach (KeyValuePair<string, CustomObjectValue> customHighlightObject in Plugin.Configuration.customHighlightObjects)
+        var customHighlightObjList = Plugin.Configuration.customHighlightObjects.ToList();
+        foreach (var customHighlightObject in customHighlightObjList)
         {
+            var name = customHighlightObject.Key;
+            var obj = customHighlightObject.Value;
+            var enabled = obj.Enabled;
+            var index = customHighlightObjList.IndexOf(customHighlightObject);
             ImGui.TableNextRow();
             ImGui.TableNextColumn();
-            bool v = customHighlightObject.Value.Enabled;
-            if (ImGui.Checkbox(customHighlightObject.Key + "##highlightObject", ref v))
+            ImGui.InputText($"##name{index}", ref name, 64);
+            if (ImGui.IsItemDeactivatedAfterEdit())
+            {
+                customHighlightObjList[index] = new KeyValuePair<string, CustomObjectValue>(name, obj);
+                Plugin.Configuration.customHighlightObjects = customHighlightObjList.ToDictionary(x => x.Key, x => x.Value);
+                break;
+            }
+
+            ImGui.TableNextColumn();
+            if (ImGui.Checkbox($"##enabled{index}", ref enabled))
             {
                 Plugin.Configuration.customHighlightObjects[customHighlightObject.Key] = customHighlightObject.Value with
                 {
-                    Enabled = v
+                    Enabled = enabled
                 };
                 break;
             }
@@ -178,7 +193,10 @@ public class ConfigUI : IDisposable
         ImGui.TableNextRow();
         ImGui.TableNextColumn();
         ImGui.SetNextItemWidth(-1f);
-        bool isInput = ImGui.InputTextWithHint("##newName", "要添加的物体名，留空添加当前目标名", ref newCustomObjectName, 255u, ImGuiInputTextFlags.EnterReturnsTrue);
+        bool isInput = ImGui.InputTextWithHint("##newName", "要添加的物体名，留空添加当前目标名", ref newCustomObjectName, 64, ImGuiInputTextFlags.EnterReturnsTrue);
+        ImGui.TableNextColumn();
+        var newObjectEnabled = true;
+        ImGui.Checkbox("##newObjEnabled", ref newObjectEnabled);
         ImGui.TableNextColumn();
         ImguiUtil.ColorPickerWithPalette(99999, string.Empty, ref newCustomObjectColor, ImGuiColorEditFlags.None);
         ImGui.TableNextColumn();
@@ -199,7 +217,7 @@ public class ConfigUI : IDisposable
                 Plugin.Configuration.customHighlightObjects[newCustomObjectName] = new CustomObjectValue
                 {
                     Color = newCustomObjectColor,
-                    Enabled = true
+                    Enabled = newObjectEnabled
                 };
                 newCustomObjectName = string.Empty;
             }

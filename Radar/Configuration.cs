@@ -120,12 +120,12 @@ public class Configuration : IPluginConfiguration
 
 	public Dictionary<string, CustomObjectValue> customHighlightObjects = new ()
 	{
-		["转移灯笼"] = new CustomObjectValue
+		["传送灯笼"] = new CustomObjectValue
 		{
 			Color = new Vector4(0f, 1f, 1f, 1f),
 			Enabled = true
 		},
-		["转移石冢"] = new CustomObjectValue
+		["传送石冢"] = new CustomObjectValue
 		{
 			Color = new Vector4(0f, 1f, 1f, 1f),
 			Enabled = true
