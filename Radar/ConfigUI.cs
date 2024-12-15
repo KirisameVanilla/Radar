@@ -1,10 +1,13 @@
 using System;
 using System.Collections.Generic;
+using System.Diagnostics;
 using System.Linq;
 using System.Numerics;
 using Dalamud.Game.ClientState.Objects.Types;
 using Dalamud.Interface;
 using ImGuiNET;
+using Lumina.Excel.Sheets;
+using Lumina.Excel;
 using Radar.CustomObject;
 using Radar.Utils;
 using static Radar.RadarEnum;
@@ -18,6 +21,26 @@ public class ConfigUI : IDisposable
     public bool ConfigVisible;
     private string newCustomObjectName = string.Empty;
     private Vector4 newCustomObjectColor = Vector4.One;
+    private HashSet<DeepDungeonObject> deepDungeonObjectsImportCache;
+    private bool importingError;
+    private static Vector4 RedVector4 = new(1f, 0f, 0f, 1f);
+    private int treeLevel;
+    private string errorMessage = string.Empty;
+    private Dictionary<ushort, string> territoryIdToBg;
+    private static readonly ExcelSheet<TerritoryType> TerritoryTypeSheet = Plugin.DataManager.GetExcelSheet<TerritoryType>();
+
+    private Dictionary<ushort, string> TerritoryIdToBg
+    {
+        get
+        {
+            if (territoryIdToBg == null)
+            {
+                territoryIdToBg = TerritoryTypeSheet.ToDictionary((i) => (ushort)i.RowId, (j) => j.Bg.ExtractText());
+                territoryIdToBg[0] = "未记录区域（数据不可用）";
+            }
+            return territoryIdToBg;
+        }
+    }
 
     #endregion
 
@@ -299,6 +322,157 @@ public class ConfigUI : IDisposable
         }
     }
 
+    private void ConfigDeepDungeonRecord()
+    {
+        ImGui.TextWrapped("记录并显示本机深层迷宫攻略过程中出现过的陷阱与宝藏位置。\n你也可以导出自己的记录并与他人共享情报。");
+        ImGui.Checkbox("深层迷宫实体显示", ref Plugin.Configuration.DeepDungeon_EnableTrapView);
+        ImGui.Checkbox("显示计数", ref Plugin.Configuration.DeepDungeon_ShowObjectCount);
+        ImGui.Spacing();
+        ImGui.SliderFloat("最远显示距离", ref Plugin.Configuration.DeepDungeon_ObjectShowDistance, 15f, 500f, Plugin.Configuration.DeepDungeon_ObjectShowDistance.ToString("##.0m"), ImGuiSliderFlags.Logarithmic);
+        ImGui.Separator();
+        if (ImGui.Button("导出当前记录点到剪贴板"))
+        {
+            Plugin.PluginLog.Information("exporting...");
+            Plugin.PluginLog.Information($"exported {(from i in Plugin.Configuration.DeepDungeonObjects
+                                                      group i by i.Territory).Count()} territories, {Plugin.Configuration.DeepDungeonObjects.Count(i => i.Type == DeepDungeonType.Trap)} traps, {Plugin.Configuration.DeepDungeonObjects.Count(i => i.Type == DeepDungeonType.AccursedHoard)} hoards.");
+            ImGui.SetClipboardText(Plugin.Configuration.DeepDungeonObjects.ToCompressedString());
+        }
+        if (deepDungeonObjectsImportCache == null || deepDungeonObjectsImportCache.Count == 0)
+        {
+            ImGui.SameLine();
+            if (ImGui.Button("从剪贴板导入已有的记录点"))
+            {
+                importingError = false;
+                try
+                {
+                    HashSet<DeepDungeonObject> source = ImGui.GetClipboardText().DecompressStringToObject<HashSet<DeepDungeonObject>>();
+                    if (source.Count != 0)
+                    {
+                        deepDungeonObjectsImportCache = source;
+                    }
+                }
+                catch (Exception ex)
+                {
+                    importingError = true;
+                    Plugin.PluginLog.Warning(ex, "error when importing deep dungeon object list.");
+                    errorMessage = ex.Message;
+                }
+            }
+            if (importingError)
+            {
+                ImGui.TextColored(RedVector4, "导入发生错误，请检查导入的字符串和日志。");
+                ImGui.TextColored(RedVector4, errorMessage);
+            }
+            return;
+        }
+        ImGui.SameLine();
+        if (ImGui.Button("正在准备导入..."))
+        {
+            deepDungeonObjectsImportCache = null;
+            Plugin.PluginLog.Debug("user canceled importing task.");
+            return;
+        }
+        bool flag = ImGui.SliderInt("树视图展开级别", ref treeLevel, 1, 4, GetFormat(treeLevel));
+        IEnumerable<IGrouping<ushort, DeepDungeonObject>> source2 = from i in deepDungeonObjectsImportCache
+                                                                    group i by i.Territory;
+
+        string arg = string.Join(", ", source2
+                                       .Select(i => i.Key.ToString())// 选择 Key 并将其转换为字符串
+                                       .OrderBy(i => i));// 按照字符串排序
+        IGrouping<string, DeepDungeonObject>[] array = deepDungeonObjectsImportCache
+                                                       .GroupBy(i => TerritoryIdToBg[i.Territory])// 根据 TerritoryIdToBg[i.Territory] 进行分组
+                                                       .OrderBy(i => i.Key)// 按 Key 排序
+                                                       .ToArray();// 转换为数组
+        ImGui.TextWrapped($"将要导入 {array.Length} 个区域的 {deepDungeonObjectsImportCache.Count} 条记录。({arg})\n包含 {array.Select(i => (from j in i
+                                                                                                                               where j.Type == DeepDungeonType.Trap
+                                                                                                                               group j by j.Location2D).Count()).Sum()} 个陷阱位置，{array.Select(i => (from j in i
+                                                                                                                                                                                                  where j.Type == DeepDungeonType.AccursedHoard
+                                                                                                                                                                                                  group j by j.Location2D).Count()).Sum()} 个宝藏位置。");
+        if (ImGui.BeginChild("deepDungeonObjectTreeview", new Vector2(-1f, (0f - ImGui.GetFrameHeightWithSpacing()) * 2f), border: true))
+        {
+            foreach (IGrouping<string, DeepDungeonObject> grouping in array)
+            {
+                if (flag)
+                {
+                    ImGui.SetNextItemOpen(treeLevel > 1);
+                }
+                if (!ImGui.TreeNodeEx(grouping.Key + "##deepDungeonTerritoryKey", ImGuiTreeNodeFlags.Framed))
+                {
+                    continue;
+                }
+                foreach (IGrouping<DeepDungeonType, DeepDungeonObject> item in from i in grouping
+                                                                               group i by i.Type into i
+                                                                               orderby i.Key
+                                                                               select i)
+                {
+                    if (flag)
+                    {
+                        ImGui.SetNextItemOpen(treeLevel > 2);
+                    }
+                    if (!ImGui.TreeNodeEx($"{item.Key} ({(from i in item
+                                                          group i by i.Location2D).Count()})##{grouping.Key}", ImGuiTreeNodeFlags.SpanAvailWidth))
+                    {
+                        continue;
+                    }
+                    foreach (IGrouping<Vector2, DeepDungeonObject> item2 in from i in item
+                                                                            group i by i.Location2D into i
+                                                                            orderby i.Count() descending
+                                                                            select i)
+                    {
+                        if (flag)
+                        {
+                            ImGui.SetNextItemOpen(treeLevel > 3);
+                        }
+                        if (!ImGui.TreeNodeEx($"{item2.Key} ({item2.Count()})##{item.Key}{grouping.Key}", ImGuiTreeNodeFlags.SpanAvailWidth))
+                        {
+                            continue;
+                        }
+                        foreach (DeepDungeonObject item3 in item2.OrderBy(i => i.InstanceId))
+                        {
+                            ImGui.TextUnformatted($"{item3.Territory} : {item3.Base} : {item3.InstanceId:X}");
+                        }
+                        ImGui.TreePop();
+                    }
+                    ImGui.TreePop();
+                }
+                ImGui.TreePop();
+            }
+            ImGui.EndChild();
+        }
+        ImGui.TextColored(new Vector4(1f, 0.8f, 0f, 1f), "确认后数据将合并到本机记录且不可撤销，请确认数据来源可靠。要继续吗？");
+        ImGui.Spacing();
+        if (ImGui.Button("取消导入##importDecline"))
+        {
+            deepDungeonObjectsImportCache = null;
+            Plugin.PluginLog.Debug("user canceled importing task.");
+            return;
+        }
+        ImGui.SameLine();
+        if (ImGui.Button("确认导入##importAccept"))
+        {
+            int count = Plugin.Configuration.DeepDungeonObjects.Count;
+            Plugin.Configuration.DeepDungeonObjects.UnionWith(deepDungeonObjectsImportCache);
+            deepDungeonObjectsImportCache = null;
+            int num = Plugin.Configuration.DeepDungeonObjects.Count - count;
+            Plugin.PluginLog.Information($"imported {num} deep dungeon object records.");
+        }
+        return;
+
+        static string GetFormat(int input)
+        {
+            return input switch
+            {
+                0 => "默认",
+                1 => "全部折叠",
+                2 => "展开到物体类型",
+                3 => "展开到物体位置",
+                4 => "全部展开",
+                _ => "invalid",
+            };
+        }
+
+    }
+
     private void DrawConfig()
     {
         if (!ConfigVisible) return;
@@ -337,6 +511,16 @@ public class ConfigUI : IDisposable
                 if (ImGui.BeginChild("config3d##child"))
                 {
                     Config3D();
+                    ImGui.EndChild();
+                }
+                ImGui.EndTabItem();
+            }
+
+            if (ImGui.BeginTabItem("Deep Dungeon"))
+            {
+                if (ImGui.BeginChild("##DeepDungeonSettings"))
+                {
+                    ConfigDeepDungeonRecord();
                     ImGui.EndChild();
                 }
                 ImGui.EndTabItem();

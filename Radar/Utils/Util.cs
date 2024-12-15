@@ -1,9 +1,13 @@
 using System;
+using System.IO;
+using System.IO.Compression;
+using System.Text;
 using Dalamud.Game.ClientState.Objects.Enums;
 using Dalamud.Game.ClientState.Objects.Types;
 using Dalamud.Interface.Textures.TextureWraps;
 using Dalamud.Interface.Utility;
 using ImGuiNET;
+using Newtonsoft.Json;
 using SharpDX;
 using static Radar.RadarEnum;
 
@@ -200,5 +204,47 @@ internal static class Util
         num7 = float.Clamp(num7, 0f, 1f);
         closeP1 = new System.Numerics.Vector2(p1.X + (num * num6), p1.Y + (num2 * num6));
         closeP2 = new System.Numerics.Vector2(p3.X + (num3 * num7), p3.Y + (num4 * num7));
+    }
+
+    public static string ToCompressedString<T>(this T obj)
+    {
+        return Compress(obj.ToJsonString());
+    }
+
+    public static string ToJsonString(this object obj)
+    {
+        return JsonConvert.SerializeObject(obj);
+    }
+
+    public static T JsonStringToObject<T>(this string str)
+    {
+        return JsonConvert.DeserializeObject<T>(str);
+    }
+
+    public static T DecompressStringToObject<T>(this string compressedString)
+    {
+        return Decompress(compressedString).JsonStringToObject<T>();
+    }
+
+    public static string Decompress(string s)
+    {
+        using MemoryStream stream = new MemoryStream(System.Convert.FromBase64String(s));
+        using MemoryStream memoryStream = new MemoryStream();
+        using (GZipStream gZipStream = new GZipStream(stream, CompressionMode.Decompress))
+        {
+            gZipStream.CopyTo(memoryStream);
+        }
+        return Encoding.Unicode.GetString(memoryStream.ToArray());
+    }
+
+    public static string Compress(string s)
+    {
+        using MemoryStream memoryStream2 = new MemoryStream(Encoding.Unicode.GetBytes(s));
+        using MemoryStream memoryStream = new MemoryStream();
+        using (GZipStream destination = new GZipStream(memoryStream, CompressionLevel.Optimal))
+        {
+            memoryStream2.CopyTo(destination);
+        }
+        return System.Convert.ToBase64String(memoryStream.ToArray());
     }
 }
