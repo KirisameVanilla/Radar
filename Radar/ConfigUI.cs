@@ -1,10 +1,10 @@
 using System;
 using System.Collections.Generic;
-using System.Diagnostics;
 using System.Linq;
 using System.Numerics;
-using Dalamud.Game.ClientState.Objects.Types;
 using Dalamud.Interface;
+using Dalamud.Interface.Utility.Raii;
+using Dalamud.Interface.Windowing;
 using ImGuiNET;
 using Lumina.Excel.Sheets;
 using Lumina.Excel;
@@ -14,16 +14,24 @@ using static Radar.RadarEnum;
 
 namespace Radar;
 
-public class ConfigUI : IDisposable
+public class ConfigUi : Window, IDisposable
 {
+    public ConfigUi()
+        : base("Radar##ConfigUi", ImGuiWindowFlags.AlwaysAutoResize)
+    {
+        SizeConstraints = new WindowSizeConstraints
+        {
+            MinimumSize = new Vector2(480f, 640f),
+            MaximumSize = new Vector2(float.MaxValue, float.MaxValue)
+        };
+    }
     #region VARIABLE
-
-    public bool ConfigVisible;
+    public void Dispose() { }
     private string newCustomObjectName = string.Empty;
     private Vector4 newCustomObjectColor = Vector4.One;
     private HashSet<DeepDungeonObject> deepDungeonObjectsImportCache;
     private bool importingError;
-    private static Vector4 RedVector4 = new(1f, 0f, 0f, 1f);
+    private static readonly Vector4 RedVector4 = new(1f, 0f, 0f, 1f);
     private int treeLevel;
     private string errorMessage = string.Empty;
     private Dictionary<ushort, string> territoryIdToBg;
@@ -43,26 +51,6 @@ public class ConfigUI : IDisposable
     }
 
     #endregion
-
-    #region BASE
-
-    public ConfigUI()
-    {
-        Plugin.PluginInterface.UiBuilder.OpenConfigUi += OnOpenConfigUi;
-        Plugin.PluginInterface.UiBuilder.OpenMainUi += OnOpenConfigUi;
-        Plugin.PluginInterface.UiBuilder.Draw += DrawConfig;
-    }
-    
-    public void Dispose()
-    {
-        Plugin.PluginInterface.UiBuilder.OpenConfigUi -= OnOpenConfigUi;
-        Plugin.PluginInterface.UiBuilder.OpenMainUi -= OnOpenConfigUi;
-        Plugin.PluginInterface.UiBuilder.Draw -= DrawConfig;
-    }
-
-    #endregion
-
-    #region SettingsTabs
 
     private static void Config2D()
     {
@@ -161,164 +149,153 @@ public class ConfigUI : IDisposable
         ImGui.DragFloat2("提示窗口位置", ref Plugin.Configuration.WindowPos, 1f, 0f, 10000f);
         ImGui.SliderFloat("提示窗口边框宽度", ref Plugin.Configuration.OverlayHint_BorderSize, 0f, 5f);
         ImGui.SliderFloat("窗口背景透明度##overlayHint", ref Plugin.Configuration.OverlayHint_BgAlpha, 0f, 1f);
-        if (!ImGui.BeginTable("CustomObjectTable", 4, ImGuiTableFlags.SizingStretchProp | ImGuiTableFlags.PadOuterX))
-        {
-            return;
-        }
-        ImGui.TableSetupScrollFreeze(0, 1);
-        ImGui.TableSetupColumn("自定义物体名");
-        ImGui.TableSetupColumn("启用");
-        ImGui.TableSetupColumn("颜色");
-        ImGui.TableSetupColumn("添加/删除");
-        ImGui.TableHeadersRow();
-        var customHighlightObjList = Plugin.Configuration.customHighlightObjects.ToList();
-        foreach (var customHighlightObject in customHighlightObjList)
-        {
-            var name = customHighlightObject.Key;
-            var obj = customHighlightObject.Value;
-            var enabled = obj.Enabled;
-            var index = customHighlightObjList.IndexOf(customHighlightObject);
-            ImGui.TableNextRow();
-            ImGui.TableNextColumn();
-            ImGui.InputText($"##name{index}", ref name, 64);
-            if (ImGui.IsItemDeactivatedAfterEdit())
-            {
-                customHighlightObjList[index] = new KeyValuePair<string, CustomObjectValue>(name, obj);
-                Plugin.Configuration.customHighlightObjects = customHighlightObjList.ToDictionary(x => x.Key, x => x.Value);
-                break;
-            }
 
-            ImGui.TableNextColumn();
-            if (ImGui.Checkbox($"##enabled{index}", ref enabled))
-            {
-                Plugin.Configuration.customHighlightObjects[customHighlightObject.Key] = customHighlightObject.Value with
-                {
-                    Enabled = enabled
-                };
-                break;
-            }
-            ImGui.TableNextColumn();
-            Vector4 originalColor = customHighlightObject.Value.Color;
-            ImguiUtil.ColorPickerWithPalette(customHighlightObject.Key.GetHashCode(), string.Empty, ref originalColor, ImGuiColorEditFlags.None);
-            if (originalColor != customHighlightObject.Value.Color)
-            {
-                Plugin.Configuration.customHighlightObjects[customHighlightObject.Key] = customHighlightObject.Value with
-                {
-                    Color = originalColor
-                };
-                break;
-            }
-            ImGui.TableNextColumn();
-            if (ImguiUtil.IconButton(FontAwesomeIcon.Trash, customHighlightObject.Key + "##delete"))
-            {
-                Plugin.Configuration.customHighlightObjects.Remove(customHighlightObject.Key);
-                break;
-            }
-        }
-        ImGui.TableNextRow();
-        ImGui.TableNextColumn();
-        ImGui.SetNextItemWidth(-1f);
-        bool isInput = ImGui.InputTextWithHint("##newName", "要添加的物体名，留空添加当前目标名", ref newCustomObjectName, 64, ImGuiInputTextFlags.EnterReturnsTrue);
-        ImGui.TableNextColumn();
-        var newObjectEnabled = true;
-        ImGui.Checkbox("##newObjEnabled", ref newObjectEnabled);
-        ImGui.TableNextColumn();
-        ImguiUtil.ColorPickerWithPalette(99999, string.Empty, ref newCustomObjectColor, ImGuiColorEditFlags.None);
-        ImGui.TableNextColumn();
-        bool isAddButtonPressed = ImguiUtil.IconButton(FontAwesomeIcon.Plus, "##newCustomObjectEntry");
-        ImGui.TableNextColumn();
-        if (isInput || isAddButtonPressed)
+        using (ImRaii.Table("CustomObjectTable", 4, ImGuiTableFlags.SizingStretchProp | ImGuiTableFlags.PadOuterX))
         {
-            if (string.IsNullOrWhiteSpace(newCustomObjectName))
+            ImGui.TableSetupScrollFreeze(0, 1);
+            ImGui.TableSetupColumn("自定义物体名");
+            ImGui.TableSetupColumn("启用");
+            ImGui.TableSetupColumn("颜色");
+            ImGui.TableSetupColumn("添加/删除");
+            ImGui.TableHeadersRow();
+            var customHighlightObjList = Plugin.Configuration.customHighlightObjects.ToList();
+            foreach (var customHighlightObject in customHighlightObjList)
             {
-                IGameObject target = Plugin.TargetManager.Target;
-                if (target != null)
+                var name = customHighlightObject.Key;
+                var obj = customHighlightObject.Value;
+                var enabled = obj.Enabled;
+                var index = customHighlightObjList.IndexOf(customHighlightObject);
+                ImGui.TableNextRow();
+                ImGui.TableNextColumn();
+                ImGui.InputText($"##name{index}", ref name, 64);
+                if (ImGui.IsItemDeactivatedAfterEdit())
                 {
-                    newCustomObjectName = target.Name.TextValue;
+                    customHighlightObjList[index] = new KeyValuePair<string, CustomObjectValue>(name, obj);
+                    Plugin.Configuration.customHighlightObjects = customHighlightObjList.ToDictionary(x => x.Key, x => x.Value);
+                    break;
+                }
+
+                ImGui.TableNextColumn();
+                if (ImGui.Checkbox($"##enabled{index}", ref enabled))
+                {
+                    Plugin.Configuration.customHighlightObjects[customHighlightObject.Key] = customHighlightObject.Value with
+                    {
+                        Enabled = enabled
+                    };
+                    break;
+                }
+                ImGui.TableNextColumn();
+                Vector4 originalColor = customHighlightObject.Value.Color;
+                ImguiUtil.ColorPickerWithPalette(customHighlightObject.Key.GetHashCode(), string.Empty, ref originalColor, ImGuiColorEditFlags.None);
+                if (originalColor != customHighlightObject.Value.Color)
+                {
+                    Plugin.Configuration.customHighlightObjects[customHighlightObject.Key] = customHighlightObject.Value with
+                    {
+                        Color = originalColor
+                    };
+                    break;
+                }
+                ImGui.TableNextColumn();
+                if (ImguiUtil.IconButton(FontAwesomeIcon.Trash, customHighlightObject.Key + "##delete"))
+                {
+                    Plugin.Configuration.customHighlightObjects.Remove(customHighlightObject.Key);
+                    break;
                 }
             }
-            else
+            ImGui.TableNextRow();
+            ImGui.TableNextColumn();
+            ImGui.SetNextItemWidth(-1f);
+            var isInput = ImGui.InputTextWithHint("##newName", "要添加的物体名，留空添加当前目标名", ref newCustomObjectName, 64, ImGuiInputTextFlags.EnterReturnsTrue);
+            ImGui.TableNextColumn();
+            var newObjectEnabled = true;
+            ImGui.Checkbox("##newObjEnabled", ref newObjectEnabled);
+            ImGui.TableNextColumn();
+            ImguiUtil.ColorPickerWithPalette(99999, string.Empty, ref newCustomObjectColor, ImGuiColorEditFlags.None);
+            ImGui.TableNextColumn();
+            var isAddButtonPressed = ImguiUtil.IconButton(FontAwesomeIcon.Plus, "##newCustomObjectEntry");
+            ImGui.TableNextColumn();
+            if (isInput || isAddButtonPressed)
             {
-                Plugin.Configuration.customHighlightObjects[newCustomObjectName] = new CustomObjectValue
+                if (string.IsNullOrWhiteSpace(newCustomObjectName))
                 {
-                    Color = newCustomObjectColor,
-                    Enabled = newObjectEnabled
-                };
-                newCustomObjectName = string.Empty;
+                    var target = Plugin.TargetManager.Target;
+                    if (target != null)
+                    {
+                        newCustomObjectName = target.Name.TextValue;
+                    }
+                }
+                else
+                {
+                    Plugin.Configuration.customHighlightObjects[newCustomObjectName] = new CustomObjectValue
+                    {
+                        Color = newCustomObjectColor,
+                        Enabled = newObjectEnabled
+                    };
+                    newCustomObjectName = string.Empty;
+                }
             }
         }
-        ImGui.EndTable();
     }
 
-    private void ConfigObjectKind()
+    private static void ConfigObjectKind()
     {
         ImGui.TextWrapped("按物体类别过滤显示。");
         if (ImGui.Button("全选"))
-        {
-            for (int i = 0; i < Plugin.Configuration.Overlay_ShowKinds.Length; i++)
-            {
+            for (var i = 0; i < Plugin.Configuration.Overlay_ShowKinds.Length; i++)
                 Plugin.Configuration.Overlay_ShowKinds[i] = true;
-            }
-        }
+
         ImGui.SameLine();
         if (ImGui.Button("全不选"))
-        {
-            for (int j = 0; j < Plugin.Configuration.Overlay_ShowKinds.Length; j++)
-            {
+            for (var j = 0; j < Plugin.Configuration.Overlay_ShowKinds.Length; j++)
                 Plugin.Configuration.Overlay_ShowKinds[j] = false;
-            }
-        }
+        
         ImGui.SameLine();
         if (ImGui.Button("反选"))
-        {
-            for (int k = 0; k < Plugin.Configuration.Overlay_ShowKinds.Length; k++)
-            {
+            for (var k = 0; k < Plugin.Configuration.Overlay_ShowKinds.Length; k++)
                 Plugin.Configuration.Overlay_ShowKinds[k] = !Plugin.Configuration.Overlay_ShowKinds[k];
-            }
-        }
+        
         ImGui.SameLine();
         if (ImGui.Button("玩家"))
         {
-            for (int l = 0; l < Plugin.Configuration.Overlay_ShowKinds.Length; l++)
-            {
+            for (var l = 0; l < Plugin.Configuration.Overlay_ShowKinds.Length; l++)
                 Plugin.Configuration.Overlay_ShowKinds[l] = false;
-            }
             Plugin.Configuration.Overlay_ShowKinds[3] = true;
         }
+
         ImGui.SameLine();
         if (ImGui.Button("NPC"))
         {
-            for (int m = 0; m < Plugin.Configuration.Overlay_ShowKinds.Length; m++)
-            {
+            for (var m = 0; m < Plugin.Configuration.Overlay_ShowKinds.Length; m++)
                 Plugin.Configuration.Overlay_ShowKinds[m] = false;
-            }
+            
             Plugin.Configuration.Overlay_ShowKinds[4] = true;
             Plugin.Configuration.Overlay_ShowKinds[5] = true;
             Plugin.Configuration.Overlay_ShowKinds[6] = true;
             Plugin.Configuration.Overlay_ShowKinds[7] = true;
             Plugin.Configuration.Overlay_ShowKinds[9] = true;
         }
+
         ImGui.SameLine();
         ImGui.Checkbox("只显示可选中物体", ref Plugin.Configuration.Overlay_OnlyShowTargetable);
-        string[] getEnumNames = Enum.GetNames(typeof(MyObjectKind));
-        if (ImGui.BeginTable("ObjectKindTable", 3, ImGuiTableFlags.SizingStretchProp | ImGuiTableFlags.PadOuterX | ImGuiTableFlags.ScrollY))
+        var enumNames = Enum.GetNames(typeof(MyObjectKind));
+        using (ImRaii.Table("ObjectKindTable", 3,
+                            ImGuiTableFlags.SizingStretchProp | ImGuiTableFlags.PadOuterX | ImGuiTableFlags.ScrollY))
         {
             ImGui.TableSetupScrollFreeze(0, 1);
             ImGui.TableSetupColumn("物体类别");
             ImGui.TableSetupColumn("前景色");
             ImGui.TableSetupColumn("背景色");
             ImGui.TableHeadersRow();
-            for (int n = 1; n < getEnumNames.Length; n++)
+            for (var n = 1; n < enumNames.Length; n++)
             {
                 ImGui.TableNextRow();
                 ImGui.TableNextColumn();
-                ImGui.Checkbox(getEnumNames[n] + "##ObjectKindCheckbox", ref Plugin.Configuration.Overlay_ShowKinds[n]);
+                ImGui.Checkbox(enumNames[n] + "##ObjectKindCheckbox", ref Plugin.Configuration.Overlay_ShowKinds[n]);
                 ImGui.TableNextColumn();
                 ImguiUtil.ColorPickerWithPalette(n, string.Empty, ref Plugin.Configuration.KindColors[n], ImGuiColorEditFlags.AlphaBar | ImGuiColorEditFlags.AlphaPreview);
                 ImGui.TableNextColumn();
                 ImguiUtil.ColorPickerWithPalette(int.MaxValue - n, string.Empty, ref Plugin.Configuration.KindColorsBg[n], ImGuiColorEditFlags.AlphaBar | ImGuiColorEditFlags.AlphaPreview);
             }
-            ImGui.EndTable();
         }
     }
 
@@ -473,64 +450,20 @@ public class ConfigUI : IDisposable
 
     }
 
-    private void DrawConfig()
+    public override void Draw()
     {
-        if (!ConfigVisible) return;
-        ImGui.SetNextWindowSize(new Vector2(480f, 640f), ImGuiCond.FirstUseEver);
-        if (ImGui.Begin("Radar config###Radar config", ref ConfigVisible) && ImGui.BeginTabBar("tabbar", ImGuiTabBarFlags.Reorderable | ImGuiTabBarFlags.AutoSelectNewTabs))
+        using (ImRaii.TabBar("RadarTabBar", ImGuiTabBarFlags.Reorderable | ImGuiTabBarFlags.AutoSelectNewTabs))
         {
-            if (ImGui.BeginTabItem("显示类别"))
-            {
-                if (ImGui.BeginChild("显示类别##childWindow"))
-                {
-                    ConfigObjectKind();
-                    ImGui.EndChild();
-                }
-                ImGui.EndTabItem();
-            }
-            if (ImGui.BeginTabItem("特殊物体"))
-            {
-                if (ImGui.BeginChild("狩猎&自定义##childWindow"))
-                {
-                    MobHuntAndCustomObjects();
-                    ImGui.EndChild();
-                }
-                ImGui.EndTabItem();
-            }
-            if (ImGui.BeginTabItem("2D覆盖"))
-            {
-                if (ImGui.BeginChild("config2d##child"))
-                {
-                    Config2D();
-                    ImGui.EndChild();
-                }
-                ImGui.EndTabItem();
-            }
-            if (ImGui.BeginTabItem("3D覆盖"))
-            {
-                if (ImGui.BeginChild("config3d##child"))
-                {
-                    Config3D();
-                    ImGui.EndChild();
-                }
-                ImGui.EndTabItem();
-            }
-
-            if (ImGui.BeginTabItem("Deep Dungeon"))
-            {
-                if (ImGui.BeginChild("##DeepDungeonSettings"))
-                {
-                    ConfigDeepDungeonRecord();
-                    ImGui.EndChild();
-                }
-                ImGui.EndTabItem();
-            }
-            ImGui.EndTabBar();
+            using (ImRaii.TabItem("显示类别"))
+                ConfigObjectKind();
+            using (ImRaii.TabItem("特殊物体"))
+                MobHuntAndCustomObjects();
+            using (ImRaii.TabItem("2D覆盖"))
+                Config2D();
+            using (ImRaii.TabItem("3D覆盖"))
+                Config3D();
+            using (ImRaii.TabItem("Deep Dungeon"))
+                ConfigDeepDungeonRecord();
         }
-        ImGui.End();
     }
-
-    #endregion
-
-    private void OnOpenConfigUi() => ConfigVisible ^= true;
 }

@@ -3,6 +3,7 @@ using System.Diagnostics;
 using System.Threading.Tasks;
 using Dalamud.Game.ClientState.Objects;
 using Dalamud.Game.Command;
+using Dalamud.Interface.Windowing;
 using Dalamud.IoC;
 using Dalamud.Plugin;
 using Dalamud.Plugin.Services;
@@ -11,8 +12,9 @@ namespace Radar;
 
 public class Plugin : IDalamudPlugin
 {
-	internal Radar Radar;
-    internal ConfigUI ConfigUi;
+    private readonly Radar radar;
+    private ConfigUi ConfigUi { get; init; }
+    private readonly WindowSystem windowSystem = new("Radar");
 
     private static int SaveTimer;
 
@@ -41,21 +43,20 @@ public class Plugin : IDalamudPlugin
 	[PluginService] internal static IPluginLog PluginLog { get; private set; }
     internal static Configuration Configuration { get; private set; }
 
-	public static string Name => "Radar";
-
 	public Plugin()
 	{
         Configuration = (Configuration)PluginInterface.GetPluginConfig() ?? new Configuration();
         Configuration.Initialize(PluginInterface);
         Framework.Update += Framework_OnUpdateEvent;
-        Radar = new Radar();
-        ConfigUi = new ConfigUI();
+        radar = new Radar();
+        ConfigUi = new ConfigUi();
+        windowSystem.AddWindow(ConfigUi);
         if (PluginInterface.Reason != PluginLoadReason.Boot)
         { 
-            ConfigUi.ConfigVisible = true;
+            ToggleMainUi();
         }
 
-        var radarInfo = new CommandInfo(OnCommand)
+        CommandManager.AddHandler("/radar", new CommandInfo(OnCommand)
         {
             HelpMessage = """
                           Opens the Radar config window.
@@ -66,15 +67,18 @@ public class Plugin : IDalamudPlugin
                           /radar custom → Toggle custom object overlay
                           """,
             ShowInHelp = true,
-        };
-        CommandManager.AddHandler("/radar", radarInfo);
+        });
+
+        PluginInterface.UiBuilder.Draw += DrawUi;
+        PluginInterface.UiBuilder.OpenConfigUi += ToggleMainUi;
+        PluginInterface.UiBuilder.OpenMainUi += ToggleMainUi;
     }
 
     private void OnCommand(string command, string arguments)
     {
         if (arguments.Length == 0)
         {
-            ConfigUi.ConfigVisible = !ConfigUi.ConfigVisible;
+            ToggleMainUi();
             return;
         }
         
@@ -138,8 +142,13 @@ public class Plugin : IDalamudPlugin
 	public void Dispose()
     {
         CommandManager.RemoveHandler("/radar");
+        windowSystem.RemoveAllWindows();
         Framework.Update -= Framework_OnUpdateEvent;
-        Radar.Dispose();
+        radar.Dispose();
+        ConfigUi.Dispose();
         PluginInterface.SavePluginConfig(Configuration);
 	}
+
+    private void DrawUi() => windowSystem.Draw();
+    public void ToggleMainUi() => ConfigUi.Toggle();
 }
