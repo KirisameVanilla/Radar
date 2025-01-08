@@ -1,15 +1,15 @@
-using System;
-using System.Collections.Generic;
-using System.Linq;
-using System.Numerics;
 using Dalamud.Interface;
 using Dalamud.Interface.Utility.Raii;
 using Dalamud.Interface.Windowing;
 using ImGuiNET;
-using Lumina.Excel.Sheets;
 using Lumina.Excel;
+using Lumina.Excel.Sheets;
 using Radar.CustomObject;
 using Radar.Utils;
+using System;
+using System.Collections.Generic;
+using System.Linq;
+using System.Numerics;
 using static Radar.RadarEnum;
 
 namespace Radar;
@@ -55,100 +55,104 @@ public class ConfigUi : Window, IDisposable
     private static void Config2D()
     {
         ImGui.TextWrapped("在游戏平面地图上显示物体信息叠加层。");
-        ImGui.Checkbox("启用2D覆盖", ref Plugin.Configuration.Overlay2D_Enabled);
-        ImGui.Checkbox("显示自己##Overlay2D_ShowCenter", ref Plugin.Configuration.Overlay2D_ShowCenter);
-        ImGui.Checkbox("显示辅助圈(25m|125m)", ref Plugin.Configuration.Overlay2D_ShowAssist);
-        DetailLevel overlay2DDetailLevel2 = (DetailLevel)Plugin.Configuration.Overlay2D_DetailLevel;
-        ImGui.SliderInt("信息显示级别##2d", ref Plugin.Configuration.Overlay2D_DetailLevel, 0, 2, overlay2DDetailLevel2.ToString());
+        ImGuiUtil.Checkbox("启用2D覆盖", ref Plugin.Configuration.Overlay2D_Enabled);
+        ImGuiUtil.Checkbox("显示自己##Overlay2D_ShowCenter", ref Plugin.Configuration.Overlay2D_ShowCenter);
+        ImGuiUtil.Checkbox("显示辅助圈(25m|125m)", ref Plugin.Configuration.Overlay2D_ShowAssist);
+        ImGuiUtil.SliderInt("信息显示级别##2d",
+                        ref Plugin.Configuration.Overlay2D_DetailLevel,
+                        0, 2,
+                        ((DetailLevel)Plugin.Configuration.Overlay2D_DetailLevel).ToString());
         ImGui.Separator();
-        ImGui.Checkbox("启用外置地图##externalMap", ref Plugin.Configuration.ExternalMap_Enabled);
-        ImGui.Checkbox("锁定位置大小##externalMap", ref Plugin.Configuration.ExternalMap_LockSizePos);
-        ImGui.Checkbox("点击穿透##externalMap", ref Plugin.Configuration.ExternalMap_ClickThrough);
-        ImGui.Checkbox("显示地图信息##externalMap", ref Plugin.Configuration.ExternalMap_ShowMapInfo);
-        ImGui.SliderFloat("地图透明度##externalMap", ref Plugin.Configuration.ExternalMap_MapAlpha, 0f, 1f);
-        ImGui.SliderFloat("背景透明度##externalMap", ref Plugin.Configuration.ExternalMap_BgAlpha, 0f, 1f);
-        MapMode externalMapMode2 = (MapMode)Plugin.Configuration.ExternalMap_Mode;
-        ImGui.SliderInt("地图模式##externalMap", ref Plugin.Configuration.ExternalMap_Mode, 0, 2, externalMapMode2.ToString());
+        ImGuiUtil.Checkbox("启用外置地图##externalMap", ref Plugin.Configuration.ExternalMap_Enabled);
+        ImGuiUtil.Checkbox("锁定位置大小##externalMap", ref Plugin.Configuration.ExternalMap_LockSizePos);
+        ImGuiUtil.Checkbox("点击穿透##externalMap", ref Plugin.Configuration.ExternalMap_ClickThrough);
+        ImGuiUtil.Checkbox("显示地图信息##externalMap", ref Plugin.Configuration.ExternalMap_ShowMapInfo);
+        ImGuiUtil.SliderFloat("地图透明度##externalMap", ref Plugin.Configuration.ExternalMap_MapAlpha, 0f, 1f);
+        ImGuiUtil.SliderFloat("背景透明度##externalMap", ref Plugin.Configuration.ExternalMap_BgAlpha, 0f, 1f);
+        ImGuiUtil.SliderInt("地图模式##externalMap",
+                        ref Plugin.Configuration.ExternalMap_Mode,
+                        0, 2,
+                        ((MapMode)Plugin.Configuration.ExternalMap_Mode).ToString());
         ImGui.Separator();
         ImGui.TextUnformatted("名牌设置");
         if (ImGui.GetIO().Fonts.Fonts.Size > 2)
-        {
-            ImGui.Checkbox("大字体##2D", ref Plugin.Configuration.Overlay2D_UseLargeFont);
-        }
-        ImGui.Checkbox("文字描边##Overlay2D_TextStroke", ref Plugin.Configuration.Overlay2D_TextStroke);
+            ImGuiUtil.Checkbox("大字体##2D", ref Plugin.Configuration.Overlay2D_UseLargeFont);
+        ImGuiUtil.Checkbox("文字描边##Overlay2D_TextStroke", ref Plugin.Configuration.Overlay2D_TextStroke);
         ImGui.Separator();
         ImGui.TextUnformatted("标识设置");
-        ImGui.SliderFloat("标识大小##Overlay2D_DotSize", ref Plugin.Configuration.Overlay2D_DotSize, 3f, 15f);
-        ImGui.SliderFloat("标识描边宽度##Overlay2D_DotStroke", ref Plugin.Configuration.Overlay2D_DotStroke, 0f, 5f);
+        ImGuiUtil.SliderFloat("标识大小##Overlay2D_DotSize", ref Plugin.Configuration.Overlay2D_DotSize, 3f, 15f);
+        ImGuiUtil.SliderFloat("标识描边宽度##Overlay2D_DotStroke", ref Plugin.Configuration.Overlay2D_DotStroke, 0f, 5f);
     }
 
     private static void Config3D()
     {
         ImGui.TextWrapped("在游戏世界空间显示物体信息叠加层。");
-        ImGui.Checkbox("启用3D覆盖", ref Plugin.Configuration.Overlay3D_Enabled);
-        ImGui.Checkbox("显示屏幕外物体", ref Plugin.Configuration.Overlay3D_ShowOffscreen);
-        ImGui.Checkbox("显示当前目标线", ref Plugin.Configuration.Overlay3D_DrawObjectLineCurrentTarget);
-        ImGui.Checkbox("显示以你为目标的目标线", ref Plugin.Configuration.Overlay3D_DrawObjectLineTargetingYou);
-        ImGui.Checkbox("显示所有物体目标线", ref Plugin.Configuration.Overlay3D_DrawObjectLineAll);
-        DetailLevel overlay3DDetailLevel2 = (DetailLevel)Plugin.Configuration.Overlay3D_DetailLevel;
-        ImGui.SliderInt("信息显示级别##3d", ref Plugin.Configuration.Overlay3D_DetailLevel, 0, 2, overlay3DDetailLevel2.ToString());
+        ImGuiUtil.Checkbox("启用3D覆盖", ref Plugin.Configuration.Overlay3D_Enabled);
+        ImGuiUtil.Checkbox("显示屏幕外物体", ref Plugin.Configuration.Overlay3D_ShowOffscreen);
+        ImGuiUtil.Checkbox("显示当前目标线", ref Plugin.Configuration.Overlay3D_DrawObjectLineCurrentTarget);
+        ImGuiUtil.Checkbox("显示以你为目标的目标线", ref Plugin.Configuration.Overlay3D_DrawObjectLineTargetingYou);
+        ImGuiUtil.Checkbox("显示所有物体目标线", ref Plugin.Configuration.Overlay3D_DrawObjectLineAll);
+        ImGuiUtil.SliderInt("信息显示级别##3d", ref Plugin.Configuration.Overlay3D_DetailLevel, 0, 2, ((DetailLevel)Plugin.Configuration.Overlay3D_DetailLevel).ToString());
         ImGui.Separator();
         ImGui.TextUnformatted("名牌设置");
         if (ImGui.GetIO().Fonts.Fonts.Size > 2)
         {
-            ImGui.Checkbox("大字体##3D", ref Plugin.Configuration.Overlay3D_UseLargeFont);
+            ImGuiUtil.Checkbox("大字体##3D", ref Plugin.Configuration.Overlay3D_UseLargeFont);
         }
-        ImGui.Checkbox("名牌居中显示##3D", ref Plugin.Configuration.Overlay3D_CenterAlign);
-        ImGui.SliderFloat("名牌圆角", ref Plugin.Configuration.Overlay3D_NamePlateRound, 0f, 10f);
-        ImGui.SliderFloat("名牌背景透明度##3D", ref Plugin.Configuration.Overlay3D_NamePlateBgAlpha, 0f, 1f);
+        ImGuiUtil.Checkbox("名牌居中显示##3D", ref Plugin.Configuration.Overlay3D_CenterAlign);
+        ImGuiUtil.SliderFloat("名牌圆角", ref Plugin.Configuration.Overlay3D_NamePlateRound, 0f, 10f);
+        ImGuiUtil.SliderFloat("名牌背景透明度##3D", ref Plugin.Configuration.Overlay3D_NamePlateBgAlpha, 0f, 1f);
         ImGui.Separator();
         ImGui.TextUnformatted("标识设置");
         if (ImGui.RadioButton("方形", Plugin.Configuration.Overlay3D_RingType == RingSegmentsType.Quad))
         {
             Plugin.Configuration.Overlay3D_RingType = RingSegmentsType.Quad;
+            Plugin.Configuration.Save();
         }
         ImGui.SameLine();
         if (ImGui.RadioButton("六边形", Plugin.Configuration.Overlay3D_RingType == RingSegmentsType.Hexagon))
         {
             Plugin.Configuration.Overlay3D_RingType = RingSegmentsType.Hexagon;
+            Plugin.Configuration.Save();
         }
         ImGui.SameLine();
         if (ImGui.RadioButton("圆形", Plugin.Configuration.Overlay3D_RingType == RingSegmentsType.Circle))
         {
             Plugin.Configuration.Overlay3D_RingType = RingSegmentsType.Circle;
+            Plugin.Configuration.Save();
         }
         ImGui.DragFloat2("边框保留宽度", ref Plugin.Configuration.Overlay3D_ClampVector2, 0.1f, 0f, 1000f);
-        ImGui.SliderFloat("屏幕内标识大小", ref Plugin.Configuration.Overlay3D_RingSize, 2f, 50f);
-        ImGui.SliderFloat("边缘标识大小", ref Plugin.Configuration.Overlay3D_ArrowSize, 5f, 50f);
-        ImGui.SliderFloat("边缘标识粗细", ref Plugin.Configuration.Overlay3D_ArrorThickness, 0.5f, 50f);
-        ImGui.SliderFloat("标识描边宽度", ref Plugin.Configuration.Overlay3D_IconStrokeThickness, 0f, 10f);
+        ImGuiUtil.SliderFloat("屏幕内标识大小", ref Plugin.Configuration.Overlay3D_RingSize, 2f, 50f);
+        ImGuiUtil.SliderFloat("边缘标识大小", ref Plugin.Configuration.Overlay3D_ArrowSize, 5f, 50f);
+        ImGuiUtil.SliderFloat("边缘标识粗细", ref Plugin.Configuration.Overlay3D_ArrorThickness, 0.5f, 50f);
+        ImGuiUtil.SliderFloat("标识描边宽度", ref Plugin.Configuration.Overlay3D_IconStrokeThickness, 0f, 10f);
     }
 
     private void MobHuntAndCustomObjects()
     {
         ImGui.TextWrapped("用单独的提示窗口显示狩猎怪和自定义名称的物体。\n需要显示的物体名可以在下方自行添加。");
-        ImGui.Checkbox("显示狩猎怪", ref Plugin.Configuration.OverlayHint_MobHuntView);
+        ImGuiUtil.Checkbox("显示狩猎怪", ref Plugin.Configuration.OverlayHint_MobHuntView);
         if (Plugin.Configuration.OverlayHint_MobHuntView)
         {
             ImGui.SameLine();
-            ImGui.Checkbox("显示S怪", ref Plugin.Configuration.OverlayHintShowRankS);
+            ImGuiUtil.Checkbox("显示S怪", ref Plugin.Configuration.OverlayHintShowRankS);
             ImGui.SameLine();
-            ImGui.Checkbox("显示A怪", ref Plugin.Configuration.OverlayHintShowRankA);
+            ImGuiUtil.Checkbox("显示A怪", ref Plugin.Configuration.OverlayHintShowRankA);
             ImGui.SameLine();
-            ImGui.Checkbox("显示B怪", ref Plugin.Configuration.OverlayHintShowRankB);
+            ImGuiUtil.Checkbox("显示B怪", ref Plugin.Configuration.OverlayHintShowRankB);
         }
         ImGui.Separator();
-        ImGui.Checkbox("显示自定义物体", ref Plugin.Configuration.OverlayHint_CustomObjectView);
+        ImGuiUtil.Checkbox("显示自定义物体", ref Plugin.Configuration.OverlayHint_CustomObjectView);
         ImGui.Separator();
         if (ImGui.GetIO().Fonts.Fonts.Size > 2)
         {
-            ImGui.Checkbox("大字体##hints", ref Plugin.Configuration.OverlayHint_LargeFont);
+            ImGuiUtil.Checkbox("大字体##hints", ref Plugin.Configuration.OverlayHint_LargeFont);
         }
-        ImGui.Checkbox("显示目标线(3D)##specialObjects", ref Plugin.Configuration.OverlayHint_ShowSpecialObjectLine);
-        ImGui.Checkbox("鼠标悬停在窗口时按Alt打开地图链接", ref Plugin.Configuration.OverlayHint_OpenMapLinkOnAlt);
+        ImGuiUtil.Checkbox("显示目标线(3D)##specialObjects", ref Plugin.Configuration.OverlayHint_ShowSpecialObjectLine);
+        ImGuiUtil.Checkbox("鼠标悬停在窗口时按Alt打开地图链接", ref Plugin.Configuration.OverlayHint_OpenMapLinkOnAlt);
         ImGui.DragFloat2("提示窗口位置", ref Plugin.Configuration.WindowPos, 1f, 0f, 10000f);
-        ImGui.SliderFloat("提示窗口边框宽度", ref Plugin.Configuration.OverlayHint_BorderSize, 0f, 5f);
-        ImGui.SliderFloat("窗口背景透明度##overlayHint", ref Plugin.Configuration.OverlayHint_BgAlpha, 0f, 1f);
+        ImGuiUtil.SliderFloat("提示窗口边框宽度", ref Plugin.Configuration.OverlayHint_BorderSize, 0f, 5f);
+        ImGuiUtil.SliderFloat("窗口背景透明度##overlayHint", ref Plugin.Configuration.OverlayHint_BgAlpha, 0f, 1f);
 
         using (ImRaii.Table("CustomObjectTable", 4, ImGuiTableFlags.SizingStretchProp | ImGuiTableFlags.PadOuterX))
         {
@@ -186,7 +190,7 @@ public class ConfigUi : Window, IDisposable
                 }
                 ImGui.TableNextColumn();
                 Vector4 originalColor = customHighlightObject.Value.Color;
-                ImguiUtil.ColorPickerWithPalette(customHighlightObject.Key.GetHashCode(), string.Empty, ref originalColor, ImGuiColorEditFlags.None);
+                ImGuiUtil.ColorPickerWithPalette(customHighlightObject.Key.GetHashCode(), string.Empty, ref originalColor, ImGuiColorEditFlags.None);
                 if (originalColor != customHighlightObject.Value.Color)
                 {
                     Plugin.Configuration.customHighlightObjects[customHighlightObject.Key] = customHighlightObject.Value with
@@ -196,7 +200,7 @@ public class ConfigUi : Window, IDisposable
                     break;
                 }
                 ImGui.TableNextColumn();
-                if (ImguiUtil.IconButton(FontAwesomeIcon.Trash, customHighlightObject.Key + "##delete"))
+                if (ImGuiUtil.IconButton(FontAwesomeIcon.Trash, customHighlightObject.Key + "##delete"))
                 {
                     Plugin.Configuration.customHighlightObjects.Remove(customHighlightObject.Key);
                     break;
@@ -208,11 +212,11 @@ public class ConfigUi : Window, IDisposable
             var isInput = ImGui.InputTextWithHint("##newName", "要添加的物体名，留空添加当前目标名", ref newCustomObjectName, 64, ImGuiInputTextFlags.EnterReturnsTrue);
             ImGui.TableNextColumn();
             var newObjectEnabled = true;
-            ImGui.Checkbox("##newObjEnabled", ref newObjectEnabled);
+            ImGuiUtil.Checkbox("##newObjEnabled", ref newObjectEnabled);
             ImGui.TableNextColumn();
-            ImguiUtil.ColorPickerWithPalette(99999, string.Empty, ref newCustomObjectColor, ImGuiColorEditFlags.None);
+            ImGuiUtil.ColorPickerWithPalette(99999, string.Empty, ref newCustomObjectColor, ImGuiColorEditFlags.None);
             ImGui.TableNextColumn();
-            var isAddButtonPressed = ImguiUtil.IconButton(FontAwesomeIcon.Plus, "##newCustomObjectEntry");
+            var isAddButtonPressed = ImGuiUtil.IconButton(FontAwesomeIcon.Plus, "##newCustomObjectEntry");
             ImGui.TableNextColumn();
             if (isInput || isAddButtonPressed)
             {
@@ -241,25 +245,35 @@ public class ConfigUi : Window, IDisposable
     {
         ImGui.TextWrapped("按物体类别过滤显示。");
         if (ImGui.Button("全选"))
+        {
             for (var i = 0; i < Plugin.Configuration.Overlay_ShowKinds.Length; i++)
                 Plugin.Configuration.Overlay_ShowKinds[i] = true;
+            Plugin.Configuration.Save();
+        }
 
         ImGui.SameLine();
         if (ImGui.Button("全不选"))
+        {
             for (var j = 0; j < Plugin.Configuration.Overlay_ShowKinds.Length; j++)
                 Plugin.Configuration.Overlay_ShowKinds[j] = false;
-        
+            Plugin.Configuration.Save();
+        }
+
         ImGui.SameLine();
         if (ImGui.Button("反选"))
+        {
             for (var k = 0; k < Plugin.Configuration.Overlay_ShowKinds.Length; k++)
                 Plugin.Configuration.Overlay_ShowKinds[k] = !Plugin.Configuration.Overlay_ShowKinds[k];
-        
+            Plugin.Configuration.Save();
+        }
+
         ImGui.SameLine();
         if (ImGui.Button("玩家"))
         {
             for (var l = 0; l < Plugin.Configuration.Overlay_ShowKinds.Length; l++)
                 Plugin.Configuration.Overlay_ShowKinds[l] = false;
             Plugin.Configuration.Overlay_ShowKinds[3] = true;
+            Plugin.Configuration.Save();
         }
 
         ImGui.SameLine();
@@ -273,10 +287,11 @@ public class ConfigUi : Window, IDisposable
             Plugin.Configuration.Overlay_ShowKinds[6] = true;
             Plugin.Configuration.Overlay_ShowKinds[7] = true;
             Plugin.Configuration.Overlay_ShowKinds[9] = true;
+            Plugin.Configuration.Save();
         }
 
         ImGui.SameLine();
-        ImGui.Checkbox("只显示可选中物体", ref Plugin.Configuration.Overlay_OnlyShowTargetable);
+        ImGuiUtil.Checkbox("只显示可选中物体", ref Plugin.Configuration.Overlay_OnlyShowTargetable);
         var enumNames = Enum.GetNames(typeof(MyObjectKind));
         using (ImRaii.Table("ObjectKindTable", 3,
                             ImGuiTableFlags.SizingStretchProp | ImGuiTableFlags.PadOuterX | ImGuiTableFlags.ScrollY))
@@ -290,11 +305,11 @@ public class ConfigUi : Window, IDisposable
             {
                 ImGui.TableNextRow();
                 ImGui.TableNextColumn();
-                ImGui.Checkbox(enumNames[n] + "##ObjectKindCheckbox", ref Plugin.Configuration.Overlay_ShowKinds[n]);
+                ImGuiUtil.Checkbox(enumNames[n] + "##ObjectKindCheckbox", ref Plugin.Configuration.Overlay_ShowKinds[n]);
                 ImGui.TableNextColumn();
-                ImguiUtil.ColorPickerWithPalette(n, string.Empty, ref Plugin.Configuration.KindColors[n], ImGuiColorEditFlags.AlphaBar | ImGuiColorEditFlags.AlphaPreview);
+                ImGuiUtil.ColorPickerWithPalette(n, string.Empty, ref Plugin.Configuration.KindColors[n], ImGuiColorEditFlags.AlphaBar | ImGuiColorEditFlags.AlphaPreview);
                 ImGui.TableNextColumn();
-                ImguiUtil.ColorPickerWithPalette(int.MaxValue - n, string.Empty, ref Plugin.Configuration.KindColorsBg[n], ImGuiColorEditFlags.AlphaBar | ImGuiColorEditFlags.AlphaPreview);
+                ImGuiUtil.ColorPickerWithPalette(int.MaxValue - n, string.Empty, ref Plugin.Configuration.KindColorsBg[n], ImGuiColorEditFlags.AlphaBar | ImGuiColorEditFlags.AlphaPreview);
             }
         }
     }
@@ -302,10 +317,10 @@ public class ConfigUi : Window, IDisposable
     private void ConfigDeepDungeonRecord()
     {
         ImGui.TextWrapped("记录并显示本机深层迷宫攻略过程中出现过的陷阱与宝藏位置。\n你也可以导出自己的记录并与他人共享情报。");
-        ImGui.Checkbox("深层迷宫实体显示", ref Plugin.Configuration.DeepDungeon_EnableTrapView);
-        ImGui.Checkbox("显示计数", ref Plugin.Configuration.DeepDungeon_ShowObjectCount);
+        ImGuiUtil.Checkbox("深层迷宫实体显示", ref Plugin.Configuration.DeepDungeon_EnableTrapView);
+        ImGuiUtil.Checkbox("显示计数", ref Plugin.Configuration.DeepDungeon_ShowObjectCount);
         ImGui.Spacing();
-        ImGui.SliderFloat("最远显示距离", ref Plugin.Configuration.DeepDungeon_ObjectShowDistance, 15f, 500f, Plugin.Configuration.DeepDungeon_ObjectShowDistance.ToString("##.0m"), ImGuiSliderFlags.Logarithmic);
+        ImGuiUtil.SliderFloat("最远显示距离", ref Plugin.Configuration.DeepDungeon_ObjectShowDistance, 15f, 500f, Plugin.Configuration.DeepDungeon_ObjectShowDistance.ToString("##.0m"), ImGuiSliderFlags.Logarithmic);
         ImGui.Separator();
         if (ImGui.Button("导出当前记录点到剪贴板"))
         {
@@ -322,11 +337,9 @@ public class ConfigUi : Window, IDisposable
                 importingError = false;
                 try
                 {
-                    HashSet<DeepDungeonObject> source = ImGui.GetClipboardText().DecompressStringToObject<HashSet<DeepDungeonObject>>();
+                    var source = ImGui.GetClipboardText().DecompressStringToObject<HashSet<DeepDungeonObject>>();
                     if (source.Count != 0)
-                    {
                         deepDungeonObjectsImportCache = source;
-                    }
                 }
                 catch (Exception ex)
                 {
@@ -349,14 +362,14 @@ public class ConfigUi : Window, IDisposable
             Plugin.PluginLog.Debug("user canceled importing task.");
             return;
         }
-        bool flag = ImGui.SliderInt("树视图展开级别", ref treeLevel, 1, 4, GetFormat(treeLevel));
-        IEnumerable<IGrouping<ushort, DeepDungeonObject>> source2 = from i in deepDungeonObjectsImportCache
+        var flag = ImGui.SliderInt("树视图展开级别", ref treeLevel, 1, 4, GetFormat(treeLevel));
+        var source2 = from i in deepDungeonObjectsImportCache
                                                                     group i by i.Territory;
 
-        string arg = string.Join(", ", source2
+        var arg = string.Join(", ", source2
                                        .Select(i => i.Key.ToString())// 选择 Key 并将其转换为字符串
                                        .OrderBy(i => i));// 按照字符串排序
-        IGrouping<string, DeepDungeonObject>[] array = deepDungeonObjectsImportCache
+        var array = deepDungeonObjectsImportCache
                                                        .GroupBy(i => TerritoryIdToBg[i.Territory])// 根据 TerritoryIdToBg[i.Territory] 进行分组
                                                        .OrderBy(i => i.Key)// 按 Key 排序
                                                        .ToArray();// 转换为数组
@@ -367,7 +380,7 @@ public class ConfigUi : Window, IDisposable
                                                                                                                                                                                                   group j by j.Location2D).Count()).Sum()} 个宝藏位置。");
         if (ImGui.BeginChild("deepDungeonObjectTreeview", new Vector2(-1f, (0f - ImGui.GetFrameHeightWithSpacing()) * 2f), border: true))
         {
-            foreach (IGrouping<string, DeepDungeonObject> grouping in array)
+            foreach (var grouping in array)
             {
                 if (flag)
                 {
@@ -377,7 +390,7 @@ public class ConfigUi : Window, IDisposable
                 {
                     continue;
                 }
-                foreach (IGrouping<DeepDungeonType, DeepDungeonObject> item in from i in grouping
+                foreach (var item in from i in grouping
                                                                                group i by i.Type into i
                                                                                orderby i.Key
                                                                                select i)
@@ -391,7 +404,7 @@ public class ConfigUi : Window, IDisposable
                     {
                         continue;
                     }
-                    foreach (IGrouping<Vector2, DeepDungeonObject> item2 in from i in item
+                    foreach (var item2 in from i in item
                                                                             group i by i.Location2D into i
                                                                             orderby i.Count() descending
                                                                             select i)

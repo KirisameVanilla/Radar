@@ -1,36 +1,32 @@
+using Dalamud.Interface;
+using Dalamud.Interface.Textures;
+using Dalamud.Interface.Utility;
+using ImGuiNET;
 using System;
 using System.Collections.Generic;
 using System.Numerics;
-using Dalamud.Interface;
-using Dalamud.Interface.Textures;
-using Dalamud.Interface.Textures.TextureWraps;
-using Dalamud.Interface.Utility;
-using ImGuiNET;
 
 namespace Radar.Utils;
 
-internal static class ImguiUtil
+internal static class ImGuiUtil
 {
 	public static void ColorPickerWithPalette(int id, string description, ref Vector4 originalColor, ImGuiColorEditFlags flags)
 	{
 		Vector4 col = originalColor;
 		List<Vector4> list = ImGuiHelpers.DefaultColorPalette(36);
 		if (ImGui.ColorButton($"{description}###ColorPickerButton{id}", originalColor, flags))
-		{
 			ImGui.OpenPopup($"###ColorPickerPopup{id}");
-		}
 		if (!ImGui.BeginPopup($"###ColorPickerPopup{id}"))
-		{
 			return;
-		}
 		if (ImGui.ColorPicker4($"###ColorPicker{id}", ref col, flags))
 		{
 			originalColor = col;
-		}
-		for (int i = 0; i < 4; i++)
+            Plugin.Configuration.Save();
+        }
+        for (int i = 0; i < 4; i++)
 		{
 			ImGui.Spacing();
-			for (int j = i * 9; j < i * 9 + 9; j++)
+			for (int j = i * 9; j < (i * 9) + 9; j++)
 			{
 				if (ImGui.ColorButton($"###ColorPickerSwatch{id}{i}{j}", list[j]))
 				{
@@ -160,9 +156,27 @@ internal static class ImguiUtil
 
 	public static void DrawIcon(this ImDrawListPtr drawList, Vector2 pos, ISharedImmediateTexture icon, float size = 1f)
 	{
-		IDalamudTextureWrap textureWrap = icon.GetWrapOrDefault();
+		var textureWrap = icon.GetWrapOrDefault();
         if (textureWrap is null) return;
 		_ = textureWrap.GetSize() * size;
 		drawList.AddImage(textureWrap.ImGuiHandle, pos, pos);
 	}
+
+    public static void Checkbox(string label, ref bool value)
+    {
+        if (ImGui.Checkbox(label, ref value))
+            Plugin.Configuration.Save();
+    }
+
+    public static void SliderFloat(string label, ref float value, float min, float max, string format = "", ImGuiSliderFlags flags = ImGuiSliderFlags.None)
+    {
+        if (ImGui.SliderFloat(label, ref value, min, max, format, flags))
+            Plugin.Configuration.Save();
+    }
+
+    public static void SliderInt(string label, ref int value, int min, int max, string format = "", ImGuiSliderFlags flags = ImGuiSliderFlags.None)
+    {
+        if (ImGui.SliderInt(label, ref value, min, max, format, flags))
+            Plugin.Configuration.Save();
+    }
 }

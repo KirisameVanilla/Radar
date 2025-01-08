@@ -1,8 +1,3 @@
-using System;
-using System.Collections.Generic;
-using System.IO;
-using System.Linq;
-using System.Numerics;
 using Dalamud.Game.ClientState.Conditions;
 using Dalamud.Game.ClientState.Objects.Types;
 using Dalamud.Game.Text.SeStringHandling.Payloads;
@@ -19,6 +14,11 @@ using Lumina.Excel;
 using Radar.CustomObject;
 using Radar.Utils;
 using SharpDX;
+using System;
+using System.Collections.Generic;
+using System.IO;
+using System.Linq;
+using System.Numerics;
 using static Radar.RadarEnum;
 using Map = Lumina.Excel.Sheets.Map;
 using ObjectKind = Dalamud.Game.ClientState.Objects.Enums.ObjectKind;
@@ -58,91 +58,15 @@ public class Radar : IDisposable
 
 	public class DeepDungeonTerritoryEqualityComparer : IEqualityComparer<ushort>
 	{
-		public bool Equals(ushort x, ushort y)
-		{
-			switch (x)
-			{
-			case 564:
-			case 565:
-				if (y != 564)
-				{
-					return y == 565;
-				}
-				return true;
-			case 593:
-			case 594:
-			case 595:
-				if (y != 593 && y != 594)
-				{
-					return y == 595;
-				}
-				return true;
-			case 596:
-			case 597:
-			case 598:
-				if (y != 596 && y != 597)
-				{
-					return y == 598;
-				}
-				return true;
-			case 599:
-			case 600:
-				if (y != 599)
-				{
-					return y == 600;
-				}
-				return true;
-			case 601:
-			case 602:
-				if (y != 601)
-				{
-					return y == 602;
-				}
-				return true;
-			case 603:
-			case 604:
-			case 605:
-			case 606:
-			case 607:
-				if (y != 603 && y != 604 && y != 605 && y != 606)
-				{
-					return y == 607;
-				}
-				return true;
-			case 772:
-			case 782:
-				if (y != 772)
-				{
-					return y == 782;
-				}
-				return true;
-			case 773:
-			case 783:
-				if (y != 773)
-				{
-					return y == 783;
-				}
-				return true;
-			case 774:
-			case 784:
-				if (y != 774)
-				{
-					return y == 784;
-				}
-				return true;
-			case 775:
-			case 785:
-				if (y != 775)
-				{
-					return y == 785;
-				}
-				return true;
-			default:
-				return x == y;
-			}
-		}
+		public bool Equals(ushort x, ushort y) => (x >= 564 && x <= 565 && y >= 564 && y <= 565) 
+                                                  || (x >= 593 && x <= 595 && y >= 593 && y <= 595) 
+                                                  || (x >= 596 && x <= 598 && y >= 596 && y <= 598) 
+                                                  || (x >= 599 && x <= 600 && y >= 599 && y <= 600) 
+                                                  || (x >= 601 && x <= 602 && y >= 601 && y <= 602) 
+                                                  || (x >= 603 && x <= 607 && y >= 603 && y <= 607) 
+                                                  || (x >= 772 && x <= 775 && y >= 772 && y <= 785);
 
-		public int GetHashCode(ushort obj)
+        public int GetHashCode(ushort obj)
 		{
             return obj switch
             {
@@ -535,32 +459,32 @@ public class Radar : IDisposable
         return false;
     }
 
-    private void AddObjectTo2DDrawList(IGameObject a, uint foregroundColor, uint backgroundColor)
+    private void AddObjectTo2DDrawList(IGameObject iGameObject, uint foregroundColor, uint backgroundColor)
     {
-        string dictionaryName = a.Name.TextValue;
-        if (Plugin.Configuration.NpcBaseMapping.ContainsKey(a.DataId))
+        string dictionaryName = iGameObject.Name.TextValue;
+        if (Plugin.Configuration.NpcBaseMapping.ContainsKey(iGameObject.DataId))
         {
-            Plugin.Configuration.NpcBaseMapping.TryGetValue(a.DataId, out dictionaryName);
+            Plugin.Configuration.NpcBaseMapping.TryGetValue(iGameObject.DataId, out dictionaryName);
         }
 
         string item = null;
         switch (Plugin.Configuration.Overlay2D_DetailLevel)
         {
             case 1:
-                item = (string.IsNullOrEmpty(dictionaryName) ? $"{a.ObjectKind} {a.DataId}" : dictionaryName);
+                item = (string.IsNullOrEmpty(dictionaryName) ? $"{iGameObject.ObjectKind} {iGameObject.DataId}" : dictionaryName);
                 break;
             case 2:
-                item = (string.IsNullOrEmpty(dictionaryName) ? $"{a.ObjectKind} {a.DataId}" : $"{dictionaryName}\u3000{a.Position.Distance2D(MeWorldPos):F2}m");
+                item = (string.IsNullOrEmpty(dictionaryName) ? $"{iGameObject.ObjectKind} {iGameObject.DataId}" : $"{dictionaryName}\u3000{iGameObject.Position.Distance2D(MeWorldPos):F2}m");
                 break;
             default:
                 throw new ArgumentOutOfRangeException();
             case 0:
                 break;
         }
-        DrawList2D.Add((a.Position, foregroundColor, backgroundColor, item));
+        DrawList2D.Add((iGameObject.Position, foregroundColor, backgroundColor, item));
     }
 
-    private void DrawObject3D(IGameObject obj, uint foregroundColor, uint bgcolor, bool drawLine, ISharedImmediateTexture icon = null)
+    private void DrawObject3D(IGameObject obj, uint foregroundColor, uint backgroundColor, bool drawLine, ISharedImmediateTexture icon = null)
     {
         string dictionaryName = obj.Name.TextValue;
         if (Plugin.Configuration.NpcBaseMapping.ContainsKey(obj.DataId))
@@ -637,7 +561,7 @@ public class Radar : IDisposable
                 float thickness = Math.Min(Plugin.Configuration.Overlay3D_RingSize * 2f, Plugin.Configuration.Overlay3D_ArrorThickness);
                 if (Plugin.Configuration.Overlay3D_IconStrokeThickness != 0f)
                 {
-                    backgroundDrawList.DrawArrow(screenPos, Plugin.Configuration.Overlay3D_ArrowSize, foregroundColor, bgcolor, _rotation, thickness, Plugin.Configuration.Overlay3D_IconStrokeThickness);
+                    backgroundDrawList.DrawArrow(screenPos, Plugin.Configuration.Overlay3D_ArrowSize, foregroundColor, backgroundColor, _rotation, thickness, Plugin.Configuration.Overlay3D_IconStrokeThickness);
                 }
                 else
                 {
@@ -646,14 +570,14 @@ public class Radar : IDisposable
             }
             else
             {
-                backgroundDrawList.DrawCircleOutlined(screenPos, foregroundColor, bgcolor);
+                backgroundDrawList.DrawCircleOutlined(screenPos, foregroundColor, backgroundColor);
             }
         }
         else if (flag2 && z > 0f)
         {
             if (!string.IsNullOrWhiteSpace(text))
             {
-                Vector4 nameplateBackgroundColor = ImGui.ColorConvertU32ToFloat4(bgcolor);
+                Vector4 nameplateBackgroundColor = ImGui.ColorConvertU32ToFloat4(backgroundColor);
                 nameplateBackgroundColor.W = Plugin.Configuration.Overlay3D_NamePlateBgAlpha;
                 backgroundDrawList.DrawTextWithBorderBg(screenPos, text, foregroundColor, ImGui.GetColorU32(nameplateBackgroundColor), Plugin.Configuration.Overlay3D_CenterAlign);
             }
@@ -898,18 +822,18 @@ public class Radar : IDisposable
 			if (!Plugin.Configuration.ExternalMap_ClickThrough)
 			{
 				ImGui.SetCursorPos(new Vector2(5f, 5f));
-				if (ImguiUtil.IconButton((Plugin.Configuration.ExternalMap_Mode == 0) ? FontAwesomeIcon.Expand : ((Plugin.Configuration.ExternalMap_Mode == 1) ? FontAwesomeIcon.Crosshairs : FontAwesomeIcon.LocationArrow), "ToggleSnap", new Vector2(25f, 25f)))
+				if (ImGuiUtil.IconButton((Plugin.Configuration.ExternalMap_Mode == 0) ? FontAwesomeIcon.Expand : ((Plugin.Configuration.ExternalMap_Mode == 1) ? FontAwesomeIcon.Crosshairs : FontAwesomeIcon.LocationArrow), "ToggleSnap", new Vector2(25f, 25f)))
 				{
 					Plugin.Configuration.ExternalMap_Mode++;
 					Plugin.Configuration.ExternalMap_Mode %= 3;
 				}
 				ImGui.SetCursorPosX(5f);
-				if (ImguiUtil.IconButton(FontAwesomeIcon.PlusCircle, "zoom++", new Vector2(25f, 25f)))
+				if (ImGuiUtil.IconButton(FontAwesomeIcon.PlusCircle, "zoom++", new Vector2(25f, 25f)))
 				{
 					UvZoom *= 1.1f;
 				}
 				ImGui.SetCursorPosX(5f);
-				if (ImguiUtil.IconButton(FontAwesomeIcon.MinusCircle, "zoom--", new Vector2(25f, 25f)))
+				if (ImGuiUtil.IconButton(FontAwesomeIcon.MinusCircle, "zoom--", new Vector2(25f, 25f)))
 				{
 					UvZoom *= 0.9f;
 				}

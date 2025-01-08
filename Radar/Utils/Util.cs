@@ -1,7 +1,3 @@
-using System;
-using System.IO;
-using System.IO.Compression;
-using System.Text;
 using Dalamud.Game.ClientState.Objects.Enums;
 using Dalamud.Game.ClientState.Objects.Types;
 using Dalamud.Interface.Textures.TextureWraps;
@@ -9,6 +5,10 @@ using Dalamud.Interface.Utility;
 using ImGuiNET;
 using Newtonsoft.Json;
 using SharpDX;
+using System;
+using System.IO;
+using System.IO.Compression;
+using System.Text;
 using static Radar.RadarEnum;
 
 namespace Radar.Utils;

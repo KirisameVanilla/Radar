@@ -1,6 +1,3 @@
-using System;
-using System.Diagnostics;
-using System.Threading.Tasks;
 using Dalamud.Game.ClientState.Objects;
 using Dalamud.Game.Command;
 using Dalamud.Interface.Windowing;
@@ -15,8 +12,6 @@ public class Plugin : IDalamudPlugin
     private readonly Radar radar;
     private ConfigUi ConfigUi { get; init; }
     private readonly WindowSystem windowSystem = new("Radar");
-
-    private static int SaveTimer;
 
 	[PluginService] internal static IDalamudPluginInterface PluginInterface { get; private set; }
 
@@ -41,13 +36,12 @@ public class Plugin : IDalamudPlugin
 	[PluginService] internal static IObjectTable ObjectTable { get; private set; }
 
 	[PluginService] internal static IPluginLog PluginLog { get; private set; }
-    internal static Configuration Configuration { get; private set; }
+    public static Configuration Configuration { get; private set; }
 
 	public Plugin()
 	{
         Configuration = (Configuration)PluginInterface.GetPluginConfig() ?? new Configuration();
         Configuration.Initialize(PluginInterface);
-        Framework.Update += Framework_OnUpdateEvent;
         radar = new Radar();
         ConfigUi = new ConfigUi();
         windowSystem.AddWindow(ConfigUi);
@@ -117,33 +111,11 @@ public class Plugin : IDalamudPlugin
             }
         }
     }
-	private static void Framework_OnUpdateEvent(IFramework framework)
-	{
-		SaveTimer++;
-		if (SaveTimer % 3600 != 0)
-		{
-			return;
-		}
-		SaveTimer = 0;
-		Task.Run(delegate
-		{
-			try
-			{
-				Stopwatch stopwatch = Stopwatch.StartNew();
-				Configuration.Save();
-				PluginLog.Verbose($"config saved in {stopwatch.Elapsed.TotalMilliseconds}ms.");
-			}
-			catch (Exception exception)
-			{
-				PluginLog.Warning(exception, "error when saving config");
-			}
-		});
-	}
+
 	public void Dispose()
     {
         CommandManager.RemoveHandler("/radar");
         windowSystem.RemoveAllWindows();
-        Framework.Update -= Framework_OnUpdateEvent;
         radar.Dispose();
         ConfigUi.Dispose();
         PluginInterface.SavePluginConfig(Configuration);
