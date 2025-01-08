@@ -281,7 +281,7 @@ public class ConfigUi : Window, IDisposable
         {
             for (var m = 0; m < Plugin.Configuration.Overlay_ShowKinds.Length; m++)
                 Plugin.Configuration.Overlay_ShowKinds[m] = false;
-            
+
             Plugin.Configuration.Overlay_ShowKinds[4] = true;
             Plugin.Configuration.Overlay_ShowKinds[5] = true;
             Plugin.Configuration.Overlay_ShowKinds[6] = true;
@@ -364,7 +364,7 @@ public class ConfigUi : Window, IDisposable
         }
         var flag = ImGui.SliderInt("树视图展开级别", ref treeLevel, 1, 4, GetFormat(treeLevel));
         var source2 = from i in deepDungeonObjectsImportCache
-                                                                    group i by i.Territory;
+                      group i by i.Territory;
 
         var arg = string.Join(", ", source2
                                        .Select(i => i.Key.ToString())// 选择 Key 并将其转换为字符串
@@ -391,9 +391,9 @@ public class ConfigUi : Window, IDisposable
                     continue;
                 }
                 foreach (var item in from i in grouping
-                                                                               group i by i.Type into i
-                                                                               orderby i.Key
-                                                                               select i)
+                                     group i by i.Type into i
+                                     orderby i.Key
+                                     select i)
                 {
                     if (flag)
                     {
@@ -405,9 +405,9 @@ public class ConfigUi : Window, IDisposable
                         continue;
                     }
                     foreach (var item2 in from i in item
-                                                                            group i by i.Location2D into i
-                                                                            orderby i.Count() descending
-                                                                            select i)
+                                          group i by i.Location2D into i
+                                          orderby i.Count() descending
+                                          select i)
                     {
                         if (flag)
                         {

@@ -1,5 +1,5 @@
-using System.Numerics;
 using Dalamud.Game.ClientState.Objects.Types;
+using System.Numerics;
 
 namespace Radar.CustomObject;
 

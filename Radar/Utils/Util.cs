@@ -34,115 +34,115 @@ internal static class Util
         return myObjectKind;
     }
 
-	public static Vector3 Convert(this System.Numerics.Vector3 v)
-	{
-		return new Vector3(v.X, v.Y, v.Z);
-	}
+    public static Vector3 Convert(this System.Numerics.Vector3 v)
+    {
+        return new Vector3(v.X, v.Y, v.Z);
+    }
 
-	public static bool WorldToScreenEx(System.Numerics.Vector3 worldPos, out System.Numerics.Vector2 screenPos, out float Z, System.Numerics.Vector2 pivot, float trolanceX = 0f, float trolanceY = 0f)
-	{
-		System.Numerics.Vector2 vector = pivot;
-		Vector3 vector2 = worldPos.Convert();
-		Vector3.Transform(ref vector2, ref Radar.MatrixSingetonCache, out SharpDX.Vector4 result);
-		Z = result.W;
-		screenPos = new System.Numerics.Vector2(result.X / Z, result.Y / Z);
-		screenPos.X = (0.5f * Radar.ViewPortSizeCache.X * (screenPos.X + 1f)) + vector.X;
-		screenPos.Y = (0.5f * Radar.ViewPortSizeCache.Y * (1f - screenPos.Y)) + vector.Y;
-		if (Z < 0f)
-		{
-			screenPos = -screenPos + ImGuiHelpers.MainViewport.Pos + ImGuiHelpers.MainViewport.Size;
-		}
-		if (screenPos.X > vector.X - trolanceX && screenPos.X < vector.X + Radar.ViewPortSizeCache.X + trolanceX && screenPos.Y > vector.Y - trolanceY)
-		{
-			return screenPos.Y < vector.Y + Radar.ViewPortSizeCache.Y + trolanceY;
-		}
-		return false;
-	}
+    public static bool WorldToScreenEx(System.Numerics.Vector3 worldPos, out System.Numerics.Vector2 screenPos, out float Z, System.Numerics.Vector2 pivot, float trolanceX = 0f, float trolanceY = 0f)
+    {
+        System.Numerics.Vector2 vector = pivot;
+        Vector3 vector2 = worldPos.Convert();
+        Vector3.Transform(ref vector2, ref Radar.MatrixSingetonCache, out SharpDX.Vector4 result);
+        Z = result.W;
+        screenPos = new System.Numerics.Vector2(result.X / Z, result.Y / Z);
+        screenPos.X = (0.5f * Radar.ViewPortSizeCache.X * (screenPos.X + 1f)) + vector.X;
+        screenPos.Y = (0.5f * Radar.ViewPortSizeCache.Y * (1f - screenPos.Y)) + vector.Y;
+        if (Z < 0f)
+        {
+            screenPos = -screenPos + ImGuiHelpers.MainViewport.Pos + ImGuiHelpers.MainViewport.Size;
+        }
+        if (screenPos.X > vector.X - trolanceX && screenPos.X < vector.X + Radar.ViewPortSizeCache.X + trolanceX && screenPos.Y > vector.Y - trolanceY)
+        {
+            return screenPos.Y < vector.Y + Radar.ViewPortSizeCache.Y + trolanceY;
+        }
+        return false;
+    }
 
-	public static bool WorldToScreenEx(System.Numerics.Vector3 worldPos, out System.Numerics.Vector2 screenPos, out float Z)
-	{
-		return WorldToScreenEx(worldPos, out screenPos, out Z, ImGui.GetMainViewport().Pos);
-	}
+    public static bool WorldToScreenEx(System.Numerics.Vector3 worldPos, out System.Numerics.Vector2 screenPos, out float Z)
+    {
+        return WorldToScreenEx(worldPos, out screenPos, out Z, ImGui.GetMainViewport().Pos);
+    }
 
-	public static System.Numerics.Vector2 GetSize(this IDalamudTextureWrap textureWrap)
-	{
-		return new System.Numerics.Vector2(textureWrap.Width, textureWrap.Height);
-	}
+    public static System.Numerics.Vector2 GetSize(this IDalamudTextureWrap textureWrap)
+    {
+        return new System.Numerics.Vector2(textureWrap.Width, textureWrap.Height);
+    }
 
-	public static System.Numerics.Vector2 ToVector2(this System.Numerics.Vector3 v)
-	{
-		return new System.Numerics.Vector2(v.X, v.Z);
-	}
+    public static System.Numerics.Vector2 ToVector2(this System.Numerics.Vector3 v)
+    {
+        return new System.Numerics.Vector2(v.X, v.Z);
+    }
 
-	public static float Distance(this System.Numerics.Vector3 v, System.Numerics.Vector3 v2)
-	{
-		try
-		{
-			return (v - v2).Length();
-		}
-		catch (Exception)
-		{
-			return 0f;
-		}
-	}
+    public static float Distance(this System.Numerics.Vector3 v, System.Numerics.Vector3 v2)
+    {
+        try
+        {
+            return (v - v2).Length();
+        }
+        catch (Exception)
+        {
+            return 0f;
+        }
+    }
 
-	public static float Distance2D(this System.Numerics.Vector3 v, System.Numerics.Vector3 v2)
-	{
-		try
-		{
-			return new System.Numerics.Vector2(v.X - v2.X, v.Z - v2.Z).Length();
-		}
-		catch (Exception)
-		{
-			return 0f;
-		}
-	}
+    public static float Distance2D(this System.Numerics.Vector3 v, System.Numerics.Vector3 v2)
+    {
+        try
+        {
+            return new System.Numerics.Vector2(v.X - v2.X, v.Z - v2.Z).Length();
+        }
+        catch (Exception)
+        {
+            return 0f;
+        }
+    }
 
-	public static float Distance2D(this System.Numerics.Vector3 v, Vector3 v2)
-	{
-		try
-		{
-			return new System.Numerics.Vector2(v.X - v2.X, v.Z - v2.Z).Length();
-		}
-		catch (Exception)
-		{
-			return 0f;
-		}
-	}
+    public static float Distance2D(this System.Numerics.Vector3 v, Vector3 v2)
+    {
+        try
+        {
+            return new System.Numerics.Vector2(v.X - v2.X, v.Z - v2.Z).Length();
+        }
+        catch (Exception)
+        {
+            return 0f;
+        }
+    }
 
-	public static System.Numerics.Vector2 Normalize(this System.Numerics.Vector2 v)
-	{
-		float num = v.Length();
-		if (!MathUtil.IsZero(num))
-		{
-			float num2 = 1f / num;
-			v.X *= num2;
-			v.Y *= num2;
-			return v;
-		}
-		return v;
-	}
+    public static System.Numerics.Vector2 Normalize(this System.Numerics.Vector2 v)
+    {
+        float num = v.Length();
+        if (!MathUtil.IsZero(num))
+        {
+            float num2 = 1f / num;
+            v.X *= num2;
+            v.Y *= num2;
+            return v;
+        }
+        return v;
+    }
 
-	public static System.Numerics.Vector2 Zoom(this System.Numerics.Vector2 vin, float zoom, System.Numerics.Vector2 origin)
-	{
-		return origin + ((vin - origin) * zoom);
-	}
+    public static System.Numerics.Vector2 Zoom(this System.Numerics.Vector2 vin, float zoom, System.Numerics.Vector2 origin)
+    {
+        return origin + ((vin - origin) * zoom);
+    }
 
-	public static System.Numerics.Vector2 Rotate(this System.Numerics.Vector2 vin, float rotation, System.Numerics.Vector2 origin)
-	{
-		return origin + (vin - origin).Rotate(rotation);
-	}
+    public static System.Numerics.Vector2 Rotate(this System.Numerics.Vector2 vin, float rotation, System.Numerics.Vector2 origin)
+    {
+        return origin + (vin - origin).Rotate(rotation);
+    }
 
-	public static System.Numerics.Vector2 Rotate(this System.Numerics.Vector2 vin, float rotation)
-	{
-		return vin.Rotate(new System.Numerics.Vector2((float)Math.Sin(rotation), (float)Math.Cos(rotation)));
-	}
+    public static System.Numerics.Vector2 Rotate(this System.Numerics.Vector2 vin, float rotation)
+    {
+        return vin.Rotate(new System.Numerics.Vector2((float)Math.Sin(rotation), (float)Math.Cos(rotation)));
+    }
 
-	public static System.Numerics.Vector2 Rotate(this System.Numerics.Vector2 vin, System.Numerics.Vector2 rotation)
-	{
-		rotation = rotation.Normalize();
-		return new System.Numerics.Vector2((rotation.Y * vin.X) + (rotation.X * vin.Y), (rotation.Y * vin.Y) - (rotation.X * vin.X));
-	}
+    public static System.Numerics.Vector2 Rotate(this System.Numerics.Vector2 vin, System.Numerics.Vector2 rotation)
+    {
+        rotation = rotation.Normalize();
+        return new System.Numerics.Vector2((rotation.Y * vin.X) + (rotation.X * vin.Y), (rotation.Y * vin.Y) - (rotation.X * vin.X));
+    }
     public static bool GetBorderClampedVector2(System.Numerics.Vector2 screenpos, System.Numerics.Vector2 clampSize, out System.Numerics.Vector2 clampedPos)
     {
         ImGuiViewportPtr mainViewport = ImGuiHelpers.MainViewport;
