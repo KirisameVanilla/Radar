@@ -25,8 +25,27 @@ public class ConfigUi : Window, IDisposable
             MaximumSize = new Vector2(float.MaxValue, float.MaxValue)
         };
     }
-    #region VARIABLE
+
+    public override void Draw()
+    {
+        using var tabBar = ImRaii.TabBar("RadarTabBar", ImGuiTabBarFlags.Reorderable);
+        if (!tabBar) return;
+
+        ObjectKind();
+
+        SpecialObject();
+
+        Overlay2D();
+
+        Overlay3D();
+
+        DeepDungeonRecord();
+    }
+
     public void Dispose() { }
+
+    #region VARIABLE
+
     private string newCustomObjectName = string.Empty;
     private Vector4 newCustomObjectColor = Vector4.One;
     private HashSet<DeepDungeonObject> deepDungeonObjectsImportCache;
@@ -52,8 +71,11 @@ public class ConfigUi : Window, IDisposable
 
     #endregion
 
-    private static void Config2D()
+    private static void Overlay2D()
     {
+        using var tabOverlay2D = ImRaii.TabItem("2D覆盖");
+        if (!tabOverlay2D) return;
+
         ImGui.TextWrapped("在游戏平面地图上显示物体信息叠加层。");
         ImGuiUtil.Checkbox("启用2D覆盖", ref Plugin.Configuration.Overlay2D_Enabled);
         ImGuiUtil.Checkbox("显示自己##Overlay2D_ShowCenter", ref Plugin.Configuration.Overlay2D_ShowCenter);
@@ -84,8 +106,11 @@ public class ConfigUi : Window, IDisposable
         ImGuiUtil.SliderFloat("标识描边宽度##Overlay2D_DotStroke", ref Plugin.Configuration.Overlay2D_DotStroke, 0f, 5f);
     }
 
-    private static void Config3D()
+    private static void Overlay3D()
     {
+        using var tabOverlay3D = ImRaii.TabItem("3D覆盖");
+        if (!tabOverlay3D) return;
+
         ImGui.TextWrapped("在游戏世界空间显示物体信息叠加层。");
         ImGuiUtil.Checkbox("启用3D覆盖", ref Plugin.Configuration.Overlay3D_Enabled);
         ImGuiUtil.Checkbox("显示屏幕外物体", ref Plugin.Configuration.Overlay3D_ShowOffscreen);
@@ -128,8 +153,11 @@ public class ConfigUi : Window, IDisposable
         ImGuiUtil.SliderFloat("标识描边宽度", ref Plugin.Configuration.Overlay3D_IconStrokeThickness, 0f, 10f);
     }
 
-    private void MobHuntAndCustomObjects()
+    private void SpecialObject()
     {
+        using var tabSpecialObject = ImRaii.TabItem("特殊物体");
+        if (!tabSpecialObject) return;
+
         ImGui.TextWrapped("用单独的提示窗口显示狩猎怪和自定义名称的物体。\n需要显示的物体名可以在下方自行添加。");
         ImGuiUtil.Checkbox("显示狩猎怪", ref Plugin.Configuration.OverlayHint_MobHuntView);
         if (Plugin.Configuration.OverlayHint_MobHuntView)
@@ -241,8 +269,11 @@ public class ConfigUi : Window, IDisposable
         }
     }
 
-    private static void ConfigObjectKind()
+    private static void ObjectKind()
     {
+        using var tabObjectKind = ImRaii.TabItem("类别");
+        if (!tabObjectKind) return;
+
         ImGui.TextWrapped("按物体类别过滤显示。");
         if (ImGui.Button("全选"))
         {
@@ -314,8 +345,11 @@ public class ConfigUi : Window, IDisposable
         }
     }
 
-    private void ConfigDeepDungeonRecord()
+    private void DeepDungeonRecord()
     {
+        using var tabDeepDungeon = ImRaii.TabItem("深层迷宫");
+        if (!tabDeepDungeon) return;
+
         ImGui.TextWrapped("记录并显示本机深层迷宫攻略过程中出现过的陷阱与宝藏位置。\n你也可以导出自己的记录并与他人共享情报。");
         ImGuiUtil.Checkbox("深层迷宫实体显示", ref Plugin.Configuration.DeepDungeon_EnableTrapView);
         ImGuiUtil.Checkbox("显示计数", ref Plugin.Configuration.DeepDungeon_ShowObjectCount);
@@ -461,36 +495,5 @@ public class ConfigUi : Window, IDisposable
             };
         }
 
-    }
-
-    public override void Draw()
-    {
-        using (ImRaii.TabBar("RadarTabBar", ImGuiTabBarFlags.Reorderable | ImGuiTabBarFlags.AutoSelectNewTabs))
-        {
-            using (var tab = ImRaii.TabItem("显示类别"))
-            {
-                if (tab) ConfigObjectKind();
-            }
-
-            using (var tab = ImRaii.TabItem("特殊物体"))
-            {
-                if (tab) MobHuntAndCustomObjects();
-            }
-
-            using (var tab = ImRaii.TabItem("2D覆盖"))
-            {
-                if (tab) Config2D();
-            }
-
-            using (var tab = ImRaii.TabItem("3D覆盖"))
-            {
-                if (tab) Config3D();
-            }
-
-            using (var tab = ImRaii.TabItem("Deep Dungeon"))
-            {
-                if (tab) ConfigDeepDungeonRecord();
-            }
-        }
     }
 }
