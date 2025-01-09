@@ -34,10 +34,7 @@ internal static class Util
         return myObjectKind;
     }
 
-    public static Vector3 Convert(this System.Numerics.Vector3 v)
-    {
-        return new Vector3(v.X, v.Y, v.Z);
-    }
+    public static Vector3 Convert(this System.Numerics.Vector3 v) => new(v.X, v.Y, v.Z);
 
     public static bool WorldToScreenEx(System.Numerics.Vector3 worldPos, out System.Numerics.Vector2 screenPos, out float Z, System.Numerics.Vector2 pivot, float trolanceX = 0f, float trolanceY = 0f)
     {
@@ -59,20 +56,15 @@ internal static class Util
         return false;
     }
 
-    public static bool WorldToScreenEx(System.Numerics.Vector3 worldPos, out System.Numerics.Vector2 screenPos, out float Z)
-    {
-        return WorldToScreenEx(worldPos, out screenPos, out Z, ImGui.GetMainViewport().Pos);
-    }
+    public static bool WorldToScreenEx(
+        System.Numerics.Vector3 worldPos, out System.Numerics.Vector2 screenPos, out float Z) =>
+        WorldToScreenEx(worldPos, out screenPos, out Z, ImGui.GetMainViewport().Pos);
 
-    public static System.Numerics.Vector2 GetSize(this IDalamudTextureWrap textureWrap)
-    {
-        return new System.Numerics.Vector2(textureWrap.Width, textureWrap.Height);
-    }
+    public static System.Numerics.Vector2 GetSize(this IDalamudTextureWrap textureWrap) =>
+        new(textureWrap.Width, textureWrap.Height);
 
-    public static System.Numerics.Vector2 ToVector2(this System.Numerics.Vector3 v)
-    {
-        return new System.Numerics.Vector2(v.X, v.Z);
-    }
+    public static System.Numerics.Vector2 ToVector2(this System.Numerics.Vector3 v) =>
+        new(v.X, v.Z);
 
     public static float Distance(this System.Numerics.Vector3 v, System.Numerics.Vector3 v2)
     {
@@ -123,38 +115,34 @@ internal static class Util
         return v;
     }
 
-    public static System.Numerics.Vector2 Zoom(this System.Numerics.Vector2 vin, float zoom, System.Numerics.Vector2 origin)
-    {
-        return origin + ((vin - origin) * zoom);
-    }
+    public static System.Numerics.Vector2 Zoom(
+        this System.Numerics.Vector2 vin, float zoom, System.Numerics.Vector2 origin) =>
+        origin + ((vin - origin) * zoom);
 
-    public static System.Numerics.Vector2 Rotate(this System.Numerics.Vector2 vin, float rotation, System.Numerics.Vector2 origin)
-    {
-        return origin + (vin - origin).Rotate(rotation);
-    }
+    public static System.Numerics.Vector2 Rotate(
+        this System.Numerics.Vector2 vin, float rotation, System.Numerics.Vector2 origin) =>
+        origin + (vin - origin).Rotate(rotation);
 
-    public static System.Numerics.Vector2 Rotate(this System.Numerics.Vector2 vin, float rotation)
-    {
-        return vin.Rotate(new System.Numerics.Vector2((float)Math.Sin(rotation), (float)Math.Cos(rotation)));
-    }
+    public static System.Numerics.Vector2 Rotate(this System.Numerics.Vector2 vin, float rotation) =>
+        vin.Rotate(new System.Numerics.Vector2((float)Math.Sin(rotation), (float)Math.Cos(rotation)));
 
     public static System.Numerics.Vector2 Rotate(this System.Numerics.Vector2 vin, System.Numerics.Vector2 rotation)
     {
         rotation = rotation.Normalize();
         return new System.Numerics.Vector2((rotation.Y * vin.X) + (rotation.X * vin.Y), (rotation.Y * vin.Y) - (rotation.X * vin.X));
     }
-    public static bool GetBorderClampedVector2(System.Numerics.Vector2 screenpos, System.Numerics.Vector2 clampSize, out System.Numerics.Vector2 clampedPos)
+    public static bool GetBorderClampedVector2(System.Numerics.Vector2 screenPos, System.Numerics.Vector2 clampSize, out System.Numerics.Vector2 clampedPos)
     {
-        ImGuiViewportPtr mainViewport = ImGuiHelpers.MainViewport;
-        System.Numerics.Vector2 center = mainViewport.GetCenter();
-        System.Numerics.Vector2 vector = mainViewport.Pos + clampSize;
-        System.Numerics.Vector2 vector2 = mainViewport.Pos + new System.Numerics.Vector2(mainViewport.Size.X - clampSize.X, clampSize.Y);
-        System.Numerics.Vector2 vector3 = mainViewport.Pos + new System.Numerics.Vector2(clampSize.X, mainViewport.Size.Y - clampSize.Y);
-        System.Numerics.Vector2 vector4 = mainViewport.Pos + mainViewport.Size - clampSize;
-        FindIntersection(vector, vector2, center, screenpos, out var lines_intersect, out var segmentsIntersect, out var intersection, out var _closeP, out var _closeP2);
-        FindIntersection(vector2, vector4, center, screenpos, out lines_intersect, out var segmentsIntersect2, out var intersection2, out _closeP2, out _closeP);
-        FindIntersection(vector4, vector3, center, screenpos, out lines_intersect, out var segmentsIntersect3, out var intersection3, out _closeP, out _closeP2);
-        FindIntersection(vector3, vector, center, screenpos, out lines_intersect, out var segmentsIntersect4, out var intersection4, out _closeP2, out _closeP);
+        var mainViewport = ImGuiHelpers.MainViewport;
+        var center = mainViewport.GetCenter();
+        var vector = mainViewport.Pos + clampSize;
+        var vector2 = mainViewport.Pos + new System.Numerics.Vector2(mainViewport.Size.X - clampSize.X, clampSize.Y);
+        var vector3 = mainViewport.Pos + new System.Numerics.Vector2(clampSize.X, mainViewport.Size.Y - clampSize.Y);
+        var vector4 = mainViewport.Pos + mainViewport.Size - clampSize;
+        FindIntersection(vector, vector2, center, screenPos, out var lines_intersect, out var segmentsIntersect, out var intersection, out var _closeP, out var _closeP2);
+        FindIntersection(vector2, vector4, center, screenPos, out lines_intersect, out var segmentsIntersect2, out var intersection2, out _closeP2, out _closeP);
+        FindIntersection(vector4, vector3, center, screenPos, out lines_intersect, out var segmentsIntersect3, out var intersection3, out _closeP, out _closeP2);
+        FindIntersection(vector3, vector, center, screenPos, out lines_intersect, out var segmentsIntersect4, out var intersection4, out _closeP2, out _closeP);
         if (segmentsIntersect)
         {
             clampedPos = intersection;
@@ -206,27 +194,16 @@ internal static class Util
         closeP2 = new System.Numerics.Vector2(p3.X + (num3 * num7), p3.Y + (num4 * num7));
     }
 
-    public static string ToCompressedString<T>(this T obj)
-    {
-        return Compress(obj.ToJsonString());
-    }
+    public static string ToCompressedString<T>(this T obj) => obj.ToJsonString().Compress();
 
-    public static string ToJsonString(this object obj)
-    {
-        return JsonConvert.SerializeObject(obj);
-    }
+    public static string ToJsonString(this object obj) => JsonConvert.SerializeObject(obj);
 
-    public static T JsonStringToObject<T>(this string str)
-    {
-        return JsonConvert.DeserializeObject<T>(str);
-    }
+    public static T JsonStringToObject<T>(this string str) => JsonConvert.DeserializeObject<T>(str);
 
-    public static T DecompressStringToObject<T>(this string compressedString)
-    {
-        return Decompress(compressedString).JsonStringToObject<T>();
-    }
+    public static T DecompressStringToObject<T>(this string compressedString) =>
+        compressedString.Decompress().JsonStringToObject<T>();
 
-    public static string Decompress(string s)
+    public static string Decompress(this string s)
     {
         using MemoryStream stream = new MemoryStream(System.Convert.FromBase64String(s));
         using MemoryStream memoryStream = new MemoryStream();
@@ -237,7 +214,7 @@ internal static class Util
         return Encoding.Unicode.GetString(memoryStream.ToArray());
     }
 
-    public static string Compress(string s)
+    public static string Compress(this string s)
     {
         using MemoryStream memoryStream2 = new MemoryStream(Encoding.Unicode.GetBytes(s));
         using MemoryStream memoryStream = new MemoryStream();
@@ -247,4 +224,19 @@ internal static class Util
         }
         return System.Convert.ToBase64String(memoryStream.ToArray());
     }
+
+    public static bool IsTrap(this IGameObject obj)
+    {
+        return obj switch
+        {
+            { DataId: 6388, Position: var p } when p != System.Numerics.Vector3.Zero => true,
+            { DataId: >= 2007182 and <= 2007186 } => true,
+            { DataId: 2009504 } => true,
+            _ => false
+        };
+    }
+
+    public static bool IsAccursedHoard(this IGameObject obj) => obj.DataId == 2007542 || obj.DataId == 2007543;
+
+    public static bool IsSilverCoffer(this IGameObject obj) => obj.DataId == 2007357;
 }

@@ -313,11 +313,11 @@ public class Radar : IDisposable
 
     private void AddDeepDungeonObjectRecord(IGameObject o)
     {
-        if (DeepDungeonObjectExtension.IsSilverCoffer(o))
+        if (o.IsSilverCoffer())
         {
             trapBlacklist.Add(new Vector2(o.Position.X, o.Position.Z));
         }
-        if (DeepDungeonObjectExtension.IsAccursedHoard(o))
+        if (o.IsAccursedHoard())
         {
             var deepDungeonObject = new DeepDungeonObject
             {
@@ -332,7 +332,7 @@ public class Radar : IDisposable
                 Plugin.PluginLog.Information($"New AccursedHoard recorded! {deepDungeonObject}");
             }
         }
-        if (DeepDungeonObjectExtension.IsTrap(o) && !trapBlacklist.Contains(new Vector2(o.Position.X, o.Position.Z)))
+        if (o.IsTrap() && !trapBlacklist.Contains(new Vector2(o.Position.X, o.Position.Z)))
         {
             var deepDungeonObject = new DeepDungeonObject
             {
