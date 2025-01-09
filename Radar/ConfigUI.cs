@@ -467,16 +467,30 @@ public class ConfigUi : Window, IDisposable
     {
         using (ImRaii.TabBar("RadarTabBar", ImGuiTabBarFlags.Reorderable | ImGuiTabBarFlags.AutoSelectNewTabs))
         {
-            using (ImRaii.TabItem("显示类别"))
-                ConfigObjectKind();
-            using (ImRaii.TabItem("特殊物体"))
-                MobHuntAndCustomObjects();
-            using (ImRaii.TabItem("2D覆盖"))
-                Config2D();
-            using (ImRaii.TabItem("3D覆盖"))
-                Config3D();
-            using (ImRaii.TabItem("Deep Dungeon"))
-                ConfigDeepDungeonRecord();
+            using (var tab = ImRaii.TabItem("显示类别"))
+            {
+                if (tab) ConfigObjectKind();
+            }
+
+            using (var tab = ImRaii.TabItem("特殊物体"))
+            {
+                if (tab) MobHuntAndCustomObjects();
+            }
+
+            using (var tab = ImRaii.TabItem("2D覆盖"))
+            {
+                if (tab) Config2D();
+            }
+
+            using (var tab = ImRaii.TabItem("3D覆盖"))
+            {
+                if (tab) Config3D();
+            }
+
+            using (var tab = ImRaii.TabItem("Deep Dungeon"))
+            {
+                if (tab) ConfigDeepDungeonRecord();
+            }
         }
     }
 }
