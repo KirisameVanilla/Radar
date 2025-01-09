@@ -5,6 +5,7 @@ using Dalamud.Interface;
 using Dalamud.Interface.Textures;
 using Dalamud.Interface.Textures.TextureWraps;
 using Dalamud.Interface.Utility;
+using Dalamud.Interface.Utility.Raii;
 using FFXIVClientStructs.FFXIV.Client.Game.Control;
 using FFXIVClientStructs.FFXIV.Client.Graphics.Kernel;
 using FFXIVClientStructs.FFXIV.Component.GUI;
@@ -756,160 +757,161 @@ public class Radar : IDisposable
         ISharedImmediateTexture fromGame = Plugin.TextureProvider.GetFromGame(texturePath);
         textureWrap = fromGame.GetWrapOrDefault();
 
+        using (ImRaii.PushStyle(ImGuiStyleVar.WindowPadding, Vector2.Zero))
+        {
+            ImGui.SetNextWindowSizeConstraints(new Vector2(150f, 150f), new Vector2(float.MaxValue, float.MaxValue), delegate (ImGuiSizeCallbackData* data)
+            {
+                float num4 = Math.Max(data->DesiredSize.X, data->DesiredSize.Y);
+                data->DesiredSize = new Vector2(num4, num4);
+            });
+            ImGuiWindowFlags imGuiWindowFlags = ImGuiWindowFlags.NoTitleBar | ImGuiWindowFlags.NoScrollbar | ImGuiWindowFlags.NoScrollWithMouse | ImGuiWindowFlags.NoDocking;
+            if (Plugin.Configuration.ExternalMap_ClickThrough)
+            {
+                imGuiWindowFlags |= ImGuiWindowFlags.NoMouseInputs;
+            }
+            if (Plugin.Configuration.ExternalMap_LockSizePos)
+            {
+                imGuiWindowFlags |= ImGuiWindowFlags.NoResize | ImGuiWindowFlags.NoMove;
+            }
+            ImGui.SetNextWindowBgAlpha(Plugin.Configuration.ExternalMap_BgAlpha);
+            Vector2 imGuiWindowCenter;
+            Vector2 mapOffset;
+            float mapSizeFactor;
+            if (ImGui.Begin("mapTexture", imGuiWindowFlags))
+            {
+                ImDrawListPtr windowDrawList = ImGui.GetWindowDrawList();
+                windowDrawList.ChannelsSplit(3);
+                float windowContentRegionWidth = ImGui.GetWindowContentRegionMax().X - ImGui.GetWindowContentRegionMin().X;
+                float num2 = windowContentRegionWidth / 2048f;
+                Vector2 windowPos = ImGui.GetWindowPos();
+                Vector2[] array = Square4(windowPos, ImGui.GetWindowWidth());
+                imGuiWindowCenter = ImGui.GetWindowPos() + (new Vector2(windowContentRegionWidth, windowContentRegionWidth) / 2f);
+                mapOffset = new Vector2(map.OffsetX, map.OffsetY);
+                mapSizeFactor = map.SizeFactor / 100f * num2;
+                windowDrawList.ChannelsSetCurrent(1);
+                if (Plugin.Configuration.ExternalMap_ShowMapInfo)
+                {
+                    var text = $" {windowContentRegionWidth / (mapSizeFactor * UvZoom) / 2f:F2}m X: {MeWorldPos.X:N3} Y: {MeWorldPos.Y:N3} Z: {MeWorldPos.Z:N3} ";
+                    var textSize = ImGui.CalcTextSize(text);
+                    var leftPos = ImGui.GetWindowSize() - textSize;
+                    windowDrawList.AddRectFilled(leftPos + windowPos, windowPos + ImGui.GetWindowSize(), 2147483648u);
+                    ImGui.SetCursorPos(leftPos);
+                    ImGui.TextColored(Vector4.One, text);
+                }
+                if (!Plugin.Configuration.ExternalMap_ClickThrough)
+                {
+                    ImGui.SetCursorPos(new Vector2(5f, 5f));
+                    if (ImGuiUtil.IconButton((Plugin.Configuration.ExternalMap_Mode == 0) ? FontAwesomeIcon.Expand : ((Plugin.Configuration.ExternalMap_Mode == 1) ? FontAwesomeIcon.Crosshairs : FontAwesomeIcon.LocationArrow), "ToggleSnap", new Vector2(25f, 25f)))
+                    {
+                        Plugin.Configuration.ExternalMap_Mode++;
+                        Plugin.Configuration.ExternalMap_Mode %= 3;
+                    }
+                    ImGui.SetCursorPosX(5f);
+                    if (ImGuiUtil.IconButton(FontAwesomeIcon.PlusCircle, "zoom++", new Vector2(25f, 25f)))
+                    {
+                        UvZoom *= 1.1f;
+                    }
+                    ImGui.SetCursorPosX(5f);
+                    if (ImGuiUtil.IconButton(FontAwesomeIcon.MinusCircle, "zoom--", new Vector2(25f, 25f)))
+                    {
+                        UvZoom *= 0.9f;
+                    }
+                }
+                windowDrawList.ChannelsSetCurrent(0);
+                if (Plugin.Configuration.ExternalMap_Mode != 0)
+                {
+                    Square4(Vector2.Zero, windowContentRegionWidth);
+                    for (int j = 0; j < 4; j++)
+                    {
+                        ref Vector2 reference = ref array[j];
+                        reference -= (MeWorldPos.ToVector2() + mapOffset) * mapSizeFactor;
+                        if (Plugin.Configuration.ExternalMap_Mode == 2)
+                        {
+                            rotation = AdjustRotationToHRotation(Plugin.ClientState.LocalPlayer.Rotation);
+                            reference = reference.Rotate(0f - rotation, imGuiWindowCenter);
+                        }
+                        reference = reference.Zoom(UvZoom, imGuiWindowCenter);
+                    }
 
-        ImGui.PushStyleVar(ImGuiStyleVar.WindowPadding, Vector2.Zero);
-        ImGui.SetNextWindowSizeConstraints(new Vector2(150f, 150f), new Vector2(float.MaxValue, float.MaxValue), delegate (ImGuiSizeCallbackData* data)
-        {
-            float num4 = Math.Max(data->DesiredSize.X, data->DesiredSize.Y);
-            data->DesiredSize = new Vector2(num4, num4);
-        });
-        ImGuiWindowFlags imGuiWindowFlags = ImGuiWindowFlags.NoTitleBar | ImGuiWindowFlags.NoScrollbar | ImGuiWindowFlags.NoScrollWithMouse | ImGuiWindowFlags.NoDocking;
-        if (Plugin.Configuration.ExternalMap_ClickThrough)
-        {
-            imGuiWindowFlags |= ImGuiWindowFlags.NoMouseInputs;
-        }
-        if (Plugin.Configuration.ExternalMap_LockSizePos)
-        {
-            imGuiWindowFlags |= ImGuiWindowFlags.NoResize | ImGuiWindowFlags.NoMove;
-        }
-        ImGui.SetNextWindowBgAlpha(Plugin.Configuration.ExternalMap_BgAlpha);
-        Vector2 imGuiWindowCenter;
-        Vector2 mapOffset;
-        float mapSizeFactor;
-        if (ImGui.Begin("mapTexture", imGuiWindowFlags))
-        {
-            ImDrawListPtr windowDrawList = ImGui.GetWindowDrawList();
-            windowDrawList.ChannelsSplit(3);
-            float windowContentRegionWidth = ImGui.GetWindowContentRegionMax().X - ImGui.GetWindowContentRegionMin().X;
-            float num2 = windowContentRegionWidth / 2048f;
-            Vector2 windowPos = ImGui.GetWindowPos();
-            Vector2[] array = Square4(windowPos, ImGui.GetWindowWidth());
-            imGuiWindowCenter = ImGui.GetWindowPos() + (new Vector2(windowContentRegionWidth, windowContentRegionWidth) / 2f);
-            mapOffset = new Vector2(map.OffsetX, map.OffsetY);
-            mapSizeFactor = map.SizeFactor / 100f * num2;
-            windowDrawList.ChannelsSetCurrent(1);
-            if (Plugin.Configuration.ExternalMap_ShowMapInfo)
-            {
-                var text = $" {windowContentRegionWidth / (mapSizeFactor * UvZoom) / 2f:F2}m X: {MeWorldPos.X:N3} Y: {MeWorldPos.Y:N3} Z: {MeWorldPos.Z:N3} ";
-                var textSize = ImGui.CalcTextSize(text);
-                var leftPos = ImGui.GetWindowSize() - textSize;
-                windowDrawList.AddRectFilled(leftPos + windowPos, windowPos + ImGui.GetWindowSize(), 2147483648u);
-                ImGui.SetCursorPos(leftPos);
-                ImGui.TextColored(Vector4.One, text);
-            }
-            if (!Plugin.Configuration.ExternalMap_ClickThrough)
-            {
-                ImGui.SetCursorPos(new Vector2(5f, 5f));
-                if (ImGuiUtil.IconButton((Plugin.Configuration.ExternalMap_Mode == 0) ? FontAwesomeIcon.Expand : ((Plugin.Configuration.ExternalMap_Mode == 1) ? FontAwesomeIcon.Crosshairs : FontAwesomeIcon.LocationArrow), "ToggleSnap", new Vector2(25f, 25f)))
-                {
-                    Plugin.Configuration.ExternalMap_Mode++;
-                    Plugin.Configuration.ExternalMap_Mode %= 3;
-                }
-                ImGui.SetCursorPosX(5f);
-                if (ImGuiUtil.IconButton(FontAwesomeIcon.PlusCircle, "zoom++", new Vector2(25f, 25f)))
-                {
-                    UvZoom *= 1.1f;
-                }
-                ImGui.SetCursorPosX(5f);
-                if (ImGuiUtil.IconButton(FontAwesomeIcon.MinusCircle, "zoom--", new Vector2(25f, 25f)))
-                {
-                    UvZoom *= 0.9f;
-                }
-            }
-            windowDrawList.ChannelsSetCurrent(0);
-            if (Plugin.Configuration.ExternalMap_Mode != 0)
-            {
-                Square4(Vector2.Zero, windowContentRegionWidth);
-                for (int j = 0; j < 4; j++)
-                {
-                    ref Vector2 reference = ref array[j];
-                    reference -= (MeWorldPos.ToVector2() + mapOffset) * mapSizeFactor;
-                    if (Plugin.Configuration.ExternalMap_Mode == 2)
+                    if (textureWrap is null) { return; }
+                    windowDrawList.AddImageQuad(textureWrap.ImGuiHandle, array[0], array[1], array[2], array[3], uv1, uv2, uv3, uv4, ImGui.ColorConvertFloat4ToU32(new Vector4(1f, 1f, 1f, Plugin.Configuration.ExternalMap_MapAlpha)));
+                    foreach (var item in DrawList2D)
                     {
-                        rotation = AdjustRotationToHRotation(Plugin.ClientState.LocalPlayer.Rotation);
-                        reference = reference.Rotate(0f - rotation, imGuiWindowCenter);
+                        var positionOfItem = WorldToMap(item.worldpos);
+                        windowDrawList.DrawMapTextDot(positionOfItem, item.name, item.fgcolor, item.bgcolor);
                     }
-                    reference = reference.Zoom(UvZoom, imGuiWindowCenter);
+                    if (Plugin.Configuration.Overlay2D_ShowCenter)
+                    {
+                        windowDrawList.DrawMapTextDot(imGuiWindowCenter, (Plugin.Configuration.Overlay2D_DetailLevel > 0) ? "ME" : null, 4294967040u, 4278190080u);
+                        if (Plugin.Configuration.Overlay2D_ShowAssist)
+                        {
+                            rotation = AdjustRotationToHRotation(Plugin.ClientState.LocalPlayer.Rotation);
+                            var num3 = ((Plugin.Configuration.ExternalMap_Mode == 2) ? 0f : (0f - rotation));
+                            windowDrawList.PathArcTo(imGuiWindowCenter, mapSizeFactor * 25f * UvZoom, num3 - ((float)Math.PI / 2f) - ((float)Math.PI / 4f), num3 - ((float)Math.PI / 4f), 24);
+                            windowDrawList.PathLineTo(imGuiWindowCenter);
+                            windowDrawList.PathStroke(4294967040u, ImDrawFlags.Closed, 2f);
+                        }
+                    }
                 }
+                else
+                {
+                    for (int k = 0; k < 4; k++)
+                    {
+                        ref var reference2 = ref array[k];
+                        reference2 = reference2.Zoom(UvZoom, imGuiWindowCenter + dragPos);
+                    }
+                    if (textureWrap is null) return;
+                    windowDrawList.AddImageQuad(textureWrap.ImGuiHandle, array[0], array[1], array[2], array[3], uv1, uv2, uv3, uv4, ImGui.ColorConvertFloat4ToU32(new Vector4(1f, 1f, 1f, Plugin.Configuration.ExternalMap_MapAlpha)));
+                    foreach (var item2 in DrawList2D)
+                    {
+                        var pos2 = WorldToMapNoSnap(item2.worldpos);
+                        windowDrawList.DrawMapTextDot(pos2, item2.name, item2.fgcolor, item2.bgcolor);
+                    }
+                    if (Plugin.Configuration.Overlay2D_ShowCenter)
+                    {
+                        var vector3 = WorldToMapNoSnap(MeWorldPos);
+                        windowDrawList.DrawMapTextDot(vector3, (Plugin.Configuration.Overlay2D_DetailLevel > 0) ? "ME" : null, 4294967040u, 4278190080u);
+                        if (Plugin.Configuration.Overlay2D_ShowAssist)
+                        {
+                            rotation = AdjustRotationToHRotation(Plugin.ClientState.LocalPlayer.Rotation);
+                            windowDrawList.PathArcTo(vector3, mapSizeFactor * 25f * UvZoom, 0f - rotation - ((float)Math.PI / 2f) - ((float)Math.PI / 4f), 0f - rotation - ((float)Math.PI / 4f), 24);
+                            windowDrawList.PathLineTo(vector3);
+                            windowDrawList.PathStroke(4294967040u, ImDrawFlags.Closed, 2f);
+                        }
+                    }
+                }
+                if (ImGui.IsWindowHovered())
+                {
+                    if (ImGui.IsMouseDown(ImGuiMouseButton.Right) || ImGui.IsMouseDown(ImGuiMouseButton.Middle))
+                    {
+                        dragPos -= ImGui.GetIO().MouseDelta / UvZoom;
+                        if (Plugin.Configuration.ExternalMap_Mode != 0)
+                        {
+                            dragPos = (MeWorldPos.ToVector2() + mapOffset) * mapSizeFactor;
+                            Plugin.Configuration.ExternalMap_Mode = 0;
+                        }
+                    }
+                    UvZoom += UvZoom * ImGui.GetIO().MouseWheel * 0.1f;
+                }
+                windowDrawList.ChannelsMerge();
+                ImGui.End();
+            }
 
-                if (textureWrap is null) { return; }
-                windowDrawList.AddImageQuad(textureWrap.ImGuiHandle, array[0], array[1], array[2], array[3], uv1, uv2, uv3, uv4, ImGui.ColorConvertFloat4ToU32(new Vector4(1f, 1f, 1f, Plugin.Configuration.ExternalMap_MapAlpha)));
-                foreach (var item in DrawList2D)
-                {
-                    var positionOfItem = WorldToMap(item.worldpos);
-                    windowDrawList.DrawMapTextDot(positionOfItem, item.name, item.fgcolor, item.bgcolor);
-                }
-                if (Plugin.Configuration.Overlay2D_ShowCenter)
-                {
-                    windowDrawList.DrawMapTextDot(imGuiWindowCenter, (Plugin.Configuration.Overlay2D_DetailLevel > 0) ? "ME" : null, 4294967040u, 4278190080u);
-                    if (Plugin.Configuration.Overlay2D_ShowAssist)
-                    {
-                        rotation = AdjustRotationToHRotation(Plugin.ClientState.LocalPlayer.Rotation);
-                        var num3 = ((Plugin.Configuration.ExternalMap_Mode == 2) ? 0f : (0f - rotation));
-                        windowDrawList.PathArcTo(imGuiWindowCenter, mapSizeFactor * 25f * UvZoom, num3 - ((float)Math.PI / 2f) - ((float)Math.PI / 4f), num3 - ((float)Math.PI / 4f), 24);
-                        windowDrawList.PathLineTo(imGuiWindowCenter);
-                        windowDrawList.PathStroke(4294967040u, ImDrawFlags.Closed, 2f);
-                    }
-                }
-            }
-            else
+            Vector2 WorldToMap(Vector3 worldPos)
             {
-                for (int k = 0; k < 4; k++)
+                Vector2 vector4 = (worldPos - MeWorldPos).ToVector2() * mapSizeFactor;
+                if (Plugin.Configuration.ExternalMap_Mode == 2)
                 {
-                    ref var reference2 = ref array[k];
-                    reference2 = reference2.Zoom(UvZoom, imGuiWindowCenter + dragPos);
+                    rotation = AdjustRotationToHRotation(Plugin.ClientState.LocalPlayer.Rotation);
+                    vector4 = vector4.Rotate(0f - rotation);
                 }
-                if (textureWrap is null) return;
-                windowDrawList.AddImageQuad(textureWrap.ImGuiHandle, array[0], array[1], array[2], array[3], uv1, uv2, uv3, uv4, ImGui.ColorConvertFloat4ToU32(new Vector4(1f, 1f, 1f, Plugin.Configuration.ExternalMap_MapAlpha)));
-                foreach (var item2 in DrawList2D)
-                {
-                    var pos2 = WorldToMapNoSnap(item2.worldpos);
-                    windowDrawList.DrawMapTextDot(pos2, item2.name, item2.fgcolor, item2.bgcolor);
-                }
-                if (Plugin.Configuration.Overlay2D_ShowCenter)
-                {
-                    var vector3 = WorldToMapNoSnap(MeWorldPos);
-                    windowDrawList.DrawMapTextDot(vector3, (Plugin.Configuration.Overlay2D_DetailLevel > 0) ? "ME" : null, 4294967040u, 4278190080u);
-                    if (Plugin.Configuration.Overlay2D_ShowAssist)
-                    {
-                        rotation = AdjustRotationToHRotation(Plugin.ClientState.LocalPlayer.Rotation);
-                        windowDrawList.PathArcTo(vector3, mapSizeFactor * 25f * UvZoom, 0f - rotation - ((float)Math.PI / 2f) - ((float)Math.PI / 4f), 0f - rotation - ((float)Math.PI / 4f), 24);
-                        windowDrawList.PathLineTo(vector3);
-                        windowDrawList.PathStroke(4294967040u, ImDrawFlags.Closed, 2f);
-                    }
-                }
+                return imGuiWindowCenter + (vector4 * UvZoom);
             }
-            if (ImGui.IsWindowHovered())
-            {
-                if (ImGui.IsMouseDown(ImGuiMouseButton.Right) || ImGui.IsMouseDown(ImGuiMouseButton.Middle))
-                {
-                    dragPos -= ImGui.GetIO().MouseDelta / UvZoom;
-                    if (Plugin.Configuration.ExternalMap_Mode != 0)
-                    {
-                        dragPos = (MeWorldPos.ToVector2() + mapOffset) * mapSizeFactor;
-                        Plugin.Configuration.ExternalMap_Mode = 0;
-                    }
-                }
-                UvZoom += UvZoom * ImGui.GetIO().MouseWheel * 0.1f;
-            }
-            windowDrawList.ChannelsMerge();
-            ImGui.End();
-        }
-        ImGui.PopStyleVar();
-        Vector2 WorldToMap(Vector3 worldPos)
-        {
-            Vector2 vector4 = (worldPos - MeWorldPos).ToVector2() * mapSizeFactor;
-            if (Plugin.Configuration.ExternalMap_Mode == 2)
-            {
-                rotation = AdjustRotationToHRotation(Plugin.ClientState.LocalPlayer.Rotation);
-                vector4 = vector4.Rotate(0f - rotation);
-            }
-            return imGuiWindowCenter + (vector4 * UvZoom);
-        }
 
-        Vector2 WorldToMapNoSnap(Vector3 worldPos)
-        {
-            return imGuiWindowCenter + ((worldPos.ToVector2() + mapOffset) * mapSizeFactor * UvZoom) - (dragPos * (UvZoom - 1f));
+            Vector2 WorldToMapNoSnap(Vector3 worldPos)
+            {
+                return imGuiWindowCenter + ((worldPos.ToVector2() + mapOffset) * mapSizeFactor * UvZoom) - (dragPos * (UvZoom - 1f));
+            }
         }
     }
 
