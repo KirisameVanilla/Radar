@@ -236,7 +236,7 @@ public class Radar : IDisposable
 
         void CheckEachObject(IGameObject o)
         {
-            var myObjectKind = Util.GetMyObjectKind(o);
+            var myObjectKind = o.GetMyObjectKind();
 
             if (Plugin.Condition[ConditionFlag.InDeepDungeon])
             {
@@ -386,7 +386,7 @@ public class Radar : IDisposable
     private bool TryAddSpecialObjectsToDrawList(IGameObject obj, ref uint fgColor, ref uint bgColor)
     {
         var dictionaryName = obj.Name.TextValue;
-        var myObjectKind = Util.GetMyObjectKind(obj);
+        var myObjectKind = obj.GetMyObjectKind();
 
         if (Plugin.Configuration.NpcBaseMapping.ContainsKey(obj.DataId))
         {

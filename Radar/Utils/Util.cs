@@ -15,7 +15,7 @@ namespace Radar.Utils;
 
 internal static class Util
 {
-    public static MyObjectKind GetMyObjectKind(IGameObject o)
+    public static MyObjectKind GetMyObjectKind(this IGameObject o)
     {
         var myObjectKind = (MyObjectKind)(o.ObjectKind + 2);
         myObjectKind = o.ObjectKind switch
@@ -29,7 +29,6 @@ internal static class Util
             },
             _ => myObjectKind
         };
-
 
         return myObjectKind;
     }

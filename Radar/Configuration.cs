@@ -145,13 +145,7 @@ public class Configuration : IPluginConfiguration
 
     public int Version { get; set; }
 
-    public void Initialize(IDalamudPluginInterface pluginInterface)
-    {
-        this.pluginInterface = pluginInterface;
-    }
+    public void Initialize(IDalamudPluginInterface pluginInterface) => this.pluginInterface = pluginInterface;
 
-    public void Save()
-    {
-        pluginInterface.SavePluginConfig(this);
-    }
+    public void Save() => pluginInterface.SavePluginConfig(this);
 }
