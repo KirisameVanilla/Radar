@@ -350,150 +350,251 @@ public class ConfigUi : Window, IDisposable
         using var tabDeepDungeon = ImRaii.TabItem("深层迷宫");
         if (!tabDeepDungeon) return;
 
+        RenderBasicSettings();
+        HandleImportExport();
+    }
+
+    private void RenderBasicSettings()
+    {
         ImGui.TextWrapped("记录并显示本机深层迷宫攻略过程中出现过的陷阱与宝藏位置。\n你也可以导出自己的记录并与他人共享情报。");
         ImGuiUtil.Checkbox("深层迷宫实体显示", ref Plugin.Configuration.DeepDungeon_EnableTrapView);
         ImGuiUtil.Checkbox("显示计数", ref Plugin.Configuration.DeepDungeon_ShowObjectCount);
         ImGui.Spacing();
-        ImGuiUtil.SliderFloat("最远显示距离", ref Plugin.Configuration.DeepDungeon_ObjectShowDistance, 15f, 500f, Plugin.Configuration.DeepDungeon_ObjectShowDistance.ToString("##.0m"), ImGuiSliderFlags.Logarithmic);
+        ImGuiUtil.SliderFloat("最远显示距离", ref Plugin.Configuration.DeepDungeon_ObjectShowDistance,
+            15f, 500f, Plugin.Configuration.DeepDungeon_ObjectShowDistance.ToString("##.0m"),
+            ImGuiSliderFlags.Logarithmic);
         ImGui.Separator();
+    }
+
+    private void HandleImportExport()
+    {
+        RenderExportSection();
+        HandleImportProcess();
+    }
+
+    private void RenderExportSection()
+    {
         if (ImGui.Button("导出当前记录点到剪贴板"))
         {
-            Plugin.PluginLog.Information("exporting...");
-            Plugin.PluginLog.Information($"exported {(from i in Plugin.Configuration.DeepDungeonObjects
-                                                      group i by i.Territory).Count()} territories, {Plugin.Configuration.DeepDungeonObjects.Count(i => i.Type == DeepDungeonType.Trap)} traps, {Plugin.Configuration.DeepDungeonObjects.Count(i => i.Type == DeepDungeonType.AccursedHoard)} hoards.");
-            ImGui.SetClipboardText(Plugin.Configuration.DeepDungeonObjects.ToCompressedString());
+            ExportToClipboard();
         }
-        if (deepDungeonObjectsImportCache == null || deepDungeonObjectsImportCache.Count == 0)
+    }
+
+    private void ExportToClipboard()
+    {
+        Plugin.PluginLog.Information("exporting...");
+        var trapCount = Plugin.Configuration.DeepDungeonObjects.Count(i => i.Type == DeepDungeonType.Trap);
+        var hoardCount = Plugin.Configuration.DeepDungeonObjects.Count(i => i.Type == DeepDungeonType.AccursedHoard);
+        Plugin.PluginLog.Information($"exported {Plugin.Configuration.DeepDungeonObjects.GroupBy(i => i.Territory).Count()} territories, {trapCount} traps, {hoardCount} hoards.");
+        ImGui.SetClipboardText(Plugin.Configuration.DeepDungeonObjects.ToCompressedString());
+    }
+
+    private void HandleImportProcess()
+    {
+        if (ShouldRenderImportButton())
         {
-            ImGui.SameLine();
-            if (ImGui.Button("从剪贴板导入已有的记录点"))
-            {
-                importingError = false;
-                try
-                {
-                    var source = ImGui.GetClipboardText().DecompressStringToObject<HashSet<DeepDungeonObject>>();
-                    if (source.Count != 0)
-                        deepDungeonObjectsImportCache = source;
-                }
-                catch (Exception ex)
-                {
-                    importingError = true;
-                    Plugin.PluginLog.Warning(ex, "error when importing deep dungeon object list.");
-                    errorMessage = ex.Message;
-                }
-            }
-            if (importingError)
-            {
-                ImGui.TextColored(RedVector4, "导入发生错误，请检查导入的字符串和日志。");
-                ImGui.TextColored(RedVector4, errorMessage);
-            }
-            return;
+            HandleImportButton();
         }
+        else // 当有导入缓存时
+        {
+            RenderImportPreview();
+            HandleImportConfirmation();
+        }
+    }
+
+    // 更明确的判断方法
+    private bool ShouldRenderImportButton()
+        => deepDungeonObjectsImportCache?.Count == 0;
+
+    private void HandleImportButton()
+    {
+        ImGui.SameLine();
+        if (ImGui.Button("从剪贴板导入已有的记录点"))
+        {
+            StartImportProcess();
+        }
+        ShowImportErrorIfNeeded();
+    }
+
+    private void StartImportProcess()
+    {
+        importingError = false;
+        try
+        {
+            var clipboardData = ImGui.GetClipboardText();
+            deepDungeonObjectsImportCache = clipboardData.DecompressStringToObject<HashSet<DeepDungeonObject>>();
+        }
+        catch (Exception ex)
+        {
+            importingError = true;
+            Plugin.PluginLog.Warning(ex, "error when importing deep dungeon object list.");
+            errorMessage = ex.Message;
+        }
+    }
+
+    private void ShowImportErrorIfNeeded()
+    {
+        if (!importingError) return;
+
+        ImGui.TextColored(RedVector4, "导入发生错误，请检查导入的字符串和日志。");
+        ImGui.TextColored(RedVector4, errorMessage);
+    }
+
+    private void RenderImportPreview()
+    {
         ImGui.SameLine();
         if (ImGui.Button("正在准备导入..."))
         {
-            deepDungeonObjectsImportCache = null;
-            Plugin.PluginLog.Debug("user canceled importing task.");
+            CancelImport();
             return;
         }
-        var flag = ImGui.SliderInt("树视图展开级别", ref treeLevel, 1, 4, GetFormat(treeLevel));
-        var source2 = from i in deepDungeonObjectsImportCache
-                      group i by i.Territory;
 
-        var arg = string.Join(", ", source2
-                                       .Select(i => i.Key.ToString())// 选择 Key 并将其转换为字符串
-                                       .OrderBy(i => i));// 按照字符串排序
-        var array = deepDungeonObjectsImportCache
-                                                       .GroupBy(i => TerritoryIdToBg[i.Territory])// 根据 TerritoryIdToBg[i.Territory] 进行分组
-                                                       .OrderBy(i => i.Key)// 按 Key 排序
-                                                       .ToArray();// 转换为数组
-        ImGui.TextWrapped($"将要导入 {array.Length} 个区域的 {deepDungeonObjectsImportCache.Count} 条记录。({arg})\n包含 {array.Select(i => (from j in i
-                                                                                                                               where j.Type == DeepDungeonType.Trap
-                                                                                                                               group j by j.Location2D).Count()).Sum()} 个陷阱位置，{array.Select(i => (from j in i
-                                                                                                                                                                                                  where j.Type == DeepDungeonType.AccursedHoard
-                                                                                                                                                                                                  group j by j.Location2D).Count()).Sum()} 个宝藏位置。");
-        if (ImGui.BeginChild("deepDungeonObjectTreeview", new Vector2(-1f, (0f - ImGui.GetFrameHeightWithSpacing()) * 2f), border: true))
+        var structure = BuildImportDataStructure();
+        RenderTreeView(structure);
+        ShowImportWarning();
+    }
+
+    private void CancelImport()
+    {
+        deepDungeonObjectsImportCache = null;
+        Plugin.PluginLog.Debug("user canceled importing task.");
+    }
+
+    private ImportDataStructure BuildImportDataStructure()
+    {
+        var territories = deepDungeonObjectsImportCache
+            .GroupBy(i => TerritoryIdToBg[i.Territory])
+            .OrderBy(g => g.Key)
+            .Select(g => new TerritoryGroup(
+                Name: g.Key,
+                Objects: g.GroupBy(o => o.Type)
+                    .OrderBy(typeGroup => typeGroup.Key)
+                    .Select(typeGroup => new ObjectTypeGroup(
+                        Type: typeGroup.Key,
+                        Locations: typeGroup.GroupBy(o => o.Location2D)
+                            .OrderByDescending(locGroup => locGroup.Count())
+                            .Select(locGroup => new LocationGroup(
+                                Position: locGroup.Key,
+                                Objects: locGroup.OrderBy(o => o.InstanceId)
+                            ))
+                    ))
+            ));
+
+        return new ImportDataStructure(
+            Territories: territories,
+            TotalTraps: deepDungeonObjectsImportCache.Count(i => i.Type == DeepDungeonType.Trap),
+            TotalHoards: deepDungeonObjectsImportCache.Count(i => i.Type == DeepDungeonType.AccursedHoard)
+        );
+    }
+
+    private void RenderTreeView(ImportDataStructure structure)
+    {
+        ImGui.TextWrapped($"将要导入 {structure.Territories.Count()} 个区域的 {deepDungeonObjectsImportCache.Count} 条记录。");
+        ImGui.TextWrapped($"包含 {structure.TotalTraps} 个陷阱位置，{structure.TotalHoards} 个宝藏位置。");
+
+        if (ImGui.BeginChild("deepDungeonObjectTreeview",
+            new Vector2(-1f, -ImGui.GetFrameHeightWithSpacing() * 2),
+            border: true))
         {
-            foreach (var grouping in array)
+            foreach (var territory in structure.Territories)
             {
-                if (flag)
-                {
-                    ImGui.SetNextItemOpen(treeLevel > 1);
-                }
-                if (!ImGui.TreeNodeEx(grouping.Key + "##deepDungeonTerritoryKey", ImGuiTreeNodeFlags.Framed))
-                {
-                    continue;
-                }
-                foreach (var item in from i in grouping
-                                     group i by i.Type into i
-                                     orderby i.Key
-                                     select i)
-                {
-                    if (flag)
-                    {
-                        ImGui.SetNextItemOpen(treeLevel > 2);
-                    }
-                    if (!ImGui.TreeNodeEx($"{item.Key} ({(from i in item
-                                                          group i by i.Location2D).Count()})##{grouping.Key}", ImGuiTreeNodeFlags.SpanAvailWidth))
-                    {
-                        continue;
-                    }
-                    foreach (var item2 in from i in item
-                                          group i by i.Location2D into i
-                                          orderby i.Count() descending
-                                          select i)
-                    {
-                        if (flag)
-                        {
-                            ImGui.SetNextItemOpen(treeLevel > 3);
-                        }
-                        if (!ImGui.TreeNodeEx($"{item2.Key} ({item2.Count()})##{item.Key}{grouping.Key}", ImGuiTreeNodeFlags.SpanAvailWidth))
-                        {
-                            continue;
-                        }
-                        foreach (DeepDungeonObject item3 in item2.OrderBy(i => i.InstanceId))
-                        {
-                            ImGui.TextUnformatted($"{item3.Territory} : {item3.Base} : {item3.InstanceId:X}");
-                        }
-                        ImGui.TreePop();
-                    }
-                    ImGui.TreePop();
-                }
-                ImGui.TreePop();
+                RenderTerritoryNode(territory);
             }
             ImGui.EndChild();
         }
-        ImGui.TextColored(new Vector4(1f, 0.8f, 0f, 1f), "确认后数据将合并到本机记录且不可撤销，请确认数据来源可靠。要继续吗？");
+    }
+
+    private void RenderTerritoryNode(TerritoryGroup territory)
+    {
+        var nodeOpen = ImGui.TreeNodeEx($"{territory.Name}##deepDungeonTerritoryKey",
+            ImGuiTreeNodeFlags.Framed);
+
+        if (!nodeOpen) return;
+
+        foreach (var objectType in territory.Objects)
+        {
+            RenderObjectTypeNode(objectType, territory.Name);
+        }
+        ImGui.TreePop();
+    }
+
+    private void RenderObjectTypeNode(ObjectTypeGroup objectType, string territoryName)
+    {
+        var locationCount = objectType.Locations.Count();
+        var nodeLabel = $"{objectType.Type} ({locationCount})##{territoryName}";
+
+        if (!ImGui.TreeNodeEx(nodeLabel, ImGuiTreeNodeFlags.SpanAvailWidth)) return;
+
+        foreach (var location in objectType.Locations)
+        {
+            RenderLocationNode(location, objectType.Type, territoryName);
+        }
+        ImGui.TreePop();
+    }
+
+    private void RenderLocationNode(LocationGroup location, DeepDungeonType objectType, string territoryName)
+    {
+        var nodeLabel = $"{location.Position} ({location.Objects.Count()})##{objectType}{territoryName}";
+
+        if (!ImGui.TreeNodeEx(nodeLabel, ImGuiTreeNodeFlags.SpanAvailWidth)) return;
+
+        foreach (var obj in location.Objects)
+        {
+            ImGui.TextUnformatted($"{obj.Territory} : {obj.Base} : {obj.InstanceId:X}");
+        }
+        ImGui.TreePop();
+    }
+
+    private void ShowImportWarning()
+    {
+        ImGui.TextColored(new Vector4(1f, 0.8f, 0f, 1f),
+            "确认后数据将合并到本机记录且不可撤销，请确认数据来源可靠。要继续吗？");
         ImGui.Spacing();
+    }
+
+    private void HandleImportConfirmation()
+    {
         if (ImGui.Button("取消导入##importDecline"))
         {
-            deepDungeonObjectsImportCache = null;
-            Plugin.PluginLog.Debug("user canceled importing task.");
+            CancelImport();
             return;
         }
+
         ImGui.SameLine();
         if (ImGui.Button("确认导入##importAccept"))
         {
-            int count = Plugin.Configuration.DeepDungeonObjects.Count;
-            Plugin.Configuration.DeepDungeonObjects.UnionWith(deepDungeonObjectsImportCache);
-            deepDungeonObjectsImportCache = null;
-            int num = Plugin.Configuration.DeepDungeonObjects.Count - count;
-            Plugin.PluginLog.Information($"imported {num} deep dungeon object records.");
+            ConfirmImport();
         }
-        return;
-
-        static string GetFormat(int input)
-        {
-            return input switch
-            {
-                0 => "默认",
-                1 => "全部折叠",
-                2 => "展开到物体类型",
-                3 => "展开到物体位置",
-                4 => "全部展开",
-                _ => "invalid",
-            };
-        }
-
     }
+
+    private void ConfirmImport()
+    {
+        int originalCount = Plugin.Configuration.DeepDungeonObjects.Count;
+        Plugin.Configuration.DeepDungeonObjects.UnionWith(deepDungeonObjectsImportCache);
+        deepDungeonObjectsImportCache = null;
+        int addedCount = Plugin.Configuration.DeepDungeonObjects.Count - originalCount;
+        Plugin.PluginLog.Information($"imported {addedCount} deep dungeon object records.");
+    }
+
+    // Helper classes for data structure
+    private record ImportDataStructure(
+        IEnumerable<TerritoryGroup> Territories,
+        int TotalTraps,
+        int TotalHoards
+    );
+
+    private record TerritoryGroup(
+        string Name,
+        IEnumerable<ObjectTypeGroup> Objects
+    );
+
+    private record ObjectTypeGroup(
+        DeepDungeonType Type,
+        IEnumerable<LocationGroup> Locations
+    );
+
+    private record LocationGroup(
+        Vector2 Position,
+        IEnumerable<DeepDungeonObject> Objects
+    );
 }
