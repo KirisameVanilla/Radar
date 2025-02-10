@@ -8,6 +8,7 @@ using SharpDX;
 using System;
 using System.IO;
 using System.IO.Compression;
+using System.Runtime.CompilerServices;
 using System.Text;
 using static Radar.RadarEnum;
 
@@ -33,6 +34,7 @@ internal static class Util
         return myObjectKind;
     }
 
+    [MethodImpl(MethodImplOptions.AggressiveInlining)]
     public static Vector3 Convert(this System.Numerics.Vector3 v) => new(v.X, v.Y, v.Z);
 
     public static bool WorldToScreenEx(System.Numerics.Vector3 worldPos, out System.Numerics.Vector2 screenPos, out float Z, System.Numerics.Vector2 pivot, float trolanceX = 0f, float trolanceY = 0f)
@@ -55,16 +57,20 @@ internal static class Util
         return false;
     }
 
+    [MethodImpl(MethodImplOptions.AggressiveInlining)]
     public static bool WorldToScreenEx(
         System.Numerics.Vector3 worldPos, out System.Numerics.Vector2 screenPos, out float Z) =>
         WorldToScreenEx(worldPos, out screenPos, out Z, ImGui.GetMainViewport().Pos);
 
+    [MethodImpl(MethodImplOptions.AggressiveInlining)]
     public static System.Numerics.Vector2 GetSize(this IDalamudTextureWrap textureWrap) =>
         new(textureWrap.Width, textureWrap.Height);
 
+    [MethodImpl(MethodImplOptions.AggressiveInlining)]
     public static System.Numerics.Vector2 ToVector2(this System.Numerics.Vector3 v) =>
         new(v.X, v.Z);
 
+    [MethodImpl(MethodImplOptions.AggressiveInlining)]
     public static float Distance(this System.Numerics.Vector3 v, System.Numerics.Vector3 v2)
     {
         try
@@ -77,6 +83,7 @@ internal static class Util
         }
     }
 
+    [MethodImpl(MethodImplOptions.AggressiveInlining)]
     public static float Distance2D(this System.Numerics.Vector3 v, System.Numerics.Vector3 v2)
     {
         try
@@ -89,6 +96,7 @@ internal static class Util
         }
     }
 
+    [MethodImpl(MethodImplOptions.AggressiveInlining)]
     public static float Distance2D(this System.Numerics.Vector3 v, Vector3 v2)
     {
         try
@@ -101,6 +109,7 @@ internal static class Util
         }
     }
 
+    [MethodImpl(MethodImplOptions.AggressiveInlining)]
     public static System.Numerics.Vector2 Normalize(this System.Numerics.Vector2 v)
     {
         float num = v.Length();
@@ -114,17 +123,21 @@ internal static class Util
         return v;
     }
 
+    [MethodImpl(MethodImplOptions.AggressiveInlining)]
     public static System.Numerics.Vector2 Zoom(
         this System.Numerics.Vector2 vin, float zoom, System.Numerics.Vector2 origin) =>
         origin + ((vin - origin) * zoom);
 
+    [MethodImpl(MethodImplOptions.AggressiveInlining)]
     public static System.Numerics.Vector2 Rotate(
         this System.Numerics.Vector2 vin, float rotation, System.Numerics.Vector2 origin) =>
         origin + (vin - origin).Rotate(rotation);
 
+    [MethodImpl(MethodImplOptions.AggressiveInlining)]
     public static System.Numerics.Vector2 Rotate(this System.Numerics.Vector2 vin, float rotation) =>
         vin.Rotate(new System.Numerics.Vector2((float)Math.Sin(rotation), (float)Math.Cos(rotation)));
 
+    [MethodImpl(MethodImplOptions.AggressiveInlining)]
     public static System.Numerics.Vector2 Rotate(this System.Numerics.Vector2 vin, System.Numerics.Vector2 rotation)
     {
         rotation = rotation.Normalize();
@@ -193,15 +206,20 @@ internal static class Util
         closeP2 = new System.Numerics.Vector2(p3.X + (num3 * num7), p3.Y + (num4 * num7));
     }
 
+    [MethodImpl(MethodImplOptions.AggressiveInlining)]
     public static string ToCompressedString<T>(this T obj) => obj.ToJsonString().Compress();
 
+    [MethodImpl(MethodImplOptions.AggressiveInlining)]
     public static string ToJsonString(this object obj) => JsonConvert.SerializeObject(obj);
 
+    [MethodImpl(MethodImplOptions.AggressiveInlining)]
     public static T JsonStringToObject<T>(this string str) => JsonConvert.DeserializeObject<T>(str);
 
+    [MethodImpl(MethodImplOptions.AggressiveInlining)]
     public static T DecompressStringToObject<T>(this string compressedString) =>
         compressedString.Decompress().JsonStringToObject<T>();
 
+    [MethodImpl(MethodImplOptions.AggressiveInlining)]
     public static string Decompress(this string s)
     {
         using MemoryStream stream = new MemoryStream(System.Convert.FromBase64String(s));
@@ -213,6 +231,7 @@ internal static class Util
         return Encoding.Unicode.GetString(memoryStream.ToArray());
     }
 
+    [MethodImpl(MethodImplOptions.AggressiveInlining)]
     public static string Compress(this string s)
     {
         using MemoryStream memoryStream2 = new MemoryStream(Encoding.Unicode.GetBytes(s));
@@ -224,6 +243,7 @@ internal static class Util
         return System.Convert.ToBase64String(memoryStream.ToArray());
     }
 
+    [MethodImpl(MethodImplOptions.AggressiveInlining)]
     public static bool IsTrap(this IGameObject obj)
     {
         return obj switch
@@ -235,7 +255,9 @@ internal static class Util
         };
     }
 
+    [MethodImpl(MethodImplOptions.AggressiveInlining)]
     public static bool IsAccursedHoard(this IGameObject obj) => obj.DataId == 2007542 || obj.DataId == 2007543;
 
+    [MethodImpl(MethodImplOptions.AggressiveInlining)]
     public static bool IsSilverCoffer(this IGameObject obj) => obj.DataId == 2007357;
 }
