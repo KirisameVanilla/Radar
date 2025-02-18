@@ -179,60 +179,32 @@ internal static class Util
         return true;
     }
 
-    private static void FindIntersection(
-    System.Numerics.Vector2 line1Start, System.Numerics.Vector2 line1End,
-    System.Numerics.Vector2 line2Start, System.Numerics.Vector2 line2End,
-    out bool linesIntersect, out bool segmentsIntersect,
-    out System.Numerics.Vector2 intersectionPoint,
-    out System.Numerics.Vector2 closestLine1, out System.Numerics.Vector2 closestLine2)
+    private static void FindIntersection(System.Numerics.Vector2 p1, System.Numerics.Vector2 p2, System.Numerics.Vector2 p3, System.Numerics.Vector2 p4, out bool lines_intersect, out bool segmentsIntersect, out System.Numerics.Vector2 intersection, out System.Numerics.Vector2 closeP1, out System.Numerics.Vector2 closeP2)
     {
-        // Calculate direction vectors for both line segments
-        System.Numerics.Vector2 direction1 = line1End - line1Start;
-        System.Numerics.Vector2 direction2 = line2End - line2Start;
-
-        // Calculate the cross product of the direction vectors
-        float crossProduct = direction1.Y * direction2.X - direction1.X * direction2.Y;
-
-        // Handle parallel lines case
-        const float epsilon = 1e-8f;
-        if (MathF.Abs(crossProduct) < epsilon)
+        float num = p2.X - p1.X;
+        float num2 = p2.Y - p1.Y;
+        float num3 = p4.X - p3.X;
+        float num4 = p4.Y - p3.Y;
+        float num5 = (num2 * num3) - (num * num4);
+        float num6 = (((p1.X - p3.X) * num4) + ((p3.Y - p1.Y) * num3)) / num5;
+        if (float.IsInfinity(num6))
         {
-            HandleParallelLines(out linesIntersect, out segmentsIntersect,
-                out intersectionPoint, out closestLine1, out closestLine2);
+            lines_intersect = false;
+            segmentsIntersect = false;
+            intersection = new System.Numerics.Vector2(float.NaN, float.NaN);
+            closeP1 = new System.Numerics.Vector2(float.NaN, float.NaN);
+            closeP2 = new System.Numerics.Vector2(float.NaN, float.NaN);
             return;
         }
-
-        // Calculate vectors between segment starts
-        System.Numerics.Vector2 startDifference = line2Start - line1Start;
-
-        // Calculate line intersection parameters
-        float t = (startDifference.X * direction2.Y - startDifference.Y * direction2.X) / crossProduct;
-        float u = (startDifference.X * direction1.Y - startDifference.Y * direction1.X) / crossProduct;
-
-        // Determine intersection results
-        linesIntersect = true;
-        intersectionPoint = line1Start + t * direction1;
-        segmentsIntersect = IsWithinSegmentRange(t) && IsWithinSegmentRange(u);
-
-        // Calculate closest points on each segment
-        t = Math.Clamp(t, 0f, 1f);
-        u = Math.Clamp(u, 0f, 1f);
-
-        closestLine1 = line1Start + t * direction1;
-        closestLine2 = line2Start + u * direction2;
+        lines_intersect = true;
+        float num7 = (((p3.X - p1.X) * num2) + ((p1.Y - p3.Y) * num)) / (0f - num5);
+        intersection = new System.Numerics.Vector2(p1.X + (num * num6), p1.Y + (num2 * num6));
+        segmentsIntersect = num6 >= 0f && num6 <= 1f && num7 >= 0f && num7 <= 1f;
+        num6 = float.Clamp(num6, 0f, 1f);
+        num7 = float.Clamp(num7, 0f, 1f);
+        closeP1 = new System.Numerics.Vector2(p1.X + (num * num6), p1.Y + (num2 * num6));
+        closeP2 = new System.Numerics.Vector2(p3.X + (num3 * num7), p3.Y + (num4 * num7));
     }
-
-    private static void HandleParallelLines(out bool linesIntersect, out bool segmentsIntersect,
-        out System.Numerics.Vector2 intersectionPoint, out System.Numerics.Vector2 closestLine1, out System.Numerics.Vector2 closestLine2)
-    {
-        linesIntersect = false;
-        segmentsIntersect = false;
-        intersectionPoint = new System.Numerics.Vector2(float.NaN, float.NaN);
-        closestLine1 = intersectionPoint;
-        closestLine2 = intersectionPoint;
-    }
-
-    private static bool IsWithinSegmentRange(float value) => value >= 0f && value <= 1f;
 
     [MethodImpl(MethodImplOptions.AggressiveInlining)]
     public static string ToCompressedString<T>(this T obj) => obj.ToJsonString().Compress();
