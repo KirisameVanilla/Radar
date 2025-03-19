@@ -40,6 +40,8 @@ public class ConfigUi : Window, IDisposable
         Overlay3D();
 
         DeepDungeonRecord();
+
+        About();
     }
 
     public void Dispose() { }
@@ -184,7 +186,6 @@ public class ConfigUi : Window, IDisposable
 
         using (ImRaii.Table("CustomObjectTable", 4, ImGuiTableFlags.SizingStretchProp | ImGuiTableFlags.PadOuterX))
         {
-            ImGui.TableSetupScrollFreeze(0, 1);
             ImGui.TableSetupColumn("自定义物体名");
             ImGui.TableSetupColumn("启用");
             ImGui.TableSetupColumn("颜色");
@@ -327,7 +328,6 @@ public class ConfigUi : Window, IDisposable
         using (ImRaii.Table("ObjectKindTable", 3,
                             ImGuiTableFlags.SizingStretchProp | ImGuiTableFlags.PadOuterX | ImGuiTableFlags.ScrollY))
         {
-            ImGui.TableSetupScrollFreeze(0, 1);
             ImGui.TableSetupColumn("物体类别");
             ImGui.TableSetupColumn("前景色");
             ImGui.TableSetupColumn("背景色");
@@ -495,5 +495,14 @@ public class ConfigUi : Window, IDisposable
             };
         }
 
+    }
+
+    private static void About()
+    {
+        using var tabObjectKind = ImRaii.TabItem("关于");
+        if (!tabObjectKind) return;
+        ImGui.Text("本插件原作者: akira0245");
+        ImGui.Text("目前重构及维护: KirisameVanilla");
+        ImGui.Text("目前版本: 2.1.0.7");
     }
 }
