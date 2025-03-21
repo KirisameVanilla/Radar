@@ -30,18 +30,12 @@ public class ConfigUi : Window, IDisposable
     {
         using var tabBar = ImRaii.TabBar("RadarTabBar", ImGuiTabBarFlags.Reorderable);
         if (!tabBar) return;
-
-        ObjectKind();
-
-        SpecialObject();
-
-        Overlay2D();
-
-        Overlay3D();
-
-        DeepDungeonRecord();
-
         About();
+        ObjectKind();
+        SpecialObject();
+        Overlay2D();
+        Overlay3D();
+        DeepDungeonRecord();
     }
 
     public void Dispose() { }
@@ -501,8 +495,10 @@ public class ConfigUi : Window, IDisposable
     {
         using var tabObjectKind = ImRaii.TabItem("关于");
         if (!tabObjectKind) return;
-        ImGui.Text("本插件原作者: akira0245");
-        ImGui.Text("目前重构及维护: KirisameVanilla");
-        ImGui.Text("目前版本: 2.1.0.8");
+        ImGui.TextWrapped("本插件原作者: akira0245");
+        ImGui.TextWrapped("目前重构及维护: KirisameVanilla");
+        ImGui.TextWrapped("目前版本: 2.1.0.9");
+        ImGui.TextWrapped("不兼容部分完全改变地图材质的mod, 特别是能够修改地图缩放限制的");
+        ImGui.TextWrapped("小提示: 设置栏顺序能拖动改变");
     }
 }
