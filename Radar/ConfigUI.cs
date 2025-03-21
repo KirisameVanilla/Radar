@@ -17,7 +17,7 @@ namespace Radar;
 public class ConfigUi : Window, IDisposable
 {
     public ConfigUi()
-        : base("Radar##ConfigUi", ImGuiWindowFlags.AlwaysAutoResize)
+        : base("Radar##ConfigUi", ImGuiWindowFlags.AlwaysAutoResize | ImGuiWindowFlags.NoCollapse)
     {
         SizeConstraints = new WindowSizeConstraints
         {
