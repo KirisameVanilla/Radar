@@ -503,6 +503,6 @@ public class ConfigUi : Window, IDisposable
         if (!tabObjectKind) return;
         ImGui.Text("本插件原作者: akira0245");
         ImGui.Text("目前重构及维护: KirisameVanilla");
-        ImGui.Text("目前版本: 2.1.0.7");
+        ImGui.Text("目前版本: 2.1.0.8");
     }
 }
