@@ -2,20 +2,20 @@
   <PropertyGroup>
     <AssemblyName>Radar</AssemblyName>
     <GenerateAssemblyInfo>False</GenerateAssemblyInfo>
-    <TargetFramework>net8.0-windows8.0</TargetFramework>
+    <TargetFramework>net9.0-windows</TargetFramework>
     <PlatformTarget>x64</PlatformTarget>
     <Configurations>Debug;SQ;SE</Configurations>
   </PropertyGroup>
 
   <ItemGroup>
-    <PackageReference Include="DalamudPackager" Version="11.0.0" />
+    <PackageReference Include="DalamudPackager" Version="12.0.0" />
   </ItemGroup>
 
   <PropertyGroup>
     <LangVersion>11.0</LangVersion>
     <AllowUnsafeBlocks>True</AllowUnsafeBlocks>
     <Authors>akira0245, KirisameVanilla</Authors>
-    <Version>2.1.0.9</Version>
+    <Version>2.1.1.0</Version>
     <DalamudLibPath Condition=" '$(Configuration)' == 'SE'">$(appdata)\XIVLauncher\addon\Hooks\dev\</DalamudLibPath>
     <DalamudLibPath Condition=" '$(Configuration)' == 'SQ'">$(appdata)\XIVLauncherCN\addon\Hooks\dev\</DalamudLibPath>
     <DalamudLibPath Condition=" '$(Configuration)' == 'Debug'">$(appdata)\XIVLauncher\addon\Hooks\dev\</DalamudLibPath>
@@ -72,6 +72,11 @@
       <HintPath>$(DalamudLibPath)SharpDX.Mathematics.dll</HintPath>
       <Private>False</Private>
     </Reference>
+
+      <Reference Include="InteropGenerator.Runtime">
+          <HintPath>$(DalamudLibPath)InteropGenerator.Runtime.dll</HintPath>
+          <Private>False</Private>
+      </Reference>
 
   </ItemGroup>
 </Project>

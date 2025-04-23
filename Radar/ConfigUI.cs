@@ -497,7 +497,7 @@ public class ConfigUi : Window, IDisposable
         if (!tabObjectKind) return;
         ImGui.TextWrapped("本插件原作者: akira0245");
         ImGui.TextWrapped("目前重构及维护: KirisameVanilla");
-        ImGui.TextWrapped("目前版本: 2.1.0.9");
+        ImGui.TextWrapped("目前版本: 2.1.1.0");
         ImGui.TextWrapped("不兼容部分完全改变地图材质的mod, 特别是能够修改地图缩放限制的");
         ImGui.TextWrapped("小提示: 设置栏顺序能拖动改变");
     }
