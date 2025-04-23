@@ -8,7 +8,7 @@
 			MakeZip="false"/>
 	</Target>
 
-	<Target Name="PackagePlugin" AfterTargets="Build" Condition="'$(Configuration)' == 'SE' Or '$(Configuration)' == 'SQ'">
+	<Target Name="PackagePlugin" AfterTargets="Build" Condition="'$(Configuration)' == 'Release'">
 		<DalamudPackager
 			ProjectDir="$(ProjectDir)"
 			OutputPath="$(OutputPath)"
