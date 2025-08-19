@@ -10,7 +10,7 @@ using FFXIVClientStructs.FFXIV.Client.Game.Control;
 using FFXIVClientStructs.FFXIV.Client.Graphics.Kernel;
 using FFXIVClientStructs.FFXIV.Component.GUI;
 using FFXIVClientStructs.STD;
-using ImGuiNET;
+using Dalamud.Bindings.ImGui;
 using Lumina.Excel;
 using Radar.CustomObject;
 using Radar.Utils;
@@ -834,7 +834,7 @@ public class Radar : IDisposable
                     }
 
                     if (textureWrap is null) { return; }
-                    windowDrawList.AddImageQuad(textureWrap.ImGuiHandle, array[0], array[1], array[2], array[3], uv1, uv2, uv3, uv4, ImGui.ColorConvertFloat4ToU32(new Vector4(1f, 1f, 1f, Plugin.Configuration.ExternalMap_MapAlpha)));
+                    windowDrawList.AddImageQuad(textureWrap.Handle, array[0], array[1], array[2], array[3], uv1, uv2, uv3, uv4, ImGui.ColorConvertFloat4ToU32(new Vector4(1f, 1f, 1f, Plugin.Configuration.ExternalMap_MapAlpha)));
                     foreach (var item in DrawList2D)
                     {
                         var positionOfItem = WorldToMap(item.worldpos);
@@ -861,7 +861,7 @@ public class Radar : IDisposable
                         reference2 = reference2.Zoom(UvZoom, imGuiWindowCenter + dragPos);
                     }
                     if (textureWrap is null) return;
-                    windowDrawList.AddImageQuad(textureWrap.ImGuiHandle, array[0], array[1], array[2], array[3], uv1, uv2, uv3, uv4, ImGui.ColorConvertFloat4ToU32(new Vector4(1f, 1f, 1f, Plugin.Configuration.ExternalMap_MapAlpha)));
+                    windowDrawList.AddImageQuad(textureWrap.Handle, array[0], array[1], array[2], array[3], uv1, uv2, uv3, uv4, ImGui.ColorConvertFloat4ToU32(new Vector4(1f, 1f, 1f, Plugin.Configuration.ExternalMap_MapAlpha)));
                     foreach (var item2 in DrawList2D)
                     {
                         var pos2 = WorldToMapNoSnap(item2.worldpos);

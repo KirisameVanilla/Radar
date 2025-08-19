@@ -1,10 +1,10 @@
 using Dalamud.Interface;
 using Dalamud.Interface.Textures;
 using Dalamud.Interface.Utility;
-using ImGuiNET;
 using System;
 using System.Collections.Generic;
 using System.Numerics;
+using Dalamud.Bindings.ImGui;
 
 namespace Radar.Utils;
 
@@ -159,7 +159,7 @@ internal static class ImGuiUtil
         var textureWrap = icon.GetWrapOrDefault();
         if (textureWrap is null) return;
         _ = textureWrap.GetSize() * size;
-        drawList.AddImage(textureWrap.ImGuiHandle, pos, pos);
+        drawList.AddImage(textureWrap.Handle, pos, pos);
     }
 
     public static void Checkbox(string label, ref bool value)

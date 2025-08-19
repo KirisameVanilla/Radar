@@ -5,7 +5,7 @@ namespace Radar.Utils;
 
 internal static class AreaMap
 {
-    public static unsafe AtkUnitBase* AreaMapAddon => (AtkUnitBase*)Plugin.Gui.GetAddonByName("AreaMap");
+    public static unsafe AtkUnitBase* AreaMapAddon => (AtkUnitBase*)Plugin.Gui.GetAddonByName("AreaMap").Address;
 
     public static unsafe bool HasMap => AreaMapAddon != (AtkUnitBase*)IntPtr.Zero;
 

@@ -15,7 +15,7 @@
     <LangVersion>11.0</LangVersion>
     <AllowUnsafeBlocks>True</AllowUnsafeBlocks>
     <Authors>akira0245, KirisameVanilla</Authors>
-    <Version>2.1.1.0</Version>
+    <Version>2.1.1.1</Version>
     <DalamudLibPath Condition=" '$(Configuration)' == 'Release'">$(appdata)\XIVLauncher\addon\Hooks\dev\</DalamudLibPath>
     <DalamudLibPath Condition=" '$(Configuration)' == 'Debug'">$(appdata)\XIVLauncher\addon\Hooks\dev\</DalamudLibPath>
     <RepositoryUrl>https://github.com/KirisameVanilla/Radar</RepositoryUrl>
@@ -39,11 +39,6 @@
 
     <Reference Include="FFXIVClientStructs">
       <HintPath>$(DalamudLibPath)FFXIVClientStructs.dll</HintPath>
-      <Private>False</Private>
-    </Reference>
-
-    <Reference Include="ImGui.NET">
-      <HintPath>$(DalamudLibPath)ImGui.NET.dll</HintPath>
       <Private>False</Private>
     </Reference>
 
@@ -74,6 +69,16 @@
 
       <Reference Include="InteropGenerator.Runtime">
           <HintPath>$(DalamudLibPath)InteropGenerator.Runtime.dll</HintPath>
+          <Private>False</Private>
+      </Reference>
+
+      <Reference Include="Dalamud.Bindings.ImGui">
+          <HintPath>$(DalamudLibPath)Dalamud.Bindings.ImGui.dll</HintPath>
+          <Private>False</Private>
+      </Reference>
+
+      <Reference Include="Dalamud.Bindings.ImPlot">
+          <HintPath>$(DalamudLibPath)Dalamud.Bindings.ImPlot.dll</HintPath>
           <Private>False</Private>
       </Reference>
 
