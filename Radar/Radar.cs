@@ -428,7 +428,7 @@ public class Radar : IDisposable
                 fgColor = 4294967040u;
                 return true;
             }
-            if (NotoriousMonsters.ListFateMobs.Contains(objCharacter.NameId))
+            if (NotoriousMonsters.ListFateMobs.Contains(obj.DataId))
             {
                 SpecialObjectDrawList.Add((obj, 4294902015U, $"F.A.T.E NOTORIOUS MONSTER\nLv.{objCharacter.Level} {dictionaryName}"));
                 fgColor = 4294902015U;
