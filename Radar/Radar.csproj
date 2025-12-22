@@ -2,20 +2,21 @@
   <PropertyGroup>
     <AssemblyName>Radar</AssemblyName>
     <GenerateAssemblyInfo>False</GenerateAssemblyInfo>
-    <TargetFramework>net9.0-windows</TargetFramework>
+    <TargetFramework>net10.0-windows7.0</TargetFramework>
     <PlatformTarget>x64</PlatformTarget>
     <Configurations>Debug;Release</Configurations>
   </PropertyGroup>
 
   <ItemGroup>
-    <PackageReference Include="DalamudPackager" Version="12.0.0" />
+    <PackageReference Include="DalamudPackager" Version="14.0.1" />
+    <PackageReference Include="SharpDX.Mathematics" Version="4.2.0" />
   </ItemGroup>
 
   <PropertyGroup>
     <LangVersion>11.0</LangVersion>
     <AllowUnsafeBlocks>True</AllowUnsafeBlocks>
     <Authors>akira0245, KirisameVanilla</Authors>
-    <Version>2.1.1.1</Version>
+    <Version>2.1.1.2</Version>
     <DalamudLibPath Condition=" '$(Configuration)' == 'Release'">$(appdata)\XIVLauncher\addon\Hooks\dev\</DalamudLibPath>
     <DalamudLibPath Condition=" '$(Configuration)' == 'Debug'">$(appdata)\XIVLauncher\addon\Hooks\dev\</DalamudLibPath>
     <RepositoryUrl>https://github.com/KirisameVanilla/Radar</RepositoryUrl>
@@ -59,11 +60,6 @@
 
     <Reference Include="Newtonsoft.Json">
       <HintPath>$(DalamudLibPath)Newtonsoft.Json.dll</HintPath>
-      <Private>False</Private>
-    </Reference>
-
-    <Reference Include="SharpDX.Mathematics">
-      <HintPath>$(DalamudLibPath)SharpDX.Mathematics.dll</HintPath>
       <Private>False</Private>
     </Reference>
 

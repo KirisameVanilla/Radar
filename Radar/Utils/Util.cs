@@ -248,16 +248,16 @@ internal static class Util
     {
         return obj switch
         {
-            { DataId: 6388, Position: var p } when p != System.Numerics.Vector3.Zero => true,
-            { DataId: >= 2007182 and <= 2007186 } => true,
-            { DataId: 2009504 } => true,
+            { BaseId: 6388, Position: var p } when p != System.Numerics.Vector3.Zero => true,
+            { BaseId: >= 2007182 and <= 2007186 } => true,
+            { BaseId: 2009504 } => true,
             _ => false
         };
     }
 
     [MethodImpl(MethodImplOptions.AggressiveInlining)]
-    public static bool IsAccursedHoard(this IGameObject obj) => obj.DataId == 2007542 || obj.DataId == 2007543;
+    public static bool IsAccursedHoard(this IGameObject obj) => obj.BaseId == 2007542 || obj.BaseId == 2007543;
 
     [MethodImpl(MethodImplOptions.AggressiveInlining)]
-    public static bool IsSilverCoffer(this IGameObject obj) => obj.DataId == 2007357;
+    public static bool IsSilverCoffer(this IGameObject obj) => obj.BaseId == 2007357;
 }

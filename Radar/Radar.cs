@@ -85,7 +85,6 @@ public class Radar : IDisposable
     private ImDrawListPtr foregroundDrawList;
     private ImDrawListPtr backgroundDrawList;
     private Dictionary<ushort, bool> isPvpZoneDict;
-    private Dictionary<ushort, string> territoryIdToBg;
     private HashSet<Vector2> hoardBlackList = new();
     private HashSet<Vector2> trapBlacklist = new();
     private readonly Dictionary<uint, ushort> sizeFactorDict;
@@ -272,15 +271,15 @@ public class Radar : IDisposable
     private static void RefreshMeScreenPos()
     {
         // This is the position of your character on the Screen
-        if (Plugin.ClientState.LocalPlayer == null) { return; }
-        Util.WorldToScreenEx(Plugin.ClientState.LocalPlayer.Position, out var screenPos, out _, ImGui.GetMainViewport().Pos);
+        if (Plugin.ObjectTable.LocalPlayer == null) { return; }
+        Util.WorldToScreenEx(Plugin.ObjectTable.LocalPlayer.Position, out var screenPos, out _, ImGui.GetMainViewport().Pos);
         MeScreenPos = screenPos;
     }
 
     private static void RefreshMeWorldPos()
     {
         // This is the position of your character in the Game
-        if (Plugin.ClientState.LocalPlayer == null) { return; }
+        if (Plugin.ObjectTable.LocalPlayer == null) { return; }
         var me = Plugin.ObjectTable.First();
         if (me != null)
         {
@@ -322,7 +321,7 @@ public class Radar : IDisposable
             var deepDungeonObject = new DeepDungeonObject
             {
                 Type = DeepDungeonType.AccursedHoard,
-                Base = o.DataId,
+                Base = o.BaseId,
                 InstanceId = (uint)o.GameObjectId,
                 Location = o.Position,
                 Territory = Plugin.ClientState.TerritoryType
@@ -337,7 +336,7 @@ public class Radar : IDisposable
             var deepDungeonObject = new DeepDungeonObject
             {
                 Type = DeepDungeonType.Trap,
-                Base = o.DataId,
+                Base = o.BaseId,
                 InstanceId = (uint)o.GameObjectId,
                 Location = o.Position,
                 Territory = Plugin.ClientState.TerritoryType
@@ -388,35 +387,35 @@ public class Radar : IDisposable
         var dictionaryName = obj.Name.TextValue;
         var myObjectKind = obj.GetMyObjectKind();
 
-        if (Plugin.Configuration.NpcBaseMapping.ContainsKey(obj.DataId))
+        if (Plugin.Configuration.NpcBaseMapping.ContainsKey(obj.BaseId))
         {
             // 只是用于显示Name属性相同的obj的不同真实名字
-            Plugin.Configuration.NpcBaseMapping.TryGetValue(obj.DataId, out dictionaryName);
+            Plugin.Configuration.NpcBaseMapping.TryGetValue(obj.BaseId, out dictionaryName);
         }
 
         var objCharacter = obj as ICharacter;
         if (Plugin.Configuration.OverlayHint_CustomObjectView && Plugin.Configuration.customHighlightObjects.TryGetValue(dictionaryName, out var value) && value.Enabled)
         {
-            SpecialObjectDrawList.Add((obj, ImGui.ColorConvertFloat4ToU32(value.Color), $"{myObjectKind.ToString().ToUpper()} {((obj.DataId != 0) ? obj.DataId.ToString() : string.Empty)}\nLv.{objCharacter?.Level} {dictionaryName}"));
+            SpecialObjectDrawList.Add((obj, ImGui.ColorConvertFloat4ToU32(value.Color), $"{myObjectKind.ToString().ToUpper()} {((obj.BaseId != 0) ? obj.BaseId.ToString() : string.Empty)}\nLv.{objCharacter?.Level} {dictionaryName}"));
             fgColor = ImGui.ColorConvertFloat4ToU32(value.Color);
             return true;
         }
         if (Plugin.Configuration.OverlayHint_MobHuntView && obj.ObjectKind == ObjectKind.BattleNpc)
         {
             if (objCharacter is null) return false;
-            if (NotoriousMonsters.SRankLazy.Value.Contains(obj.DataId) && Plugin.Configuration.OverlayHintShowRankS)
+            if (NotoriousMonsters.SRankLazy.Value.Contains(obj.BaseId) && Plugin.Configuration.OverlayHintShowRankS)
             {
                 SpecialObjectDrawList.Add((obj, 4278190335u, $"S RANK NOTORIOUS MONSTER\nLv.{objCharacter.Level} {dictionaryName}"));
                 fgColor = 4278190335u;
                 return true;
             }
-            if (NotoriousMonsters.ARankLazy.Value.Contains(obj.DataId) && Plugin.Configuration.OverlayHintShowRankA)
+            if (NotoriousMonsters.ARankLazy.Value.Contains(obj.BaseId) && Plugin.Configuration.OverlayHintShowRankA)
             {
                 SpecialObjectDrawList.Add((obj, 4278255615u, $"A RANK NOTORIOUS MONSTER\nLv.{objCharacter.Level} {dictionaryName}"));
                 fgColor = 4278255615u;
                 return true;
             }
-            if (NotoriousMonsters.BRankLazy.Value.Contains(obj.DataId) && Plugin.Configuration.OverlayHintShowRankB)
+            if (NotoriousMonsters.BRankLazy.Value.Contains(obj.BaseId) && Plugin.Configuration.OverlayHintShowRankB)
             {
                 SpecialObjectDrawList.Add((obj, 4278255360u, $"B RANK NOTORIOUS MONSTER\nLv.{objCharacter.Level} {dictionaryName}"));
                 fgColor = 4278255360u;
@@ -428,7 +427,7 @@ public class Radar : IDisposable
                 fgColor = 4294967040u;
                 return true;
             }
-            if (NotoriousMonsters.ListFateMobs.Contains(obj.DataId))
+            if (NotoriousMonsters.ListFateMobs.Contains(obj.BaseId))
             {
                 SpecialObjectDrawList.Add((obj, 4294902015U, $"F.A.T.E NOTORIOUS MONSTER\nLv.{objCharacter.Level} {dictionaryName}"));
                 fgColor = 4294902015U;
@@ -441,19 +440,19 @@ public class Radar : IDisposable
     private void AddObjectTo2DDrawList(IGameObject iGameObject, uint foregroundColor, uint backgroundColor)
     {
         string dictionaryName = iGameObject.Name.TextValue;
-        if (Plugin.Configuration.NpcBaseMapping.ContainsKey(iGameObject.DataId))
+        if (Plugin.Configuration.NpcBaseMapping.ContainsKey(iGameObject.BaseId))
         {
-            Plugin.Configuration.NpcBaseMapping.TryGetValue(iGameObject.DataId, out dictionaryName);
+            Plugin.Configuration.NpcBaseMapping.TryGetValue(iGameObject.BaseId, out dictionaryName);
         }
 
         string item = null;
         switch (Plugin.Configuration.Overlay2D_DetailLevel)
         {
             case 1:
-                item = (string.IsNullOrEmpty(dictionaryName) ? $"{iGameObject.ObjectKind} {iGameObject.DataId}" : dictionaryName);
+                item = (string.IsNullOrEmpty(dictionaryName) ? $"{iGameObject.ObjectKind} {iGameObject.BaseId}" : dictionaryName);
                 break;
             case 2:
-                item = (string.IsNullOrEmpty(dictionaryName) ? $"{iGameObject.ObjectKind} {iGameObject.DataId}" : $"{dictionaryName}\u3000{iGameObject.Position.Distance2D(MeWorldPos):F2}m");
+                item = (string.IsNullOrEmpty(dictionaryName) ? $"{iGameObject.ObjectKind} {iGameObject.BaseId}" : $"{dictionaryName}\u3000{iGameObject.Position.Distance2D(MeWorldPos):F2}m");
                 break;
             default:
                 throw new ArgumentOutOfRangeException();
@@ -466,9 +465,9 @@ public class Radar : IDisposable
     private void DrawObject3D(IGameObject obj, uint foregroundColor, uint backgroundColor, bool drawLine, ISharedImmediateTexture icon = null)
     {
         string dictionaryName = obj.Name.TextValue;
-        if (Plugin.Configuration.NpcBaseMapping.ContainsKey(obj.DataId))
+        if (Plugin.Configuration.NpcBaseMapping.ContainsKey(obj.BaseId))
         {
-            Plugin.Configuration.NpcBaseMapping.TryGetValue(obj.DataId, out dictionaryName);
+            Plugin.Configuration.NpcBaseMapping.TryGetValue(obj.BaseId, out dictionaryName);
         }
         bool flag = false;
         string text = null;
@@ -478,10 +477,10 @@ public class Radar : IDisposable
                 flag = true;
                 break;
             case 1:
-                text = (string.IsNullOrEmpty(dictionaryName) ? $"{obj.ObjectKind} {obj.DataId}" : dictionaryName);
+                text = (string.IsNullOrEmpty(dictionaryName) ? $"{obj.ObjectKind} {obj.BaseId}" : dictionaryName);
                 break;
             case 2:
-                text = (string.IsNullOrEmpty(dictionaryName) ? $"{obj.ObjectKind} {obj.DataId}" : dictionaryName) + $"\t{obj.Position.Distance2D(MeWorldPos):F2}m";
+                text = (string.IsNullOrEmpty(dictionaryName) ? $"{obj.ObjectKind} {obj.BaseId}" : dictionaryName) + $"\t{obj.Position.Distance2D(MeWorldPos):F2}m";
                 break;
             default:
                 throw new ArgumentOutOfRangeException();
@@ -496,7 +495,7 @@ public class Radar : IDisposable
             {
                 drawLine = true;
             }
-            if (Plugin.Configuration.Overlay3D_DrawObjectLineTargetingYou && Plugin.ClientState.LocalPlayer != null && obj.TargetObject != null && (obj.TargetObject.EntityId == Plugin.ClientState.LocalPlayer.EntityId))
+            if (Plugin.Configuration.Overlay3D_DrawObjectLineTargetingYou && Plugin.ObjectTable.LocalPlayer != null && obj.TargetObject != null && (obj.TargetObject.EntityId == Plugin.ObjectTable.LocalPlayer.EntityId))
             {
                 drawLine = true;
             }
@@ -571,7 +570,7 @@ public class Radar : IDisposable
     private void DrawSpecialObjectTipWindows()
     {
         //特殊物体名牌
-        if (Plugin.ClientState.LocalPlayer == null)
+        if (Plugin.ObjectTable.LocalPlayer == null)
         {
             return;
         }
@@ -594,7 +593,7 @@ public class Radar : IDisposable
             }
             windowPos.Y += 15f;
             var pos2 = ImGui.GetWindowPos() + ImGui.GetCursorPos() + new Vector2(ImGui.GetTextLineHeight(), ImGui.GetTextLineHeight());
-            rotation = AdjustRotationToHRotation(Plugin.ClientState.LocalPlayer.Rotation);
+            rotation = AdjustRotationToHRotation(Plugin.ObjectTable.LocalPlayer.Rotation);
 
             // 指示相对方向的箭头
             ImGui.GetWindowDrawList().DrawArrow(pos2, ImGui.GetTextLineHeightWithSpacing() * 0.618f, fgcolor, (new Vector2(thisGameObject.Position.X, thisGameObject.Position.Z) - MeWorldPos.ToVector2()).Normalize().Rotate(0f - rotation), 5f);
@@ -667,9 +666,9 @@ public class Radar : IDisposable
         {
             backgroundDrawList.DrawMapTextDot(valueOrDefault, "ME", 4294967040u, 4278190080u);
         }
-        if (Plugin.Configuration.Overlay2D_ShowAssist && Plugin.ClientState.LocalPlayer != null)
+        if (Plugin.Configuration.Overlay2D_ShowAssist && Plugin.ObjectTable.LocalPlayer != null)
         {
-            rotation = AdjustRotationToHRotation(Plugin.ClientState.LocalPlayer.Rotation);
+            rotation = AdjustRotationToHRotation(Plugin.ObjectTable.LocalPlayer.Rotation);
             backgroundDrawList.AddCircle(valueOrDefault, WorldToMapScale * 25f, 4294967040u, 0, 1f);
             backgroundDrawList.AddCircle(valueOrDefault, WorldToMapScale * 125f, 4286611584u, 0, 1f);
             backgroundDrawList.AddLine(valueOrDefault,
@@ -743,7 +742,7 @@ public class Radar : IDisposable
 
     internal unsafe void DrawExternalMap()
     {
-        if (Plugin.ClientState.LocalPlayer == null)
+        if (Plugin.ObjectTable.LocalPlayer == null)
         {
             return;
         }
@@ -827,7 +826,7 @@ public class Radar : IDisposable
                         reference -= (MeWorldPos.ToVector2() + mapOffset) * mapSizeFactor;
                         if (Plugin.Configuration.ExternalMap_Mode == 2)
                         {
-                            rotation = AdjustRotationToHRotation(Plugin.ClientState.LocalPlayer.Rotation);
+                            rotation = AdjustRotationToHRotation(Plugin.ObjectTable.LocalPlayer.Rotation);
                             reference = reference.Rotate(0f - rotation, imGuiWindowCenter);
                         }
                         reference = reference.Zoom(UvZoom, imGuiWindowCenter);
@@ -845,7 +844,7 @@ public class Radar : IDisposable
                         windowDrawList.DrawMapTextDot(imGuiWindowCenter, (Plugin.Configuration.Overlay2D_DetailLevel > 0) ? "ME" : null, 4294967040u, 4278190080u);
                         if (Plugin.Configuration.Overlay2D_ShowAssist)
                         {
-                            rotation = AdjustRotationToHRotation(Plugin.ClientState.LocalPlayer.Rotation);
+                            rotation = AdjustRotationToHRotation(Plugin.ObjectTable.LocalPlayer.Rotation);
                             var num3 = ((Plugin.Configuration.ExternalMap_Mode == 2) ? 0f : (0f - rotation));
                             windowDrawList.PathArcTo(imGuiWindowCenter, mapSizeFactor * 25f * UvZoom, num3 - ((float)Math.PI / 2f) - ((float)Math.PI / 4f), num3 - ((float)Math.PI / 4f), 24);
                             windowDrawList.PathLineTo(imGuiWindowCenter);
@@ -873,7 +872,7 @@ public class Radar : IDisposable
                         windowDrawList.DrawMapTextDot(vector3, (Plugin.Configuration.Overlay2D_DetailLevel > 0) ? "ME" : null, 4294967040u, 4278190080u);
                         if (Plugin.Configuration.Overlay2D_ShowAssist)
                         {
-                            rotation = AdjustRotationToHRotation(Plugin.ClientState.LocalPlayer.Rotation);
+                            rotation = AdjustRotationToHRotation(Plugin.ObjectTable.LocalPlayer.Rotation);
                             windowDrawList.PathArcTo(vector3, mapSizeFactor * 25f * UvZoom, 0f - rotation - ((float)Math.PI / 2f) - ((float)Math.PI / 4f), 0f - rotation - ((float)Math.PI / 4f), 24);
                             windowDrawList.PathLineTo(vector3);
                             windowDrawList.PathStroke(4294967040u, ImDrawFlags.Closed, 2f);
@@ -902,7 +901,7 @@ public class Radar : IDisposable
                 Vector2 vector4 = (worldPos - MeWorldPos).ToVector2() * mapSizeFactor;
                 if (Plugin.Configuration.ExternalMap_Mode == 2)
                 {
-                    rotation = AdjustRotationToHRotation(Plugin.ClientState.LocalPlayer.Rotation);
+                    rotation = AdjustRotationToHRotation(Plugin.ObjectTable.LocalPlayer.Rotation);
                     vector4 = vector4.Rotate(0f - rotation);
                 }
                 return imGuiWindowCenter + (vector4 * UvZoom);
