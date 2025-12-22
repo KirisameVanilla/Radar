@@ -34,7 +34,7 @@ internal static class Util
         return myObjectKind;
     }
 
-    public static bool WorldToScreenEx(Vector3 worldPos, out Vector2 screenPos, out float Z, Vector2 pivot, float toleranceX = 0f, float toleranceY = 0f)
+    public static bool WorldToScreenEx(Vector3 worldPos, out Vector2 screenPos, out float Z, Vector2? pivot = null, float toleranceX = 0f, float toleranceY = 0f)
     {
         /* 
          * Transform(vector3 vector, Matrix4x4 transform) =>
@@ -43,30 +43,27 @@ internal static class Util
          * Z vector.X * transform.M13 + vector.Y * transform.M23 + vector.Z * transform.M33 + transform.M43,
          * W vector.X * transform.M14 + vector.Y * transform.M24 + vector.Z * transform.M34 + transform.M44);
         */
+        pivot ??= ImGui.GetMainViewport().Pos;
         var res = Vector3.Transform(worldPos, Radar.MatrixSingetonCache);
-        Z = (worldPos.X * Radar.MatrixSingetonCache.M14) 
-            + (worldPos.Y * Radar.MatrixSingetonCache.M24) 
-            + (worldPos.Z * Radar.MatrixSingetonCache.M34) 
-            + Radar.MatrixSingetonCache.M44;
+        Z = (worldPos.X * Radar.MatrixSingetonCache.M14) + 
+            (worldPos.Y * Radar.MatrixSingetonCache.M24) + 
+            (worldPos.Z * Radar.MatrixSingetonCache.M34) + 
+            Radar.MatrixSingetonCache.M44;
         
         screenPos = new Vector2(res.X / Z, res.Y / Z);
-        screenPos.X = (0.5f * Radar.ViewPortSizeCache.X * (screenPos.X + 1f)) + pivot.X;
-        screenPos.Y = (0.5f * Radar.ViewPortSizeCache.Y * (1f - screenPos.Y)) + pivot.Y;
+        screenPos.X = (0.5f * Radar.ViewPortSizeCache.X * (screenPos.X + 1f)) + pivot.Value.X;
+        screenPos.Y = (0.5f * Radar.ViewPortSizeCache.Y * (1f - screenPos.Y)) + pivot.Value.Y;
         if (Z < 0f)
         {
             screenPos = -screenPos + ImGuiHelpers.MainViewport.Pos + ImGuiHelpers.MainViewport.Size;
         }
-        if (screenPos.X > pivot.X - toleranceX && screenPos.X < pivot.X + Radar.ViewPortSizeCache.X + toleranceX && screenPos.Y > pivot.Y - toleranceY)
+        if (screenPos.X > pivot.Value.X - toleranceX && screenPos.X < pivot.Value.X + Radar.ViewPortSizeCache.X + toleranceX && screenPos.Y > pivot.Value.Y - toleranceY)
         {
-            return screenPos.Y < pivot.Y + Radar.ViewPortSizeCache.Y + toleranceY;
+            return screenPos.Y < pivot.Value.Y + Radar.ViewPortSizeCache.Y + toleranceY;
         }
         return false;
     }
 
-    [MethodImpl(MethodImplOptions.AggressiveInlining)]
-    public static bool WorldToScreenEx(
-        Vector3 worldPos, out Vector2 screenPos, out float Z) =>
-        WorldToScreenEx(worldPos, out screenPos, out Z, ImGui.GetMainViewport().Pos);
 
     [MethodImpl(MethodImplOptions.AggressiveInlining)]
     public static Vector2 GetSize(this IDalamudTextureWrap textureWrap) =>

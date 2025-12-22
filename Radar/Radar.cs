@@ -74,8 +74,8 @@ public class Radar : IDisposable
     private Vector2? mapOrigin = Vector2.Zero;
     private float globalUiScale = 1f;
     private Vector2[] mapPosSize = new Vector2[2];
-    private static Vector2 MeScreenPos = ImGuiHelpers.MainViewport.GetCenter();
-    private static Vector3 MeWorldPos = Vector3.Zero;
+    private static Vector2 MyScreenPos = ImGuiHelpers.MainViewport.GetCenter();
+    private static Vector3 MyWorldPos = Vector3.Zero;
     internal static Matrix4x4 MatrixSingetonCache;
     internal static Vector2 ViewPortSizeCache;
     private ImDrawListPtr foregroundDrawList;
@@ -264,7 +264,7 @@ public class Radar : IDisposable
         // This is the position of your character on the Screen
         if (Plugin.ObjectTable.LocalPlayer == null) { return; }
         Util.WorldToScreenEx(Plugin.ObjectTable.LocalPlayer.Position, out var screenPos, out _, ImGui.GetMainViewport().Pos);
-        MeScreenPos = screenPos;
+        MyScreenPos = screenPos;
     }
 
     private static void RefreshMeWorldPos()
@@ -274,7 +274,7 @@ public class Radar : IDisposable
         var me = Plugin.ObjectTable.First();
         if (me != null)
         {
-            MeWorldPos = me.Position;
+            MyWorldPos = me.Position;
         }
     }
 
@@ -343,7 +343,7 @@ public class Radar : IDisposable
     {
         foreach (var item in Plugin.Configuration.DeepDungeonObjects.Where(i => i.Territory != 0 &&
                           i.GetBg == GetDeepDungeonBg(Plugin.ClientState.TerritoryType) &&
-                          i.Location.Distance2D(MeWorldPos) < Plugin.Configuration.DeepDungeon_ObjectShowDistance).GroupBy((DeepDungeonObject i) => i, DeepDungeonObjectLocationEqual))
+                          i.Location.Distance2D(MyWorldPos) < Plugin.Configuration.DeepDungeon_ObjectShowDistance).GroupBy((DeepDungeonObject i) => i, DeepDungeonObjectLocationEqual))
         {
             Vector2 ringCenter;
             if (item.Key.Type == DeepDungeonType.Trap)
@@ -443,7 +443,7 @@ public class Radar : IDisposable
                 item = (string.IsNullOrEmpty(dictionaryName) ? $"{iGameObject.ObjectKind} {iGameObject.BaseId}" : dictionaryName);
                 break;
             case 2:
-                item = (string.IsNullOrEmpty(dictionaryName) ? $"{iGameObject.ObjectKind} {iGameObject.BaseId}" : $"{dictionaryName}\u3000{iGameObject.Position.Distance2D(MeWorldPos):F2}m");
+                item = (string.IsNullOrEmpty(dictionaryName) ? $"{iGameObject.ObjectKind} {iGameObject.BaseId}" : $"{dictionaryName}\u3000{iGameObject.Position.Distance2D(MyWorldPos):F2}m");
                 break;
             default:
                 throw new ArgumentOutOfRangeException();
@@ -471,7 +471,7 @@ public class Radar : IDisposable
                 text = (string.IsNullOrEmpty(dictionaryName) ? $"{obj.ObjectKind} {obj.BaseId}" : dictionaryName);
                 break;
             case 2:
-                text = (string.IsNullOrEmpty(dictionaryName) ? $"{obj.ObjectKind} {obj.BaseId}" : dictionaryName) + $"\t{obj.Position.Distance2D(MeWorldPos):F2}m";
+                text = (string.IsNullOrEmpty(dictionaryName) ? $"{obj.ObjectKind} {obj.BaseId}" : dictionaryName) + $"\t{obj.Position.Distance2D(MyWorldPos):F2}m";
                 break;
             default:
                 throw new ArgumentOutOfRangeException();
@@ -494,16 +494,16 @@ public class Radar : IDisposable
         Vector3 location = obj.Position;
         var size = ImGuiHelpers.MainViewport.Size;
         var pos = ImGuiHelpers.MainViewport.Pos;
-        _ = MeScreenPos - ImGuiHelpers.MainViewport.GetCenter();
+        _ = MyScreenPos - ImGuiHelpers.MainViewport.GetCenter();
         ImGuiHelpers.MainViewport.GetCenter();
         bool flag2 = Util.WorldToScreenEx(location, out var screenPos, out var z, Vector2.Zero, 200f, 100f);
         if (flag2 && z < 0f)
         {
-            screenPos -= MeScreenPos;
+            screenPos -= MyScreenPos;
             screenPos /= size;
             screenPos = screenPos.Normalize();
             screenPos *= size;
-            screenPos += MeScreenPos;
+            screenPos += MyScreenPos;
         }
         else
         {
@@ -520,7 +520,7 @@ public class Radar : IDisposable
         }
         if (drawLine)
         {
-            backgroundDrawList.AddLine(MeScreenPos, screenPosVector, foregroundColor);
+            backgroundDrawList.AddLine(MyScreenPos, screenPosVector, foregroundColor);
         }
         if (flag3 || flag)
         {
@@ -568,7 +568,7 @@ public class Radar : IDisposable
         ImGui.PushStyleVar(ImGuiStyleVar.WindowRounding, 0f);
         ImGui.PushStyleVar(ImGuiStyleVar.WindowBorderSize, Plugin.Configuration.OverlayHint_BorderSize);
         var windowPos = Plugin.Configuration.WindowPos;
-        foreach (var specialObjectTuple in SpecialObjectDrawList.OrderBy(i => i.obj.Position.Distance(MeWorldPos)))
+        foreach (var specialObjectTuple in SpecialObjectDrawList.OrderBy(i => i.obj.Position.Distance(MyWorldPos)))
         {
             var thisGameObject = specialObjectTuple.obj;
             var fgcolor = specialObjectTuple.fgcolor;
@@ -587,7 +587,7 @@ public class Radar : IDisposable
             rotation = AdjustRotationToHRotation(Plugin.ObjectTable.LocalPlayer.Rotation);
 
             // 指示相对方向的箭头
-            ImGui.GetWindowDrawList().DrawArrow(pos2, ImGui.GetTextLineHeightWithSpacing() * 0.618f, fgcolor, (new Vector2(thisGameObject.Position.X, thisGameObject.Position.Z) - MeWorldPos.ToVector2()).Normalize().Rotate(0f - rotation), 5f);
+            ImGui.GetWindowDrawList().DrawArrow(pos2, ImGui.GetTextLineHeightWithSpacing() * 0.618f, fgcolor, (new Vector2(thisGameObject.Position.X, thisGameObject.Position.Z) - MyWorldPos.ToVector2()).Normalize().Rotate(0f - rotation), 5f);
 
             ImGui.SetCursorPosX(ImGui.GetCursorPosX() + ImGui.GetTextLineHeight() + ImGui.GetTextLineHeightWithSpacing());
             ImGui.TextColored(ImGui.ColorConvertU32ToFloat4(fgcolor), nameString ?? "");
@@ -600,9 +600,9 @@ public class Radar : IDisposable
                 var percent = currentHp * 1.0 / maxHp;
                 text += $"{currentHp:N0}/{maxHp:N0}\t{percent:P}\n";
             }
-            var distanceY = thisGameObject.Position.Y - MeWorldPos.Y;
+            var distanceY = thisGameObject.Position.Y - MyWorldPos.Y;
             var direction = (double.Abs(distanceY) < 0.1f) ? "" : ((distanceY > 0f) ? "↑" : "↓");
-            ImGui.TextUnformatted($"{text}{thisGameObject.Position.Distance2D(MeWorldPos):F2}m\t{direction}{Math.Abs(distanceY):F1}m");
+            ImGui.TextUnformatted($"{text}{thisGameObject.Position.Distance2D(MyWorldPos):F2}m\t{direction}{Math.Abs(distanceY):F1}m");
             windowPos += new Vector2(0f, ImGui.GetWindowSize().Y);
             if (Plugin.Configuration.OverlayHint_OpenMapLinkOnAlt && ImGui.GetIO().KeyAlt && ImGui.IsMouseHoveringRect(ImGui.GetWindowPos(), ImGui.GetWindowSize() + ImGui.GetWindowPos()))
             {
@@ -676,7 +676,7 @@ public class Radar : IDisposable
 
     private Vector2 WorldToMap(Vector2 origin, Vector3 worldVector3)
     {
-        Vector2 vector = (worldVector3.ToVector2() - MeWorldPos.ToVector2()) * WorldToMapScale;
+        Vector2 vector = (worldVector3.ToVector2() - MyWorldPos.ToVector2()) * WorldToMapScale;
         return origin + vector;
     }
 
@@ -781,7 +781,7 @@ public class Radar : IDisposable
                 windowDrawList.ChannelsSetCurrent(1);
                 if (Plugin.Configuration.ExternalMap_ShowMapInfo)
                 {
-                    var text = $" {windowContentRegionWidth / (mapSizeFactor * UvZoom) / 2f:F2}m X: {MeWorldPos.X:N3} Y: {MeWorldPos.Y:N3} Z: {MeWorldPos.Z:N3} ";
+                    var text = $" {windowContentRegionWidth / (mapSizeFactor * UvZoom) / 2f:F2}m X: {MyWorldPos.X:N3} Y: {MyWorldPos.Y:N3} Z: {MyWorldPos.Z:N3} ";
                     var textSize = ImGui.CalcTextSize(text);
                     var leftPos = ImGui.GetWindowSize() - textSize;
                     windowDrawList.AddRectFilled(leftPos + windowPos, windowPos + ImGui.GetWindowSize(), 2147483648u);
@@ -814,7 +814,7 @@ public class Radar : IDisposable
                     for (int j = 0; j < 4; j++)
                     {
                         ref Vector2 reference = ref array[j];
-                        reference -= (MeWorldPos.ToVector2() + mapOffset) * mapSizeFactor;
+                        reference -= (MyWorldPos.ToVector2() + mapOffset) * mapSizeFactor;
                         if (Plugin.Configuration.ExternalMap_Mode == 2)
                         {
                             rotation = AdjustRotationToHRotation(Plugin.ObjectTable.LocalPlayer.Rotation);
@@ -859,7 +859,7 @@ public class Radar : IDisposable
                     }
                     if (Plugin.Configuration.Overlay2D_ShowCenter)
                     {
-                        var vector3 = WorldToMapNoSnap(MeWorldPos);
+                        var vector3 = WorldToMapNoSnap(MyWorldPos);
                         windowDrawList.DrawMapTextDot(vector3, (Plugin.Configuration.Overlay2D_DetailLevel > 0) ? "ME" : null, 4294967040u, 4278190080u);
                         if (Plugin.Configuration.Overlay2D_ShowAssist)
                         {
@@ -877,7 +877,7 @@ public class Radar : IDisposable
                         dragPos -= ImGui.GetIO().MouseDelta / UvZoom;
                         if (Plugin.Configuration.ExternalMap_Mode != 0)
                         {
-                            dragPos = (MeWorldPos.ToVector2() + mapOffset) * mapSizeFactor;
+                            dragPos = (MyWorldPos.ToVector2() + mapOffset) * mapSizeFactor;
                             Plugin.Configuration.ExternalMap_Mode = 0;
                         }
                     }
@@ -889,7 +889,7 @@ public class Radar : IDisposable
 
             Vector2 WorldToMap(Vector3 worldPos)
             {
-                Vector2 vector4 = (worldPos - MeWorldPos).ToVector2() * mapSizeFactor;
+                Vector2 vector4 = (worldPos - MyWorldPos).ToVector2() * mapSizeFactor;
                 if (Plugin.Configuration.ExternalMap_Mode == 2)
                 {
                     rotation = AdjustRotationToHRotation(Plugin.ObjectTable.LocalPlayer.Rotation);
