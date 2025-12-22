@@ -9,7 +9,6 @@
 
   <ItemGroup>
     <PackageReference Include="DalamudPackager" Version="14.0.1" />
-    <PackageReference Include="SharpDX.Mathematics" Version="4.2.0" />
   </ItemGroup>
 
   <PropertyGroup>

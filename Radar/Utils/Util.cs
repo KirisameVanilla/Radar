@@ -4,8 +4,8 @@ using Dalamud.Interface.Textures.TextureWraps;
 using Dalamud.Interface.Utility;
 using Dalamud.Bindings.ImGui;
 using Newtonsoft.Json;
-using SharpDX;
 using System;
+using System.Numerics;
 using System.IO;
 using System.IO.Compression;
 using System.Runtime.CompilerServices;
@@ -34,44 +34,50 @@ internal static class Util
         return myObjectKind;
     }
 
-    [MethodImpl(MethodImplOptions.AggressiveInlining)]
-    public static Vector3 Convert(this System.Numerics.Vector3 v) => new(v.X, v.Y, v.Z);
-
-    public static bool WorldToScreenEx(System.Numerics.Vector3 worldPos, out System.Numerics.Vector2 screenPos, out float Z, System.Numerics.Vector2 pivot, float trolanceX = 0f, float trolanceY = 0f)
+    public static bool WorldToScreenEx(Vector3 worldPos, out Vector2 screenPos, out float Z, Vector2 pivot, float toleranceX = 0f, float toleranceY = 0f)
     {
-        System.Numerics.Vector2 vector = pivot;
-        Vector3 vector2 = worldPos.Convert();
-        Vector3.Transform(ref vector2, ref Radar.MatrixSingetonCache, out SharpDX.Vector4 result);
-        Z = result.W;
-        screenPos = new System.Numerics.Vector2(result.X / Z, result.Y / Z);
-        screenPos.X = (0.5f * Radar.ViewPortSizeCache.X * (screenPos.X + 1f)) + vector.X;
-        screenPos.Y = (0.5f * Radar.ViewPortSizeCache.Y * (1f - screenPos.Y)) + vector.Y;
+        /* 
+         * Transform(vector3 vector, Matrix4x4 transform) =>
+         * X vector.X * transform.M11 + vector.Y * transform.M21 + vector.Z * transform.M31 + transform.M41,
+         * Y vector.X * transform.M12 + vector.Y * transform.M22 + vector.Z * transform.M32 + transform.M42,
+         * Z vector.X * transform.M13 + vector.Y * transform.M23 + vector.Z * transform.M33 + transform.M43,
+         * W vector.X * transform.M14 + vector.Y * transform.M24 + vector.Z * transform.M34 + transform.M44);
+        */
+        var res = Vector3.Transform(worldPos, Radar.MatrixSingetonCache);
+        Z = (worldPos.X * Radar.MatrixSingetonCache.M14) 
+            + (worldPos.Y * Radar.MatrixSingetonCache.M24) 
+            + (worldPos.Z * Radar.MatrixSingetonCache.M34) 
+            + Radar.MatrixSingetonCache.M44;
+        
+        screenPos = new Vector2(res.X / Z, res.Y / Z);
+        screenPos.X = (0.5f * Radar.ViewPortSizeCache.X * (screenPos.X + 1f)) + pivot.X;
+        screenPos.Y = (0.5f * Radar.ViewPortSizeCache.Y * (1f - screenPos.Y)) + pivot.Y;
         if (Z < 0f)
         {
             screenPos = -screenPos + ImGuiHelpers.MainViewport.Pos + ImGuiHelpers.MainViewport.Size;
         }
-        if (screenPos.X > vector.X - trolanceX && screenPos.X < vector.X + Radar.ViewPortSizeCache.X + trolanceX && screenPos.Y > vector.Y - trolanceY)
+        if (screenPos.X > pivot.X - toleranceX && screenPos.X < pivot.X + Radar.ViewPortSizeCache.X + toleranceX && screenPos.Y > pivot.Y - toleranceY)
         {
-            return screenPos.Y < vector.Y + Radar.ViewPortSizeCache.Y + trolanceY;
+            return screenPos.Y < pivot.Y + Radar.ViewPortSizeCache.Y + toleranceY;
         }
         return false;
     }
 
     [MethodImpl(MethodImplOptions.AggressiveInlining)]
     public static bool WorldToScreenEx(
-        System.Numerics.Vector3 worldPos, out System.Numerics.Vector2 screenPos, out float Z) =>
+        Vector3 worldPos, out Vector2 screenPos, out float Z) =>
         WorldToScreenEx(worldPos, out screenPos, out Z, ImGui.GetMainViewport().Pos);
 
     [MethodImpl(MethodImplOptions.AggressiveInlining)]
-    public static System.Numerics.Vector2 GetSize(this IDalamudTextureWrap textureWrap) =>
+    public static Vector2 GetSize(this IDalamudTextureWrap textureWrap) =>
         new(textureWrap.Width, textureWrap.Height);
 
     [MethodImpl(MethodImplOptions.AggressiveInlining)]
-    public static System.Numerics.Vector2 ToVector2(this System.Numerics.Vector3 v) =>
+    public static Vector2 ToVector2(this Vector3 v) =>
         new(v.X, v.Z);
 
     [MethodImpl(MethodImplOptions.AggressiveInlining)]
-    public static float Distance(this System.Numerics.Vector3 v, System.Numerics.Vector3 v2)
+    public static float Distance(this Vector3 v, Vector3 v2)
     {
         try
         {
@@ -84,11 +90,11 @@ internal static class Util
     }
 
     [MethodImpl(MethodImplOptions.AggressiveInlining)]
-    public static float Distance2D(this System.Numerics.Vector3 v, System.Numerics.Vector3 v2)
+    public static float Distance2D(this Vector3 v, Vector3 v2)
     {
         try
         {
-            return new System.Numerics.Vector2(v.X - v2.X, v.Z - v2.Z).Length();
+            return new Vector2(v.X - v2.X, v.Z - v2.Z).Length();
         }
         catch (Exception)
         {
@@ -97,23 +103,13 @@ internal static class Util
     }
 
     [MethodImpl(MethodImplOptions.AggressiveInlining)]
-    public static float Distance2D(this System.Numerics.Vector3 v, Vector3 v2)
-    {
-        try
-        {
-            return new System.Numerics.Vector2(v.X - v2.X, v.Z - v2.Z).Length();
-        }
-        catch (Exception)
-        {
-            return 0f;
-        }
-    }
+    public static bool IsZero(this float v) => Math.Abs(v) < 1E-06f;
 
     [MethodImpl(MethodImplOptions.AggressiveInlining)]
-    public static System.Numerics.Vector2 Normalize(this System.Numerics.Vector2 v)
+    public static Vector2 Normalize(this Vector2 v)
     {
         float num = v.Length();
-        if (!MathUtil.IsZero(num))
+        if (!IsZero(num))
         {
             float num2 = 1f / num;
             v.X *= num2;
@@ -124,32 +120,32 @@ internal static class Util
     }
 
     [MethodImpl(MethodImplOptions.AggressiveInlining)]
-    public static System.Numerics.Vector2 Zoom(
-        this System.Numerics.Vector2 vin, float zoom, System.Numerics.Vector2 origin) =>
+    public static Vector2 Zoom(
+        this Vector2 vin, float zoom, Vector2 origin) =>
         origin + ((vin - origin) * zoom);
 
     [MethodImpl(MethodImplOptions.AggressiveInlining)]
-    public static System.Numerics.Vector2 Rotate(
-        this System.Numerics.Vector2 vin, float rotation, System.Numerics.Vector2 origin) =>
+    public static Vector2 Rotate(
+        this Vector2 vin, float rotation, Vector2 origin) =>
         origin + (vin - origin).Rotate(rotation);
 
     [MethodImpl(MethodImplOptions.AggressiveInlining)]
-    public static System.Numerics.Vector2 Rotate(this System.Numerics.Vector2 vin, float rotation) =>
-        vin.Rotate(new System.Numerics.Vector2((float)Math.Sin(rotation), (float)Math.Cos(rotation)));
+    public static Vector2 Rotate(this Vector2 vin, float rotation) =>
+        vin.Rotate(new Vector2((float)Math.Sin(rotation), (float)Math.Cos(rotation)));
 
     [MethodImpl(MethodImplOptions.AggressiveInlining)]
-    public static System.Numerics.Vector2 Rotate(this System.Numerics.Vector2 vin, System.Numerics.Vector2 rotation)
+    public static Vector2 Rotate(this Vector2 vin, Vector2 rotation)
     {
         rotation = rotation.Normalize();
-        return new System.Numerics.Vector2((rotation.Y * vin.X) + (rotation.X * vin.Y), (rotation.Y * vin.Y) - (rotation.X * vin.X));
+        return new Vector2((rotation.Y * vin.X) + (rotation.X * vin.Y), (rotation.Y * vin.Y) - (rotation.X * vin.X));
     }
-    public static bool GetBorderClampedVector2(System.Numerics.Vector2 screenPos, System.Numerics.Vector2 clampSize, out System.Numerics.Vector2 clampedPos)
+    public static bool GetBorderClampedVector2(Vector2 screenPos, Vector2 clampSize, out Vector2 clampedPos)
     {
         var mainViewport = ImGuiHelpers.MainViewport;
         var center = mainViewport.GetCenter();
         var vector = mainViewport.Pos + clampSize;
-        var vector2 = mainViewport.Pos + new System.Numerics.Vector2(mainViewport.Size.X - clampSize.X, clampSize.Y);
-        var vector3 = mainViewport.Pos + new System.Numerics.Vector2(clampSize.X, mainViewport.Size.Y - clampSize.Y);
+        var vector2 = mainViewport.Pos + new Vector2(mainViewport.Size.X - clampSize.X, clampSize.Y);
+        var vector3 = mainViewport.Pos + new Vector2(clampSize.X, mainViewport.Size.Y - clampSize.Y);
         var vector4 = mainViewport.Pos + mainViewport.Size - clampSize;
         FindIntersection(vector, vector2, center, screenPos, out var lines_intersect, out var segmentsIntersect, out var intersection, out var _closeP, out var _closeP2);
         FindIntersection(vector2, vector4, center, screenPos, out lines_intersect, out var segmentsIntersect2, out var intersection2, out _closeP2, out _closeP);
@@ -171,7 +167,7 @@ internal static class Util
         {
             if (!segmentsIntersect4)
             {
-                clampedPos = System.Numerics.Vector2.Zero;
+                clampedPos = Vector2.Zero;
                 return false;
             }
             clampedPos = intersection4;
@@ -179,7 +175,7 @@ internal static class Util
         return true;
     }
 
-    private static void FindIntersection(System.Numerics.Vector2 p1, System.Numerics.Vector2 p2, System.Numerics.Vector2 p3, System.Numerics.Vector2 p4, out bool lines_intersect, out bool segmentsIntersect, out System.Numerics.Vector2 intersection, out System.Numerics.Vector2 closeP1, out System.Numerics.Vector2 closeP2)
+    private static void FindIntersection(Vector2 p1, Vector2 p2, Vector2 p3, Vector2 p4, out bool lines_intersect, out bool segmentsIntersect, out Vector2 intersection, out Vector2 closeP1, out Vector2 closeP2)
     {
         float num = p2.X - p1.X;
         float num2 = p2.Y - p1.Y;
@@ -191,19 +187,19 @@ internal static class Util
         {
             lines_intersect = false;
             segmentsIntersect = false;
-            intersection = new System.Numerics.Vector2(float.NaN, float.NaN);
-            closeP1 = new System.Numerics.Vector2(float.NaN, float.NaN);
-            closeP2 = new System.Numerics.Vector2(float.NaN, float.NaN);
+            intersection = new Vector2(float.NaN, float.NaN);
+            closeP1 = new Vector2(float.NaN, float.NaN);
+            closeP2 = new Vector2(float.NaN, float.NaN);
             return;
         }
         lines_intersect = true;
         float num7 = (((p3.X - p1.X) * num2) + ((p1.Y - p3.Y) * num)) / (0f - num5);
-        intersection = new System.Numerics.Vector2(p1.X + (num * num6), p1.Y + (num2 * num6));
+        intersection = new Vector2(p1.X + (num * num6), p1.Y + (num2 * num6));
         segmentsIntersect = num6 >= 0f && num6 <= 1f && num7 >= 0f && num7 <= 1f;
         num6 = float.Clamp(num6, 0f, 1f);
         num7 = float.Clamp(num7, 0f, 1f);
-        closeP1 = new System.Numerics.Vector2(p1.X + (num * num6), p1.Y + (num2 * num6));
-        closeP2 = new System.Numerics.Vector2(p3.X + (num3 * num7), p3.Y + (num4 * num7));
+        closeP1 = new Vector2(p1.X + (num * num6), p1.Y + (num2 * num6));
+        closeP2 = new Vector2(p3.X + (num3 * num7), p3.Y + (num4 * num7));
     }
 
     [MethodImpl(MethodImplOptions.AggressiveInlining)]
@@ -248,7 +244,7 @@ internal static class Util
     {
         return obj switch
         {
-            { BaseId: 6388, Position: var p } when p != System.Numerics.Vector3.Zero => true,
+            { BaseId: 6388, Position: var p } when p != Vector3.Zero => true,
             { BaseId: >= 2007182 and <= 2007186 } => true,
             { BaseId: 2009504 } => true,
             _ => false

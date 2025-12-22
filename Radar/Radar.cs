@@ -14,19 +14,15 @@ using Dalamud.Bindings.ImGui;
 using Lumina.Excel;
 using Radar.CustomObject;
 using Radar.Utils;
-using SharpDX;
 using System;
+using System.Numerics;
 using System.Collections.Generic;
 using System.IO;
 using System.Linq;
-using System.Numerics;
 using static Radar.RadarEnum;
 using Map = Lumina.Excel.Sheets.Map;
 using ObjectKind = Dalamud.Game.ClientState.Objects.Enums.ObjectKind;
 using TerritoryType = Lumina.Excel.Sheets.TerritoryType;
-using Vector2 = System.Numerics.Vector2;
-using Vector3 = System.Numerics.Vector3;
-using Vector4 = System.Numerics.Vector4;
 
 namespace Radar;
 
@@ -80,7 +76,7 @@ public class Radar : IDisposable
     private Vector2[] mapPosSize = new Vector2[2];
     private static Vector2 MeScreenPos = ImGuiHelpers.MainViewport.GetCenter();
     private static Vector3 MeWorldPos = Vector3.Zero;
-    internal static Matrix MatrixSingetonCache;
+    internal static Matrix4x4 MatrixSingetonCache;
     internal static Vector2 ViewPortSizeCache;
     private ImDrawListPtr foregroundDrawList;
     private ImDrawListPtr backgroundDrawList;
@@ -160,7 +156,7 @@ public class Radar : IDisposable
             {
                 Matrix4x4 view = renderCamera->ViewMatrix;
                 Matrix4x4 proj = renderCamera->ProjectionMatrix;
-                MatrixSingetonCache = Matrix4x4ToSharpDX(view * proj);
+                MatrixSingetonCache = view * proj;
                 var device = Device.Instance();
                 ViewPortSizeCache = new Vector2(device->Width, device->Height);
                 foregroundDrawList = ImGui.GetForegroundDrawList(ImGui.GetMainViewport());
@@ -214,11 +210,6 @@ public class Radar : IDisposable
 
         DrawList2D.Clear();
         return;
-
-        static Matrix Matrix4x4ToSharpDX(Matrix4x4 ma)
-        {
-            return new Matrix(ma.M11, ma.M12, ma.M13, ma.M14, ma.M21, ma.M22, ma.M23, ma.M24, ma.M31, ma.M32, ma.M33, ma.M34, ma.M41, ma.M42, ma.M43, ma.M44);
-        }
     }
 
     private void EnumerateAllObjects()
@@ -352,7 +343,7 @@ public class Radar : IDisposable
     {
         foreach (var item in Plugin.Configuration.DeepDungeonObjects.Where(i => i.Territory != 0 &&
                           i.GetBg == GetDeepDungeonBg(Plugin.ClientState.TerritoryType) &&
-                          i.Location.Distance2D(MeWorldPos.Convert()) < Plugin.Configuration.DeepDungeon_ObjectShowDistance).GroupBy((DeepDungeonObject i) => i, DeepDungeonObjectLocationEqual))
+                          i.Location.Distance2D(MeWorldPos) < Plugin.Configuration.DeepDungeon_ObjectShowDistance).GroupBy((DeepDungeonObject i) => i, DeepDungeonObjectLocationEqual))
         {
             Vector2 ringCenter;
             if (item.Key.Type == DeepDungeonType.Trap)
