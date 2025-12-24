@@ -510,7 +510,6 @@ public class Radar : IDisposable
             screenPos += pos;
         }
         var screenPosVector = screenPos;
-        _ = Plugin.Configuration.Overlay3D_ClampVector2;
         var overlay3DClampVector2 = Plugin.Configuration.Overlay3D_ClampVector2;
         var flag3 = false;
         if (Plugin.Configuration.Overlay3D_ShowOffscreen && Util.GetBorderClampedVector2(screenPos, overlay3DClampVector2, out var clampedPos))

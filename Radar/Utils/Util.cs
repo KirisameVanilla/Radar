@@ -124,55 +124,67 @@ internal static class Util
         rotation = rotation.Normalize();
         return new Vector2((rotation.Y * vin.X) + (rotation.X * vin.Y), (rotation.Y * vin.Y) - (rotation.X * vin.X));
     }
-    public static bool GetBorderClampedVector2(Vector2 screenPos, Vector2 clampSize, out Vector2 clampedPos)
+    public static bool GetBorderClampedVector2(
+        Vector2 screenPos,
+        Vector2 clampSize,
+        out Vector2 clampedPos)
     {
-        var mainViewport = ImGuiHelpers.MainViewport;
-        var center = mainViewport.GetCenter();
-        var vector = mainViewport.Pos + clampSize;
-        var vector2 = mainViewport.Pos + new Vector2(mainViewport.Size.X - clampSize.X, clampSize.Y);
-        var vector3 = mainViewport.Pos + new Vector2(clampSize.X, mainViewport.Size.Y - clampSize.Y);
-        var vector4 = mainViewport.Pos + mainViewport.Size - clampSize;
-        if (FindIntersection(vector, vector2, center, screenPos, out var intersection))
+        var viewport = ImGuiHelpers.MainViewport;
+        var center = viewport.GetCenter();
+
+        var topLeft = viewport.Pos + clampSize;
+        var topRight = viewport.Pos + new Vector2(viewport.Size.X - clampSize.X, clampSize.Y);
+        var bottomRight = viewport.Pos + viewport.Size - clampSize;
+        var bottomLeft = viewport.Pos + new Vector2(clampSize.X, viewport.Size.Y - clampSize.Y);
+
+        Span<(Vector2 a, Vector2 b)> edges = stackalloc[]
         {
-            clampedPos = intersection;
-        }
-        else if (FindIntersection(vector2, vector4, center, screenPos, out var intersection2))
+            (topLeft,     topRight),
+            (topRight,    bottomRight),
+            (bottomRight, bottomLeft),
+            (bottomLeft,  topLeft),
+        };
+
+        foreach (var (a, b) in edges)
         {
-            clampedPos = intersection2;
+            if (FindIntersection(a, b, center, screenPos, out clampedPos))
+                return true;
         }
-        else if (FindIntersection(vector4, vector3, center, screenPos, out var intersection3))
-        {
-            clampedPos = intersection3;
-        }
-        else
-        {
-            if (!FindIntersection(vector3, vector, center, screenPos, out var intersection4))
-            {
-                clampedPos = Vector2.Zero;
-                return false;
-            }
-            clampedPos = intersection4;
-        }
+
+        clampedPos = Vector2.Zero;
+        return false;
+    }
+
+    private static bool FindIntersection(
+        Vector2 a1, Vector2 a2,
+        Vector2 b1, Vector2 b2,
+        out Vector2 intersection)
+    {
+        intersection = default;
+
+        var r = a2 - a1;
+        var s = b2 - b1;
+
+        float rxs = Cross(r, s);
+        float qpxr = Cross(b1 - a1, r);
+
+        // 平行或共线
+        if (MathF.Abs(rxs) < float.Epsilon)
+            return false;
+
+        float t = Cross(b1 - a1, s) / rxs;
+        float u = qpxr / rxs;
+
+        if (t < 0f || t > 1f || u < 0f || u > 1f)
+            return false;
+
+        intersection = a1 + t * r;
         return true;
     }
 
-    private static bool FindIntersection(Vector2 p1, Vector2 p2, Vector2 p3, Vector2 p4, out Vector2 intersection)
-    {
-        float num = p2.X - p1.X;
-        float num2 = p2.Y - p1.Y;
-        float num3 = p4.X - p3.X;
-        float num4 = p4.Y - p3.Y;
-        float num5 = (num2 * num3) - (num * num4);
-        float num6 = (((p1.X - p3.X) * num4) + ((p3.Y - p1.Y) * num3)) / num5;
-        if (float.IsInfinity(num6))
-        {
-            intersection = new Vector2(float.NaN, float.NaN);
-            return false;
-        }
-        float num7 = (((p3.X - p1.X) * num2) + ((p1.Y - p3.Y) * num)) / (0f - num5);
-        intersection = new Vector2(p1.X + (num * num6), p1.Y + (num2 * num6));
-        return num6 >= 0f && num6 <= 1f && num7 >= 0f && num7 <= 1f;
-    }
+    [MethodImpl(MethodImplOptions.AggressiveInlining)]
+    private static float Cross(Vector2 a, Vector2 b)
+        => a.X * b.Y - a.Y * b.X;
 
     [MethodImpl(MethodImplOptions.AggressiveInlining)]
     public static string ToCompressedString<T>(this T obj) => obj.ToJsonString().Compress();
