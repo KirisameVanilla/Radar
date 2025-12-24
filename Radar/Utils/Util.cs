@@ -1,13 +1,14 @@
+using Dalamud.Bindings.ImGui;
 using Dalamud.Game.ClientState.Objects.Enums;
 using Dalamud.Game.ClientState.Objects.Types;
 using Dalamud.Interface.Textures.TextureWraps;
 using Dalamud.Interface.Utility;
-using Dalamud.Bindings.ImGui;
+using FFXIVClientStructs.FFXIV.Client.Graphics.Render;
 using Newtonsoft.Json;
 using System;
-using System.Numerics;
 using System.IO;
 using System.IO.Compression;
+using System.Numerics;
 using System.Runtime.CompilerServices;
 using System.Text;
 using static Radar.RadarEnum;
@@ -44,24 +45,16 @@ internal static class Util
          * W vector.X * transform.M14 + vector.Y * transform.M24 + vector.Z * transform.M34 + transform.M44);
         */
         pivot ??= ImGui.GetMainViewport().Pos;
-        var res = Vector3.Transform(worldPos, Radar.MatrixSingetonCache);
         Z = (worldPos.X * Radar.MatrixSingetonCache.M14) + 
             (worldPos.Y * Radar.MatrixSingetonCache.M24) + 
             (worldPos.Z * Radar.MatrixSingetonCache.M34) + 
             Radar.MatrixSingetonCache.M44;
         
-        screenPos = new Vector2(res.X / Z, res.Y / Z);
-        screenPos.X = (0.5f * Radar.ViewPortSizeCache.X * (screenPos.X + 1f)) + pivot.Value.X;
-        screenPos.Y = (0.5f * Radar.ViewPortSizeCache.Y * (1f - screenPos.Y)) + pivot.Value.Y;
-        if (Z < 0f)
-        {
-            screenPos = -screenPos + ImGuiHelpers.MainViewport.Pos + ImGuiHelpers.MainViewport.Size;
-        }
-        if (screenPos.X > pivot.Value.X - toleranceX && screenPos.X < pivot.Value.X + Radar.ViewPortSizeCache.X + toleranceX && screenPos.Y > pivot.Value.Y - toleranceY)
-        {
-            return screenPos.Y < pivot.Value.Y + Radar.ViewPortSizeCache.Y + toleranceY;
-        }
-        return false;
+        Plugin.Gui.WorldToScreen(worldPos, out screenPos);
+        return screenPos.X > pivot.Value.X - toleranceX 
+            && screenPos.X < pivot.Value.X + Radar.ViewPortSizeCache.X + toleranceX 
+            && screenPos.Y > pivot.Value.Y - toleranceY 
+            && screenPos.Y < pivot.Value.Y + Radar.ViewPortSizeCache.Y + toleranceY;
     }
 
 
@@ -105,10 +98,10 @@ internal static class Util
     [MethodImpl(MethodImplOptions.AggressiveInlining)]
     public static Vector2 Normalize(this Vector2 v)
     {
-        float num = v.Length();
+        var num = v.Length();
         if (!IsZero(num))
         {
-            float num2 = 1f / num;
+            var num2 = 1f / num;
             v.X *= num2;
             v.Y *= num2;
             return v;
