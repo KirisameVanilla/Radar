@@ -57,11 +57,6 @@ internal static class Util
             && screenPos.Y < pivot.Value.Y + Radar.ViewPortSizeCache.Y + toleranceY;
     }
 
-
-    [MethodImpl(MethodImplOptions.AggressiveInlining)]
-    public static Vector2 GetSize(this IDalamudTextureWrap textureWrap) =>
-        new(textureWrap.Width, textureWrap.Height);
-
     [MethodImpl(MethodImplOptions.AggressiveInlining)]
     public static Vector2 ToVector2(this Vector3 v) =>
         new(v.X, v.Z);
@@ -137,25 +132,21 @@ internal static class Util
         var vector2 = mainViewport.Pos + new Vector2(mainViewport.Size.X - clampSize.X, clampSize.Y);
         var vector3 = mainViewport.Pos + new Vector2(clampSize.X, mainViewport.Size.Y - clampSize.Y);
         var vector4 = mainViewport.Pos + mainViewport.Size - clampSize;
-        FindIntersection(vector, vector2, center, screenPos, out var lines_intersect, out var segmentsIntersect, out var intersection, out var _closeP, out var _closeP2);
-        FindIntersection(vector2, vector4, center, screenPos, out lines_intersect, out var segmentsIntersect2, out var intersection2, out _closeP2, out _closeP);
-        FindIntersection(vector4, vector3, center, screenPos, out lines_intersect, out var segmentsIntersect3, out var intersection3, out _closeP, out _closeP2);
-        FindIntersection(vector3, vector, center, screenPos, out lines_intersect, out var segmentsIntersect4, out var intersection4, out _closeP2, out _closeP);
-        if (segmentsIntersect)
+        if (FindIntersection(vector, vector2, center, screenPos, out var intersection))
         {
             clampedPos = intersection;
         }
-        else if (segmentsIntersect2)
+        else if (FindIntersection(vector2, vector4, center, screenPos, out var intersection2))
         {
             clampedPos = intersection2;
         }
-        else if (segmentsIntersect3)
+        else if (FindIntersection(vector4, vector3, center, screenPos, out var intersection3))
         {
             clampedPos = intersection3;
         }
         else
         {
-            if (!segmentsIntersect4)
+            if (!FindIntersection(vector3, vector, center, screenPos, out var intersection4))
             {
                 clampedPos = Vector2.Zero;
                 return false;
@@ -165,7 +156,7 @@ internal static class Util
         return true;
     }
 
-    private static void FindIntersection(Vector2 p1, Vector2 p2, Vector2 p3, Vector2 p4, out bool lines_intersect, out bool segmentsIntersect, out Vector2 intersection, out Vector2 closeP1, out Vector2 closeP2)
+    private static bool FindIntersection(Vector2 p1, Vector2 p2, Vector2 p3, Vector2 p4, out Vector2 intersection)
     {
         float num = p2.X - p1.X;
         float num2 = p2.Y - p1.Y;
@@ -175,21 +166,12 @@ internal static class Util
         float num6 = (((p1.X - p3.X) * num4) + ((p3.Y - p1.Y) * num3)) / num5;
         if (float.IsInfinity(num6))
         {
-            lines_intersect = false;
-            segmentsIntersect = false;
             intersection = new Vector2(float.NaN, float.NaN);
-            closeP1 = new Vector2(float.NaN, float.NaN);
-            closeP2 = new Vector2(float.NaN, float.NaN);
-            return;
+            return false;
         }
-        lines_intersect = true;
         float num7 = (((p3.X - p1.X) * num2) + ((p1.Y - p3.Y) * num)) / (0f - num5);
         intersection = new Vector2(p1.X + (num * num6), p1.Y + (num2 * num6));
-        segmentsIntersect = num6 >= 0f && num6 <= 1f && num7 >= 0f && num7 <= 1f;
-        num6 = float.Clamp(num6, 0f, 1f);
-        num7 = float.Clamp(num7, 0f, 1f);
-        closeP1 = new Vector2(p1.X + (num * num6), p1.Y + (num2 * num6));
-        closeP2 = new Vector2(p3.X + (num3 * num7), p3.Y + (num4 * num7));
+        return num6 >= 0f && num6 <= 1f && num7 >= 0f && num7 <= 1f;
     }
 
     [MethodImpl(MethodImplOptions.AggressiveInlining)]

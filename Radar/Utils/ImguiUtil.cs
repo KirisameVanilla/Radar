@@ -158,7 +158,6 @@ internal static class ImGuiUtil
     {
         var textureWrap = icon.GetWrapOrDefault();
         if (textureWrap is null) return;
-        _ = textureWrap.GetSize() * size;
         drawList.AddImage(textureWrap.Handle, pos, pos);
     }
 
