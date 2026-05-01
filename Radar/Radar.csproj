@@ -1,16 +1,12 @@
 ﻿<Project Sdk="Microsoft.NET.Sdk">
   <PropertyGroup>
     <AssemblyName>Radar</AssemblyName>
-    <GenerateAssemblyInfo>False</GenerateAssemblyInfo>
+    <GenerateAssemblyInfo>True</GenerateAssemblyInfo>
     <TargetFramework>net10.0-windows7.0</TargetFramework>
     <PlatformTarget>x64</PlatformTarget>
     <Configurations>Debug;Release</Configurations>
     <Nullable>enable</Nullable>
   </PropertyGroup>
-
-  <ItemGroup>
-    <PackageReference Include="DalamudPackager" Version="14.0.1" />
-  </ItemGroup>
 
   <PropertyGroup>
     <LangVersion>latest</LangVersion>
@@ -31,6 +27,11 @@
     <DebugType>none</DebugType>
     <CheckForOverflowUnderflow>True</CheckForOverflowUnderflow>
   </PropertyGroup>
+    
+    
+  <ItemGroup>
+    <PackageReference Include="DalamudPackager" Version="15.0.0" />
+  </ItemGroup>
 
   <ItemGroup>
     <Reference Include="Dalamud">
