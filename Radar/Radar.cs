@@ -40,17 +40,18 @@ public class Radar : IDisposable
         public int GetHashCode(DeepDungeonObject obj) => obj.Location2D.GetHashCode() ^ (int)obj.GetBg ^ (int)obj.Type;
     }
 
-    public class DeepDungeonTerritoryEqualityComparer : IEqualityComparer<ushort>
+    public class DeepDungeonTerritoryEqualityComparer : IEqualityComparer<uint>
     {
-        public bool Equals(ushort x, ushort y) => (x >= 564 && x <= 565 && y >= 564 && y <= 565)
+        public bool Equals(uint x, uint y) => (x >= 564 && x <= 565 && y >= 564 && y <= 565)
                                                   || (x >= 593 && x <= 595 && y >= 593 && y <= 595)
                                                   || (x >= 596 && x <= 598 && y >= 596 && y <= 598)
                                                   || (x >= 599 && x <= 600 && y >= 599 && y <= 600)
                                                   || (x >= 601 && x <= 602 && y >= 601 && y <= 602)
                                                   || (x >= 603 && x <= 607 && y >= 603 && y <= 607)
                                                   || (x >= 772 && x <= 775 && y >= 772 && y <= 785);
+        
 
-        public int GetHashCode(ushort obj)
+        public int GetHashCode(uint obj)
         {
             return obj switch
             {
@@ -64,7 +65,7 @@ public class Radar : IDisposable
                 773 or 783 => -7,
                 774 or 784 => -8,
                 775 or 785 => -9,
-                _ => obj,
+                _ => (int)obj,
             };
         }
     }
@@ -80,7 +81,7 @@ public class Radar : IDisposable
     internal static Vector2 ViewPortSizeCache;
     private ImDrawListPtr foregroundDrawList;
     private ImDrawListPtr backgroundDrawList;
-    private Dictionary<ushort, bool> isPvpZoneDict;
+    private Dictionary<uint, bool> isPvpZoneDict;
     private HashSet<Vector2> hoardBlackList = new();
     private HashSet<Vector2> trapBlacklist = new();
     private readonly Dictionary<uint, ushort> sizeFactorDict;
@@ -107,9 +108,9 @@ public class Radar : IDisposable
         }
     }
     private float rotation;
-    private Dictionary<ushort, bool> IsPvpZone => isPvpZoneDict
+    private Dictionary<uint, bool> IsPvpZone => isPvpZoneDict
                                                       ??= TerritoryTypeSheet.ToDictionary(
-                                                          i => (ushort)i.RowId,
+                                                          i => i.RowId,
                                                           j => j.IsPvpZone
                                                       );
     private static readonly ExcelSheet<TerritoryType> TerritoryTypeSheet = Plugin.DataManager.GetExcelSheet<TerritoryType>();
@@ -117,20 +118,19 @@ public class Radar : IDisposable
 
     #endregion
 
-    public static DeepDungeonTerritoryEqualityComparer DeepDungeonTerritoryEqual { get; set; }
+    public static DeepDungeonTerritoryEqualityComparer DeepDungeonTerritoryEqual { get; } = new();
 
     public static DeepDungeonObjectLocationEqualityComparer DeepDungeonObjectLocationEqual { get; set; }
 
     public Radar()
     {
         sizeFactorDict = TerritoryTypeSheet.ToDictionary(k => k.RowId, v => v.Map.Value.SizeFactor);
-        DeepDungeonTerritoryEqual = new DeepDungeonTerritoryEqualityComparer();
         DeepDungeonObjectLocationEqual = new DeepDungeonObjectLocationEqualityComparer();
         Plugin.ClientState.TerritoryChanged += TerritoryChanged;
         Plugin.PluginInterface.UiBuilder.Draw += UiBuilder_OnBuildUi;
     }
 
-    private void TerritoryChanged(ushort territoryId)
+    private void TerritoryChanged(uint territoryId)
     {
         Plugin.PluginLog.Information($"territory changed to: {territoryId}");
         trapBlacklist.Clear();
@@ -239,7 +239,7 @@ public class Radar : IDisposable
             {
                 if (!flag)
                 {
-                    if (!Plugin.Configuration.Overlay_ShowKinds[(int)myObjectKind] || (Plugin.Configuration.Overlay_OnlyShowTargetable && (!o.IsTargetable || o.ObjectKind == ObjectKind.MountType)))
+                    if (!Plugin.Configuration.Overlay_ShowKinds[(int)myObjectKind] || (Plugin.Configuration.Overlay_OnlyShowTargetable && (!o.IsTargetable || o.ObjectKind == ObjectKind.Mount)))
                     {
                         return;
                     }
@@ -278,7 +278,7 @@ public class Radar : IDisposable
         }
     }
 
-    internal static DeepDungeonBg GetDeepDungeonBg(ushort territory)
+    internal static DeepDungeonBg GetDeepDungeonBg(uint territory)
     {
         return territory switch
         {
@@ -592,7 +592,7 @@ public class Radar : IDisposable
             ImGui.TextColored(ImGui.ColorConvertU32ToFloat4(fgcolor), nameString ?? "");
             ImGui.Separator();
             var text = string.Empty;
-            if (thisGameObject.ObjectKind is ObjectKind.BattleNpc or ObjectKind.Player)
+            if (thisGameObject.ObjectKind is ObjectKind.BattleNpc or ObjectKind.Pc)
             {
                 var currentHp = objCharacter.CurrentHp;
                 var maxHp = objCharacter.MaxHp;

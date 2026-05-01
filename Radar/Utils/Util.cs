@@ -137,7 +137,7 @@ internal static class Util
         var bottomRight = viewport.Pos + viewport.Size - clampSize;
         var bottomLeft = viewport.Pos + new Vector2(clampSize.X, viewport.Size.Y - clampSize.Y);
 
-        Span<(Vector2 a, Vector2 b)> edges = stackalloc[]
+        var edges = new []
         {
             (topLeft,     topRight),
             (topRight,    bottomRight),

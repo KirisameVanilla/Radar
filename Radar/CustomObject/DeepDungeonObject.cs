@@ -9,7 +9,7 @@ public record DeepDungeonObject
 {
     public Vector3 Location { get; init; }
 
-    public ushort Territory { get; init; }
+    public uint Territory { get; init; }
 
     public uint Base { get; init; }
 

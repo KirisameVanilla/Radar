@@ -49,16 +49,16 @@ public class ConfigUi : Window, IDisposable
     private static readonly Vector4 RedVector4 = new(1f, 0f, 0f, 1f);
     private int treeLevel;
     private string errorMessage = string.Empty;
-    private Dictionary<ushort, string> territoryIdToBg;
+    private Dictionary<uint, string> territoryIdToBg;
     private static readonly ExcelSheet<TerritoryType> TerritoryTypeSheet = Plugin.DataManager.GetExcelSheet<TerritoryType>();
 
-    private Dictionary<ushort, string> TerritoryIdToBg
+    private Dictionary<uint, string> TerritoryIdToBg
     {
         get
         {
             if (territoryIdToBg == null)
             {
-                territoryIdToBg = TerritoryTypeSheet.ToDictionary((i) => (ushort)i.RowId, (j) => j.Bg.ExtractText());
+                territoryIdToBg = TerritoryTypeSheet.ToDictionary((i) => i.RowId, (j) => j.Bg.ExtractText());
                 territoryIdToBg[0] = "未记录区域（数据不可用）";
             }
             return territoryIdToBg;
