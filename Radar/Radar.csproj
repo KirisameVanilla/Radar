@@ -12,7 +12,7 @@
     <LangVersion>latest</LangVersion>
     <AllowUnsafeBlocks>True</AllowUnsafeBlocks>
     <Authors>akira0245, KirisameVanilla</Authors>
-    <Version>2.1.1.5</Version>
+    <Version>2.1.1.7</Version>
     <DalamudLibPath Condition=" '$(Configuration)' == 'Release'">$(appdata)\XIVLauncher\addon\Hooks\dev\</DalamudLibPath>
     <DalamudLibPath Condition=" '$(Configuration)' == 'Debug'">$(appdata)\XIVLauncher\addon\Hooks\dev\</DalamudLibPath>
     <RepositoryUrl>https://github.com/KirisameVanilla/Radar</RepositoryUrl>
